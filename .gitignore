@@ -1,0 +1,21 @@
+# Configuración local y secretos
+.env
+.env.*
+!.env.example
+
+# Dependencias y cachés
+node_modules/
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.cache/
+
+# Resultados generados
+build/
+dist/
+coverage/
+*.log
