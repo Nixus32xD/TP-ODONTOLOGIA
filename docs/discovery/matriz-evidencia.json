@@ -1,0 +1,244 @@
+{
+  "estado": "BORRADOR PARA REVISIÓN",
+  "fecha": "2026-10-15",
+  "metrica": "Cobertura documental pública; no calidad real",
+  "formula": "sum(peso * puntaje / 5)",
+  "pesos": {
+    "turnos": 25,
+    "clinica": 20,
+    "integraciones": 15,
+    "administracion": 15,
+    "paciente": 10,
+    "seguridad": 10,
+    "precio": 5
+  },
+  "productos": [
+    {
+      "producto": "Denteo",
+      "ficha": "fuentes/denteo.md",
+      "sha256": "bdf544126d5e6c9f2d3dc376fd6ff87c83029c5ffc4385cc7e736d662eed106e",
+      "puntajes": {
+        "turnos": 4,
+        "clinica": 4,
+        "integraciones": 3,
+        "administracion": 2,
+        "paciente": 3,
+        "seguridad": 4,
+        "precio": 2
+      },
+      "total": 67.0
+    },
+    {
+      "producto": "Dentalink",
+      "ficha": "fuentes/dentalink.md",
+      "sha256": "b5217d73b64c6251619d3cad9c234968492f2d7128ad0d4f82ba45e145b5b2ad",
+      "puntajes": {
+        "turnos": 4,
+        "clinica": 2,
+        "integraciones": 2,
+        "administracion": 3,
+        "paciente": 3,
+        "seguridad": 3,
+        "precio": 1
+      },
+      "total": 56.0
+    },
+    {
+      "producto": "DENTIDESK",
+      "ficha": "fuentes/dentidesk.md",
+      "sha256": "337a0a8eb3af08abe4ce3611c5a722162ddea52e038e61b647d701fcc8e890bf",
+      "puntajes": {
+        "turnos": 2,
+        "clinica": 2,
+        "integraciones": 2,
+        "administracion": 2,
+        "paciente": 2,
+        "seguridad": 3,
+        "precio": 1
+      },
+      "total": 41.0
+    },
+    {
+      "producto": "OdontoSoft Millennium",
+      "ficha": "fuentes/odontosoft.md",
+      "sha256": "e86e9f192915d4d41f27b08427992e2c072b0d89033379350174c4f8ea0c4233",
+      "puntajes": {
+        "turnos": 3,
+        "clinica": 3,
+        "integraciones": 0,
+        "administracion": 3,
+        "paciente": 2,
+        "seguridad": 2,
+        "precio": 2
+      },
+      "total": 46.0
+    },
+    {
+      "producto": "Doctoralia Argentina",
+      "ficha": "fuentes/doctoralia-argentina.md",
+      "sha256": "d99cfe7438602e511b0e879ca759fab82c4eeda77034081e56da3504f35637e8",
+      "puntajes": {
+        "turnos": 4,
+        "clinica": 2,
+        "integraciones": 2,
+        "administracion": 1,
+        "paciente": 2,
+        "seguridad": 2,
+        "precio": 2
+      },
+      "total": 47.0
+    },
+    {
+      "producto": "AgendaPro",
+      "ficha": "fuentes/agendapro.md",
+      "sha256": "f5c4e2eb7911ff31fc2c3aa52b8769b5fa4f9d0fd009b4c6f32321742432bf97",
+      "puntajes": {
+        "turnos": 3,
+        "clinica": 2,
+        "integraciones": 2,
+        "administracion": 2,
+        "paciente": 2,
+        "seguridad": 2,
+        "precio": 2
+      },
+      "total": 45.0
+    },
+    {
+      "producto": "Odontosys",
+      "ficha": "fuentes/odontosys.md",
+      "sha256": "f4a310c6ecaeeac6bf3b3498cbc10e02d1153248efbb6b785884b1be98356fd3",
+      "puntajes": {
+        "turnos": 4,
+        "clinica": 2,
+        "integraciones": 3,
+        "administracion": 2,
+        "paciente": 3,
+        "seguridad": 3,
+        "precio": 1
+      },
+      "total": 56.0
+    },
+    {
+      "producto": "Simples Dental",
+      "ficha": "fuentes/simples-dental.md",
+      "sha256": "818cc50b4535c946b5e640aa2b6722b612ee25b1e3fca92112cf4d2b67be318a",
+      "puntajes": {
+        "turnos": 2,
+        "clinica": 2,
+        "integraciones": 2,
+        "administracion": 2,
+        "paciente": 2,
+        "seguridad": 2,
+        "precio": 2
+      },
+      "total": 40.0
+    },
+    {
+      "producto": "Dental Office",
+      "ficha": "fuentes/dental-office.md",
+      "sha256": "377d95896513b72630a64d747275c656f9c3d5e66aa5521b5e558b6b04f7a0ea",
+      "puntajes": {
+        "turnos": 2,
+        "clinica": 2,
+        "integraciones": 2,
+        "administracion": 2,
+        "paciente": 2,
+        "seguridad": 2,
+        "precio": 2
+      },
+      "total": 40.0
+    },
+    {
+      "producto": "Clinic Cloud",
+      "ficha": "fuentes/clinic-cloud.md",
+      "sha256": "0e6a149dccc18434661eb90d3cd45627e73cf7aec68c1ffcdbdabbd13361cf98",
+      "puntajes": {
+        "turnos": 4,
+        "clinica": 2,
+        "integraciones": 3,
+        "administracion": 3,
+        "paciente": 3,
+        "seguridad": 2,
+        "precio": 2
+      },
+      "total": 58.0
+    },
+    {
+      "producto": "GESDEN ONE/G5",
+      "ficha": "fuentes/gesden.md",
+      "sha256": "25b0fe8b8619200e4c1e57a87cfc4967cbbf18e3bbbfbaf71015f667a3a0ba4e",
+      "puntajes": {
+        "turnos": 3,
+        "clinica": 2,
+        "integraciones": 4,
+        "administracion": 2,
+        "paciente": 4,
+        "seguridad": 3,
+        "precio": 1
+      },
+      "total": 56.0
+    },
+    {
+      "producto": "Open Dental",
+      "ficha": "fuentes/open-dental.md",
+      "sha256": "b2187d9f74e33dfa45dc36d9506dc70d4c5ca1bd6dc640633ab85ba6ecfb786a",
+      "puntajes": {
+        "turnos": 4,
+        "clinica": 4,
+        "integraciones": 0,
+        "administracion": 3,
+        "paciente": 3,
+        "seguridad": 4,
+        "precio": 3
+      },
+      "total": 62.0
+    },
+    {
+      "producto": "Dentrix Ascend",
+      "ficha": "fuentes/dentrix-ascend.md",
+      "sha256": "a7bc2928f4b446fd6a748f325cb5ce747d9aa0223f2406c6aa76b67ec4f7cb4f",
+      "puntajes": {
+        "turnos": 4,
+        "clinica": 3,
+        "integraciones": 0,
+        "administracion": 2,
+        "paciente": 3,
+        "seguridad": 2,
+        "precio": 1
+      },
+      "total": 49.0
+    },
+    {
+      "producto": "CareStack",
+      "ficha": "fuentes/carestack.md",
+      "sha256": "a25e824231b687b74dc22ccd497018544e08612ffd2be85f08fa9d3796300e76",
+      "puntajes": {
+        "turnos": 4,
+        "clinica": 4,
+        "integraciones": 0,
+        "administracion": 4,
+        "paciente": 3,
+        "seguridad": 3,
+        "precio": 2
+      },
+      "total": 62.0
+    },
+    {
+      "producto": "Dentisoft",
+      "ficha": "fuentes/dentisoft.md",
+      "sha256": "69c928fbec70bec1ca00b8ffd4675e241df08a21f1e891e09be001c33ed13a71",
+      "puntajes": {
+        "turnos": 1,
+        "clinica": 2,
+        "integraciones": 0,
+        "administracion": 2,
+        "paciente": 2,
+        "seguridad": 2,
+        "precio": 1
+      },
+      "total": 28.0
+    }
+  ],
+  "urls_unicas_en_fichas_productos": 92,
+  "leyes_referenciadas": 2
+}

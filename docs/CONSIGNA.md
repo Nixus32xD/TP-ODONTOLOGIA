@@ -14,20 +14,20 @@ Este checklist resume requisitos de la consigna; no acredita su cumplimiento. La
 ## Etapa 1 - Inicio de la fundación
 
 - [x] Inicializar OpenSpec: `openspec init --tools codex --language es --no-animation`, finalizado con código 0. El flujo completo de Active Stack continúa pendiente.
-- [ ] Elegir Discovery en la bifurcación; es obligatorio en este TP.
+- [x] Elegir Discovery en la bifurcación; el usuario confirmó continuar el 2026-10-15.
 - [x] Incluir `.active-orchestrator-state.json` con el estado real: versión 4, siguiente fase `discovery`, pendiente de revisión e inicio.
-- [ ] Registrar inspección y decisión humana antes de avanzar de etapa.
+- [x] Registrar inspección y decisión de continuar desde la inicialización. La aprobación final de Discovery permanece pendiente.
 
 ## Etapa 2 - Discovery
 
 - [ ] Ejecutar `discovery-research` y guardar su checklist de once puntos: problema, usuarios, casos de uso, competidores, funcionalidades necesarias, opcionales, reglas de negocio, integraciones, restricciones, riesgos y preguntas abiertas.
-- [ ] Investigar Argentina, Latinoamérica y soluciones internacionales relevantes con fuentes verificables, URL y fecha de consulta.
-- [ ] Relevar por producto: identidad/proveedor/país, segmento, modalidad, agenda, turnos digitales, automatización, gestión clínica, administración, integraciones, operación, seguridad/cumplimiento, modelo comercial, fortalezas/limitaciones y adopción evidenciada.
-- [ ] A: comparar al menos 15 sistemas, ordenados por relevancia para Argentina. Toda característica sin respaldo público dice **No evidenciado**.
-- [ ] B: puntuar de 0 a 5, incluir total ponderado y explicar la escala y el tratamiento de datos no evidenciados.
-- [ ] C: analizar estándares, diferenciadores reales, vacíos argentinos y oportunidades.
-- [ ] D: recomendar cinco competidores para demo, tres referencias de UX y un MVP con imprescindibles, diferenciadores y etapas posteriores.
-- [ ] Distinguir funcionalidades comprobadas de afirmaciones comerciales.
+- [x] Investigar Argentina, Latinoamérica y referencias internacionales con fuentes públicas, URL y fecha; accesos fallidos registrados.
+- [x] Relevar los campos por producto en quince fichas, conservando límites y datos **No evidenciados**.
+- [x] A: comparar 15 sistemas, ordenados por relevancia para Argentina. Material para revisión, sin aprobación final.
+- [x] B: matriz de 0 a 5, total ponderado, escala y tratamiento de datos no evidenciados.
+- [x] C: estándares, diferenciadores, lagunas documentales y oportunidades como hipótesis; no se afirma un vacío de mercado por ausencia de fuentes.
+- [x] D: cinco prioridades para demo futura, tres referencias de UX y un MVP acotado. Las demos no se realizaron.
+- [x] Distinguir documentación de funciones, afirmaciones comerciales y falta de evidencia; sin pruebas funcionales de los proveedores.
 - [ ] Verificación humana: comprobar personalmente al menos cinco fuentes de distintos tipos; registrar afirmación, hallazgo y corrección. La revisión del agente no sustituye esta comprobación.
 - [ ] Entregar `docs/discovery/informe-discovery.md`, su PDF y el resultado estructurado de los once puntos en la misma carpeta.
 

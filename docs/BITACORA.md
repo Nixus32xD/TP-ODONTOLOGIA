@@ -2,7 +2,7 @@
 
 ## 2026-10-15 - Preparación
 
-- **Decisión del usuario:** construir una entrega propia desde cero; usar los dos repositorios proporcionados como referencia.
+- **Decisión del usuario:** construir una entrega propia desde cero.
 - **Destino:** [Nixus32xD/TP-ODONTOLOGIA](https://github.com/Nixus32xD/TP-ODONTOLOGIA).
 - **Publicación autorizada:** realizar avances con commit y push por hitos, conservando un historial del proceso.
 - **Trabajo de esta etapa:** documentación inicial, checklist de la consigna e inventario del entorno. Todavía no hay código de producto ni pruebas.
@@ -46,3 +46,13 @@ Cada entrada posterior debe indicar qué cambió, evidencia disponible, resultad
 - Se distinguieron GESDEN ONE/G5, anuncios en prelanzamiento, doble reserva advertida frente a rechazada y pagos de suscripción frente a cobros clínicos.
 - Las lecturas divergentes de condiciones Denteo se conservaron como incertidumbre; no se decidió arbitrariamente qué versión era definitiva.
 - **Estado:** investigación e informe para revisión. No se ha aprobado el resumen final ni se escribió la sección `state.discovery`.
+
+### Informe preparado para revisión
+
+- Se publicaron las fuentes como `ea2bd17f4f62cb449f16394e2f98f691c7583344` en `main`; las herramientas se habían incorporado en `14b7fff`.
+- El usuario pidió continuar y retirar la mención a otros repositorios de trabajos prácticos de la documentación actual. Se aplicó la edición al README y al registro inicial.
+- Se generaron `informe-discovery.md`, `informe-discovery.pdf`, `matriz-evidencia.json` y `resumen-para-revision.md`. El PDF contiene el informe principal, las quince fichas, marco argentino y once puntos: 55 páginas, identificado como borrador.
+- **Verificación:** ejecución de `tools/render_discovery.py` con el Python del runtime disponible, salida 0; quince productos, 105 puntajes, pesos que suman 100 y totales exactos. Se contrastaron los hashes de las quince fichas con texto UTF-8 y finales de línea normalizados.
+- **Documentación:** 68 enlaces locales válidos, sin tablas pendientes de consolidar. El PDF contiene los textos esperados, sin caracteres de sustitución ni texto fuera de los límites de página. Se renderizaron todas las páginas con `pdftoppm` y se revisaron las vistas de conjunto y tablas principales.
+- **OpenSpec:** `openspec validate --all --json` finalizó con salida 0 y cero elementos; no representa tests de producto. `git diff --check` pasó. No hay implementación ni suite de comportamiento aún.
+- **Pendiente:** revisión y confirmación del resumen de once puntos antes de crear el resultado canónico de Discovery y su sección de estado. La comprobación personal de al menos cinco fuentes, identificación del integrante, capturas, video y reflexión siguen pendientes.

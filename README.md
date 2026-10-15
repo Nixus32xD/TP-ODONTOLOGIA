@@ -6,9 +6,9 @@ Repositorio: [Nixus32xD/TP-ODONTOLOGIA](https://github.com/Nixus32xD/TP-ODONTOLO
 
 ## Estado actual
 
-Preparación documental y OpenSpec inicializado con Codex. Todavía no hay código de producto, runtime del proyecto ni pruebas para ejecutar. El stack de la aplicación y una única funcionalidad verificable se elegirán después del Discovery y de la fundación.
+OpenSpec inicializado y Discovery en revisión: quince sistemas relevados, matriz ponderada y propuesta para un consultorio pequeño. El usuario confirmó como primer change crear turnos evitando solapamientos por profesional y box. Todavía no hay código de producto ni pruebas de comportamiento; el stack y la persistencia se decidirán durante la fundación.
 
-Se ejecutó correctamente `openspec init --tools codex --language es --no-animation`: configuración `spec-driven` y seis skills del proyecto para Explore, Propose, Update, Apply, Sync y Archive. El estado de Active Stack tiene `version: 4` y `step: discovery`; indica la siguiente fase pendiente, no un Discovery ejecutado ni una revisión humana aprobada.
+Se ejecutó `openspec init --tools codex --language es --no-animation`: configuración `spec-driven` y seis skills OPSX. Se incorporó `discovery-research` sólo en este proyecto. El estado de Active Stack conserva `version: 4` y `step: discovery`: el informe está para revisar, sin aprobación final ni cierre de la fase.
 
 Para consultar el estado desde PowerShell con OpenSpec disponible en PATH:
 
@@ -17,11 +17,9 @@ Set-Location -LiteralPath 'N:\Nueva carpeta\TP-ODONTOLOGIA'
 openspec list --json
 ```
 
-La consulta actual devuelve `changes: []`. Sigue la revisión humana de la preparación y resolver la disponibilidad de `discovery-research` para iniciar Discovery. Los demás pendientes del entorno y de evidencia quedan documentados para la entrega.
+La consulta actual devuelve `changes: []`. Sigue la revisión del informe y de sus once puntos antes de completar el resultado canónico de Discovery y pasar a la base de conocimiento. Los pendientes del entorno y de evidencia quedan documentados para la entrega.
 
-Esta entrega comienza desde cero; los repositorios de referencia sirven para estudiar el proceso. El alcance inicial es una funcionalidad terminada, sin asumir un SaaS completo, autenticación ni facturación fiscal.
-
-Referencias revisadas: [Mateows/TPI-METODOLOGIA](https://github.com/Mateows/TPI-METODOLOGIA) (`20622f44293010d9bd6d8aef5c0a2ea401e55891`, fundación; agenda pendiente) y [Santiago-Btto/TP_ODONTOLOGIA_METODOLOGIA](https://github.com/Santiago-Btto/TP_ODONTOLOGIA_METODOLOGIA) (`438933b193f5b6b9a90e945f634d8315210565f6`, alta de turnos con prevención de solapamientos). No se importan su código, historial ni capturas; las decisiones de producto y tecnología requieren investigación propia.
+Esta entrega comienza desde cero. El alcance inicial es una funcionalidad terminada de agenda, con datos ficticios y sin integraciones clínicas reales.
 
 ## Recorrido de la entrega
 
@@ -41,5 +39,18 @@ Se registrarán avances mediante commits y push por hitos. Las revisiones humana
 - [Consigna y checklist de entregables](docs/CONSIGNA.md).
 - [Bitácora del proceso](docs/BITACORA.md).
 - [Inventario y pendientes del entorno](docs/evidencia/entorno.md).
+- [Informe Discovery](docs/discovery/informe-discovery.md) y [PDF](docs/discovery/informe-discovery.pdf).
+- [Once puntos para revisión](docs/discovery/resumen-para-revision.md).
+- [Comprobaciones documentales y revisión personal pendiente](docs/discovery/verificacion-fuentes.md).
+
+## Regenerar el informe PDF
+
+Con Python 3, `reportlab`, `pypdf` y las fuentes Arial de Windows disponibles:
+
+```powershell
+python tools/render_discovery.py
+```
+
+El comando consolida tablas, calcula los totales y genera el PDF y `matriz-evidencia.json` desde las fichas. No consulta servicios externos ni modifica el estado de Active Stack. La revisión personal de al menos cinco fuentes continúa pendiente.
 
 El README incorporará los pasos de instalación y ejecución de la suite cuando exista la implementación. Todos los ejemplos y pruebas usarán datos ficticios, sin secretos ni datos reales de pacientes.
