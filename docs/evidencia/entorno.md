@@ -21,7 +21,7 @@ Registro de preparación del 2026-10-15. Este inventario distingue disponibilida
 - `openspec/config.yaml`: esquema `spec-driven`.
 - Seis skills de proyecto en `.agents/skills/`: `openspec-explore`, `openspec-propose`, `openspec-update-change`, `openspec-apply-change`, `openspec-sync-specs` y `openspec-archive-change`.
 - `.active-orchestrator-state.json`: versión 4, fase actual `agents`; Discovery documental y base de conocimiento registrados en sus secciones propias.
-- `openspec list --json`: código de salida 0, `changes: []`, raíz `N:/Nueva carpeta/TP-ODONTOLOGIA`.
+- `openspec list --json`: raíz `N:/Nueva carpeta/TP-ODONTOLOGIA`; inicialmente sin changes. Ahora existe `crear-turno-sin-solapamientos`, con planificación completa y 0/15 tareas implementadas.
 
 Estos resultados verifican inicialización y estado del flujo. Todavía no existen pruebas de comportamiento de producto.
 
@@ -49,3 +49,10 @@ No se incluyen configuraciones globales, credenciales ni datos personales en est
 
 - La [selección de skills](../fundacion/seleccion-skills.md) reutiliza existentes y no instala herramientas nuevas. El [registro del proyecto](../../.atl/skill-registry.md) conserva las 21 skills y sus reglas compactas, y enlaza las convenciones del proyecto. [AGENTS.md](../../AGENTS.md) y [CLAUDE.md](../../CLAUDE.md) están generados con contenido idéntico, consolidando restricciones previas sin elegir stack ni crear reglas técnicas nuevas. No hubo rescaneo ni instalaciones.
 - La [revisión delegada de seis fuentes](../discovery/revision-documental-2026-10-15.md) precisó Denteo, Dentalink e Infomed. La comprobación personal requerida por la consigna permanece no acreditada.
+
+
+## Propose preparado
+
+- [Exploración](../exploracion/alta-turno.md) y cuatro artefactos de C-01 generados mediante el flujo del CLI; validación estricta pasó para un change, sin incidencias.
+- Runtime observado: Python 3.12.14, SQLite 3.53.1 y unittest importable. Son comprobaciones del entorno, no pruebas de agenda.
+- Python 3.12+, SQLite, módulo local y las reglas temporales son la propuesta del agente; aceptación de contrato pendiente. Sin instalaciones, código de producto, DB creada ni Apply.

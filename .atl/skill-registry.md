@@ -251,6 +251,7 @@ Convenciones y todos los documentos referenciados por AGENTS.md/CLAUDE.md:
 | BITACORA.md | `N:/Nueva carpeta/TP-ODONTOLOGIA/docs/BITACORA.md` | Documento referenciado por las instrucciones del proyecto |
 | skill-registry.md | `N:/Nueva carpeta/TP-ODONTOLOGIA/.atl/skill-registry.md` | Documento referenciado por las instrucciones del proyecto |
 | CHANGES.md | `N:/Nueva carpeta/TP-ODONTOLOGIA/CHANGES.md` | Documento referenciado por las instrucciones del proyecto |
+| design.md | `N:/Nueva carpeta/TP-ODONTOLOGIA/openspec/changes/crear-turno-sin-solapamientos/design.md` | Propuesta técnica referenciada por las instrucciones; aceptación pendiente |
 | AGENTS.md | `N:/Nueva carpeta/TP-ODONTOLOGIA/AGENTS.md` | Convenciones específicas; pareja idéntica, sin decisiones técnicas nuevas |
 | CLAUDE.md | `N:/Nueva carpeta/TP-ODONTOLOGIA/CLAUDE.md` | Convenciones específicas; pareja idéntica, sin decisiones técnicas nuevas |
 

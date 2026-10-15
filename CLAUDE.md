@@ -52,7 +52,7 @@ Los compact rules los resuelve el delegador desde `.atl/skill-registry.md`, gene
 
 ## Roadmap de Changes
 
-El plan está en [CHANGES.md](CHANGES.md): un único change funcional, **C-01 `crear-turno-sin-solapamientos`**, todavía pendiente de Propose. Bootstrap, modelos ficticios y pruebas son tareas internas del mismo change.
+El plan está en [CHANGES.md](CHANGES.md): un único change funcional, **C-01 `crear-turno-sin-solapamientos`**, con Propose generado y revisión del contrato pendiente. El [diseño del change](openspec/changes/crear-turno-sin-solapamientos/design.md) propone Python, SQLite y reglas temporales; todavía no son decisiones humanas aprobadas. Bootstrap, modelos ficticios y pruebas son tareas internas del mismo change.
 
 Camino crítico: contrato revisado → alta sin solapamientos → suite completa → Archive. WhatsApp, pagos, historia clínica, autenticación, multisede y UI completa permanecen fuera de esta porción.
 

@@ -20,6 +20,8 @@ El alcance es un consultorio pequeño con recepción y múltiples profesionales/
 
 Las versiones observadas de Git, Node y OpenSpec están en el [inventario](../docs/evidencia/entorno.md). Disponibilidad local no equivale a requisito tecnológico aprobado.
 
+Propose ahora contiene una [elección técnica propuesta](../openspec/changes/crear-turno-sin-solapamientos/design.md): módulo Python 3.12+, SQLite y unittest, sin servidor ni dependencias externas de producto. La tabla conserva el estado de aceptación pendiente hasta revisar el contrato; el renderer no determina esa elección.
+
 ## Arquitectura general
 
 Propuesta para revisión: una operación de alta recibe datos, valida el contrato, consulta ocupaciones de los recursos y registra o rechaza el turno. El diseño debe definir si consulta y registro necesitan una operación indivisible según el modelo de ejecución acordado.

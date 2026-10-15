@@ -1,7 +1,7 @@
 # CHANGES — Secuencia de Implementación
 
 > Índice canónico de changes del proyecto **TP-ODONTOLOGIA**.
-> Plan local del 2026-10-15: **un change funcional**, todavía sin crear en OpenSpec.
+> Plan local del 2026-10-15: **un change funcional**, con Propose generado; contrato pendiente de revisión antes de Apply.
 > **Leer este archivo antes de ejecutar cualquier `/opsx:propose`.**
 
 ---
@@ -67,7 +67,7 @@ No hay frontend definido para asignar. Las contribuciones de tres agentes son op
 
 ### [C-01] `crear-turno-sin-solapamientos`
 
-- **Estado**: `[ ]` pendiente de propuesta; sin implementación ni pruebas de producto ejecutadas.
+- **Estado**: `[ ]` Propose generado en [crear-turno-sin-solapamientos](openspec/changes/crear-turno-sin-solapamientos/proposal.md); sin implementación ni pruebas de producto ejecutadas. Diseño, spec y tareas están preparados para revisión, no aprobados por este índice.
 - **Scope**: entregar una operación de alta para recepción, con recursos ficticios y rechazo de conflictos independientes de profesional y box (RN-TU-01/02).
   - Preparar dentro del mismo change el bootstrap mínimo y el runner elegidos; registrar comandos reales, sin scaffolding de módulos postergados ni instalaciones asumidas desde este roadmap.
   - Concretar representaciones mínimas de `Turno`, `Profesional`, `Box` y la identidad ficticia de `Paciente` según Q07; no añadir datos clínicos ni CRUDs completos.
@@ -89,7 +89,7 @@ No hay frontend definido para asignar. Las contribuciones de tres agentes son op
 
 #### Precondiciones de contrato
 
-Preparar respuestas en Propose y obtener revisión de las decisiones indispensables antes de Apply; este índice no elige respuestas por defecto.
+Las respuestas propuestas de Q01–Q08 están en [design.md](openspec/changes/crear-turno-sin-solapamientos/design.md), con alternativas y exclusiones explícitas. Obtener revisión de las decisiones indispensables antes de Apply; este índice no las convierte en contratos aceptados.
 
 | Pregunta KB | Definición necesaria para C-01 |
 | --- | --- |

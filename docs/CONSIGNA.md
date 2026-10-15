@@ -63,10 +63,11 @@ La generación local de la base de conocimiento no acredita su revisión humana 
 
 ## Etapa 6 - Un change completo
 
-- [ ] Elegir una sola funcionalidad pequeña del MVP y justificarla en dos o tres líneas en `proposal.md`.
-- [ ] Explore: relevar problema y código actual; conservar resumen del relevamiento.
-- [ ] Propose: generar `proposal.md`, `design.md`, `specs/` y `tasks.md`; revisar el spec completo y registrar correcciones reales con Ajustar cuando correspondan.
-- [ ] Especificar al menos tres escenarios dado/cuando/entonces: feliz, error de negocio y borde.
+- [x] Elegir la única funcionalidad del MVP y justificarla en [proposal.md](../openspec/changes/crear-turno-sin-solapamientos/proposal.md).
+- [x] Conservar el [relevamiento del problema y checkout](exploracion/alta-turno.md) previo a la propuesta; no acredita implementación.
+- [x] Propose: generar propuesta, diseño, [spec](../openspec/changes/crear-turno-sin-solapamientos/specs/alta-turnos/spec.md) y [tareas](../openspec/changes/crear-turno-sin-solapamientos/tasks.md); validar estructura mediante OpenSpec.
+- [ ] Revisar humanamente el spec completo y registrar las correcciones reales solicitadas con Ajustar; la validación del agente no acredita esta revisión.
+- [x] Especificar escenarios dado/cuando/entonces: feliz, conflictos, bordes, fallos y competencia. Son contratos propuestos, no tests ejecutados.
 - [ ] Apply: implementar el contrato aprobado. Si falta una decisión, volver a Propose.
 - [ ] Verify: ejecutar tests por cada escenario y health checks aplicables; documentar comandos y resultados. No archivar con pruebas fallando.
 - [ ] Archive: archivar el change y actualizar las especificaciones y el estado.

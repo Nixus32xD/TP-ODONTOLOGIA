@@ -17,7 +17,7 @@ Set-Location -LiteralPath 'N:\Nueva carpeta\TP-ODONTOLOGIA'
 openspec list --json
 ```
 
-La última consulta registrada devuelve `changes: []`. El [roadmap](CHANGES.md) organiza un único change candidato, `C-01: crear-turno-sin-solapamientos`, con dependencias, contexto, camino crítico y riesgos. No crea aún un change de OpenSpec. La revisión humana del contenido de la base de conocimiento y del roadmap sigue pendiente. La [selección de skills](docs/fundacion/seleccion-skills.md) recomienda reutilizar las existentes, descarta React del alcance actual y difiere pruebas de UI hasta definir el stack. No se instalaron herramientas nuevas. El [registro de skills](.atl/skill-registry.md) documenta las herramientas disponibles, su alcance y las tareas a las que aplican. Las instrucciones específicas están en [AGENTS.md](AGENTS.md) y [CLAUDE.md](CLAUDE.md), con contenido idéntico y reglas consolidadas desde el alcance y las restricciones ya autorizados. No adoptan un stack ni resuelven contratos abiertos. El siguiente trabajo es explorar las decisiones pendientes de C-01 antes de Propose; los pendientes del entorno y de evidencia quedan documentados para la entrega.
+OpenSpec registra ahora el único change `crear-turno-sin-solapamientos`, con sus cuatro artefactos de planificación completos y 0 de 15 tareas implementadas. El [diseño propuesto](openspec/changes/crear-turno-sin-solapamientos/design.md) elige módulo Python 3.12+, SQLite local y unittest; propone intervalos `[inicio, fin)`, fechas con offset y exclusión concurrente limitada al mismo archivo local. La revisión del contrato antes de Apply sigue pendiente; no se confunde planificación completa con producto terminado. El [roadmap](CHANGES.md) organiza un único change candidato, `C-01: crear-turno-sin-solapamientos`, con dependencias, contexto, camino crítico y riesgos. El change fue creado mediante el CLI, sin specs principales previas. La revisión humana del contenido de la base de conocimiento y del roadmap sigue pendiente. La [selección de skills](docs/fundacion/seleccion-skills.md) recomienda reutilizar las existentes, descarta React del alcance actual y difiere pruebas de UI hasta definir el stack. No se instalaron herramientas nuevas. El [registro de skills](.atl/skill-registry.md) documenta las herramientas disponibles, su alcance y las tareas a las que aplican. Las instrucciones específicas están en [AGENTS.md](AGENTS.md) y [CLAUDE.md](CLAUDE.md), con contenido idéntico y reglas consolidadas desde el alcance y las restricciones ya autorizados. No adoptan un stack ni resuelven contratos abiertos. El siguiente trabajo es revisar el contrato propuesto antes de iniciar Apply; los pendientes del entorno y de evidencia quedan documentados para la entrega.
 
 Esta entrega comienza desde cero. El alcance inicial es una funcionalidad terminada de agenda, con datos ficticios y sin integraciones clínicas reales.
 
@@ -32,7 +32,7 @@ Esta entrega comienza desde cero. El alcance inicial es una funcionalidad termin
 6. Completar un change: Explore, Propose, Apply, Verify y Archive.
 7. Demostrar memoria y recuperación de contexto con Engram.
 
-El usuario autorizó commits locales separados por petición completada, validación previa y cambios no relacionados separados. El registro de skills quedó publicado en `main` en `197be16a2eed4b8ea0c0dbcfcfa4cd601a38d59c`. Para esta petición de instrucciones del proyecto se conserva la preferencia de commit local validado; no se presume nueva autorización de push. La entrega docente final sigue pendiente. Este permiso no constituye autorización universal para publicaciones futuras. Las revisiones humanas se documentan cuando ocurren.
+El usuario autorizó commits locales separados por petición completada, validación previa y cambios no relacionados separados. El registro de skills quedó publicado en `main` en `197be16a2eed4b8ea0c0dbcfcfa4cd601a38d59c`. Para esta petición de planificación se conserva la preferencia de commit local validado; no se presume nueva autorización de push. La entrega docente final sigue pendiente. Este permiso no constituye autorización universal para publicaciones futuras. Las revisiones humanas se documentan cuando ocurren.
 
 ## Documentación
 
@@ -48,6 +48,7 @@ El usuario autorizó commits locales separados por petición completada, validac
 - [Selección y justificación de skills](docs/fundacion/seleccion-skills.md).
 - [Registro de skills del proyecto](.atl/skill-registry.md).
 - [Instrucciones para agentes](AGENTS.md) y [versión equivalente para Claude](CLAUDE.md).
+- [Exploración técnica](docs/exploracion/alta-turno.md), [propuesta](openspec/changes/crear-turno-sin-solapamientos/proposal.md), [spec](openspec/changes/crear-turno-sin-solapamientos/specs/alta-turnos/spec.md) y [tareas](openspec/changes/crear-turno-sin-solapamientos/tasks.md).
 
 ## Regenerar el informe PDF
 
