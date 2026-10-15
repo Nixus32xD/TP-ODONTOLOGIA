@@ -1,6 +1,6 @@
 {
   "version": 4,
-  "step": "kb",
+  "step": "roadmap",
   "owner": "active-orchestrator",
   "discovery": {
     "created_by": "discovery-research",
@@ -271,5 +271,10 @@
       "knowledge-base/10_preguntas_abiertas.md",
       "knowledge-base/README.md"
     ]
+  },
+  "roadmap": {
+    "created_by": "roadmap-generator",
+    "source": "CHANGES.md",
+    "changes": ["C-01"]
   }
 }

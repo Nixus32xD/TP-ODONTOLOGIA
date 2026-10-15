@@ -20,7 +20,7 @@ Registro de preparación del 2026-10-15. Este inventario distingue disponibilida
 - `openspec init --tools codex --language es --no-animation`: código de salida 0.
 - `openspec/config.yaml`: esquema `spec-driven`.
 - Seis skills de proyecto en `.agents/skills/`: `openspec-explore`, `openspec-propose`, `openspec-update-change`, `openspec-apply-change`, `openspec-sync-specs` y `openspec-archive-change`.
-- `.active-orchestrator-state.json`: versión 4, fase actual `kb`; Discovery documental confirmado y registrado en su sección propia.
+- `.active-orchestrator-state.json`: versión 4, fase actual `roadmap`; Discovery documental y base de conocimiento registrados en sus secciones propias.
 - `openspec list --json`: código de salida 0, `changes: []`, raíz `N:/Nueva carpeta/TP-ODONTOLOGIA`.
 
 Estos resultados verifican inicialización y estado del flujo. Todavía no existen pruebas de comportamiento de producto.
@@ -43,4 +43,6 @@ No se incluyen configuraciones globales, credenciales ni datos personales en est
 - El usuario confirmó los once puntos de Discovery y autorizó continuar el 2026-10-15. `discovery/discovery.md` y `state.discovery` registran el cierre documental, sin acreditar verificación personal de fuentes.
 - La [base de conocimiento](../../knowledge-base/README.md) está generada desde los documentos existentes: diez canónicos y un índice. Conserva abiertas las decisiones de stack, persistencia, intervalos y concurrencia; no acredita revisión humana de la KB. No existe aún código de producto ni suite de comportamiento.
 - La edición del informe y del PDF usa primera persona sólo para elecciones veraces del estudiante y declara la investigación documental asistida por IA. No atribuye al estudiante las comprobaciones del agente.
-- La instrucción vigente permite trabajo local y exige nueva autorización explícita para commit, push o publicación. Los resultados de la nueva revisión del PDF se registrarán después de ejecutarse.
+- El PDF revisado tiene 55 páginas y SHA-256 `32bef0a07299913ca2e163ffd5a966827ae617989eaa47aa5ce0bd5f249fc099`. La revisión final registrada en la [bitácora](../BITACORA.md) comprobó 146 enlaces locales, 105 puntajes/totales y los hashes de las quince fichas; no acredita pruebas de producto ni revisión personal de fuentes.
+- El usuario autorizó commits locales separados por petición completada, con mensajes descriptivos, validación previa y cambios no relacionados separados. Su autorización explícita actual permitió el commit local `947dc63ded05bf0afbddb5ad5e77c8a04df9042c` de Discovery, KB e informe revisado. No se realiza push ni publicación hasta su revisión y autorización explícita.
+- El [roadmap](../../CHANGES.md) está generado para un único change candidato de turnos; su revisión humana permanece pendiente. No decide stack, persistencia, contratos temporales ni concurrencia, y no crea artefactos Propose ni código.

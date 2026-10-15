@@ -8,7 +8,7 @@ Repositorio: [Nixus32xD/TP-ODONTOLOGIA](https://github.com/Nixus32xD/TP-ODONTOLO
 
 OpenSpec inicializado y Discovery documental confirmado: quince sistemas relevados, matriz ponderada y once puntos aceptados el 2026-10-15 para un consultorio pequeño. Elegí como primer change crear turnos evitando solapamientos por profesional y box. La investigación documental está asistida por IA; queda pendiente mi verificación personal de al menos cinco fuentes. Todavía no hay código de producto ni pruebas de comportamiento.
 
-Se ejecutó `openspec init --tools codex --language es --no-animation`: configuración `spec-driven` y seis skills OPSX. Se incorporó `discovery-research` sólo en este proyecto. El estado de Active Stack conserva `version: 4` y avanza a `step: kb`: Discovery está registrado y la [base de conocimiento](knowledge-base/README.md) contiene diez documentos canónicos más su índice, generados desde las fuentes existentes. Stack, API o módulo, persistencia, límites temporales y estrategia de concurrencia permanecen abiertos; confirmar el alcance no decide esos contratos.
+Se ejecutó `openspec init --tools codex --language es --no-animation`: configuración `spec-driven` y seis skills OPSX. Se incorporó `discovery-research` sólo en este proyecto. El estado de Active Stack conserva `version: 4` y registra `step: roadmap`: Discovery está registrado y la [base de conocimiento](knowledge-base/README.md) contiene diez documentos canónicos más su índice, generados desde las fuentes existentes. Stack, API o módulo, persistencia, límites temporales y estrategia de concurrencia permanecen abiertos; confirmar el alcance no decide esos contratos.
 
 Para consultar el estado desde PowerShell con OpenSpec disponible en PATH:
 
@@ -17,7 +17,7 @@ Set-Location -LiteralPath 'N:\Nueva carpeta\TP-ODONTOLOGIA'
 openspec list --json
 ```
 
-La última consulta registrada devuelve `changes: []`. La base de conocimiento está generada localmente; su revisión humana no se da por realizada. El siguiente artefacto del flujo es el roadmap. Los pendientes del entorno y de evidencia quedan documentados para la entrega.
+La última consulta registrada devuelve `changes: []`. El [roadmap](CHANGES.md) organiza un único change candidato, `C-01: crear-turno-sin-solapamientos`, con dependencias, contexto, camino crítico y riesgos. No crea aún un change de OpenSpec. La revisión humana del contenido de la base de conocimiento y del roadmap sigue pendiente. El siguiente paso de fundación es seleccionar skills y generar su registro; los pendientes del entorno y de evidencia quedan documentados para la entrega.
 
 Esta entrega comienza desde cero. El alcance inicial es una funcionalidad terminada de agenda, con datos ficticios y sin integraciones clínicas reales.
 
@@ -32,7 +32,7 @@ Esta entrega comienza desde cero. El alcance inicial es una funcionalidad termin
 6. Completar un change: Explore, Propose, Apply, Verify y Archive.
 7. Demostrar memoria y recuperación de contexto con Engram.
 
-Los primeros hitos se publicaron con autorización. La instrucción vigente exige nueva autorización explícita antes de realizar commit, push o publicación; el avance actual queda local. Las revisiones humanas y las decisiones Continuar / Ajustar / Parar acá se documentan cuando ocurren.
+Los primeros hitos se publicaron con autorización. El usuario autorizó commits locales separados por petición completada, con mensajes descriptivos y validación previa; los cambios no relacionados se mantienen separados. La autorización explícita actual permitió registrar Discovery, KB e informe revisado en `947dc63`. No se realiza push ni publicación hasta la revisión y autorización explícita del usuario. Las revisiones humanas y las decisiones Continuar / Ajustar / Parar acá se documentan cuando ocurren.
 
 ## Documentación
 
@@ -42,6 +42,7 @@ Los primeros hitos se publicaron con autorización. La instrucción vigente exig
 - [Informe Discovery](docs/discovery/informe-discovery.md) y [PDF](docs/discovery/informe-discovery.pdf).
 - [Discovery canónico](discovery/discovery.md) y [once puntos confirmados](docs/discovery/resumen-para-revision.md).
 - [Base de conocimiento: índice y diez documentos](knowledge-base/README.md).
+- [Roadmap del único change de turnos](CHANGES.md).
 - [Comprobaciones documentales y revisión personal pendiente](docs/discovery/verificacion-fuentes.md).
 
 ## Regenerar el informe PDF

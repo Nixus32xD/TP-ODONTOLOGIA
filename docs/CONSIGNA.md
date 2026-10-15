@@ -15,7 +15,7 @@ Este checklist resume requisitos de la consigna; no acredita su cumplimiento. La
 
 - [x] Inicializar OpenSpec: `openspec init --tools codex --language es --no-animation`, finalizado con código 0. El flujo completo de Active Stack continúa pendiente.
 - [x] Elegir Discovery en la bifurcación; el usuario confirmó continuar el 2026-10-15.
-- [x] Incluir `.active-orchestrator-state.json` con el estado real: versión 4, fase `kb`; Discovery documental confirmado y registrado.
+- [x] Incluir `.active-orchestrator-state.json` con el estado real: versión 4, fase `roadmap`; Discovery documental y base de conocimiento registrados.
 - [x] Registrar inspección y decisión de continuar desde la inicialización; confirmación explícita de los once puntos de Discovery el 2026-10-15.
 
 ## Etapa 2 - Discovery
@@ -49,7 +49,8 @@ Pesos de la matriz:
 
 - [x] [`knowledge-base/`](../knowledge-base/README.md): diez archivos canónicos de visión, descripción, actores, modelos de datos, reglas de negocio, features, flujos, arquitectura, decisiones y preguntas abiertas, más un índice; generados desde los documentos existentes.
 - [ ] Revisar coherencia con el Discovery, incluyendo duración de prestaciones, sillones/boxes, solapamientos y preguntas sin evidencia.
-- [ ] `CHANGES.md`: dependencias, asignaciones con contexto, camino crítico y riesgos, alineados con el MVP.
+- [x] [`CHANGES.md`](../CHANGES.md): dependencias, asignaciones con contexto, camino crítico y riesgos del único change candidato `C-01: crear-turno-sin-solapamientos`, alineado con el MVP.
+- [ ] Revisar humanamente el roadmap y registrar la decisión; generarlo no acredita su aprobación.
 - [ ] `find-skill`: decidir qué recomendaciones instalar o descartar, con justificación de una línea por recomendación.
 - [ ] Generar `.atl/skill-registry.md`.
 - [ ] Revisar y confirmar las reglas candidatas; generar `AGENTS.md` y `CLAUDE.md` en raíz. Agregar reglas del dominio cuando corresponda.
