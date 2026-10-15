@@ -15,6 +15,16 @@ Registro de preparación del 2026-10-15. Este inventario distingue disponibilida
 | Agente | Codex, seleccionado por el usuario |
 | Skill `discovery-research` | No encontrada en `C:\Users\Oficina\.agents\skills` |
 
+## Inicialización verificada
+
+- `openspec init --tools codex --language es --no-animation`: código de salida 0.
+- `openspec/config.yaml`: esquema `spec-driven`.
+- Seis skills de proyecto en `.agents/skills/`: `openspec-explore`, `openspec-propose`, `openspec-update-change`, `openspec-apply-change`, `openspec-sync-specs` y `openspec-archive-change`.
+- `.active-orchestrator-state.json`: versión 4, paso siguiente `discovery`, pendiente de revisión e inicio.
+- `openspec list --json`: código de salida 0, `changes: []`, raíz `N:/Nueva carpeta/TP-ODONTOLOGIA`.
+
+Estos resultados verifican inicialización y estado del flujo. Todavía no existen pruebas de comportamiento de producto.
+
 ## Pendientes de evidencia y preparación
 
 - Comprobar o resolver Go antes de dar por completos los requisitos de entorno.

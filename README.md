@@ -6,7 +6,18 @@ Repositorio: [Nixus32xD/TP-ODONTOLOGIA](https://github.com/Nixus32xD/TP-ODONTOLO
 
 ## Estado actual
 
-Preparación documental. Todavía no hay código de producto, runtime del proyecto ni pruebas para ejecutar. El stack de la aplicación y una única funcionalidad verificable se elegirán después del Discovery y de la fundación.
+Preparación documental y OpenSpec inicializado con Codex. Todavía no hay código de producto, runtime del proyecto ni pruebas para ejecutar. El stack de la aplicación y una única funcionalidad verificable se elegirán después del Discovery y de la fundación.
+
+Se ejecutó correctamente `openspec init --tools codex --language es --no-animation`: configuración `spec-driven` y seis skills del proyecto para Explore, Propose, Update, Apply, Sync y Archive. El estado de Active Stack tiene `version: 4` y `step: discovery`; indica la siguiente fase pendiente, no un Discovery ejecutado ni una revisión humana aprobada.
+
+Para consultar el estado desde PowerShell con OpenSpec disponible en PATH:
+
+```powershell
+Set-Location -LiteralPath 'N:\Nueva carpeta\TP-ODONTOLOGIA'
+openspec list --json
+```
+
+La consulta actual devuelve `changes: []`. Sigue la revisión humana de la preparación y resolver la disponibilidad de `discovery-research` para iniciar Discovery. Los demás pendientes del entorno y de evidencia quedan documentados para la entrega.
 
 Esta entrega comienza desde cero; los repositorios de referencia sirven para estudiar el proceso. El alcance inicial es una funcionalidad terminada, sin asumir un SaaS completo, autenticación ni facturación fiscal.
 

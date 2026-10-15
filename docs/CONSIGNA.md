@@ -8,14 +8,14 @@ Este checklist resume requisitos de la consigna; no acredita su cumplimiento. La
 
 - [ ] Go, Git y Node instalados; agente de código funcionando. La consigna menciona OpenCode o Claude Code; el trabajo solicitado utilizará Codex y debe dejar explícita esa diferencia.
 - [ ] Active Stack en modo Full, con evidencia de instalación y lista de harnesses instalados.
-- [ ] Repositorio nuevo con Git y sin código previo.
+- [x] Repositorio nuevo con Git y sin código previo.
 - [ ] Capturas del instalador finalizado y de los harnesses.
 
 ## Etapa 1 - Inicio de la fundación
 
-- [ ] Ejecutar Active Stack dentro del repositorio y comenzar con `openspec init`.
+- [x] Inicializar OpenSpec: `openspec init --tools codex --language es --no-animation`, finalizado con código 0. El flujo completo de Active Stack continúa pendiente.
 - [ ] Elegir Discovery en la bifurcación; es obligatorio en este TP.
-- [ ] Incluir `.active-orchestrator-state.json` con el estado real.
+- [x] Incluir `.active-orchestrator-state.json` con el estado real: versión 4, siguiente fase `discovery`, pendiente de revisión e inicio.
 - [ ] Registrar inspección y decisión humana antes de avanzar de etapa.
 
 ## Etapa 2 - Discovery
