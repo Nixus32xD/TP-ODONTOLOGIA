@@ -15,21 +15,23 @@ Este checklist resume requisitos de la consigna; no acredita su cumplimiento. La
 
 - [x] Inicializar OpenSpec: `openspec init --tools codex --language es --no-animation`, finalizado con código 0. El flujo completo de Active Stack continúa pendiente.
 - [x] Elegir Discovery en la bifurcación; el usuario confirmó continuar el 2026-10-15.
-- [x] Incluir `.active-orchestrator-state.json` con el estado real: versión 4, siguiente fase `discovery`, pendiente de revisión e inicio.
-- [x] Registrar inspección y decisión de continuar desde la inicialización. La aprobación final de Discovery permanece pendiente.
+- [x] Incluir `.active-orchestrator-state.json` con el estado real: versión 4, fase `kb`; Discovery documental confirmado y registrado.
+- [x] Registrar inspección y decisión de continuar desde la inicialización; confirmación explícita de los once puntos de Discovery el 2026-10-15.
 
 ## Etapa 2 - Discovery
 
-- [ ] Ejecutar `discovery-research` y guardar su checklist de once puntos: problema, usuarios, casos de uso, competidores, funcionalidades necesarias, opcionales, reglas de negocio, integraciones, restricciones, riesgos y preguntas abiertas.
+- [x] Ejecutar `discovery-research` y guardar sus once puntos en [Discovery canónico](../discovery/discovery.md) y `.active-orchestrator-state.json`: problema, usuarios, casos de uso, competidores, funcionalidades necesarias, opcionales, reglas de negocio, integraciones, restricciones, riesgos y preguntas abiertas.
+- [x] Registrar la confirmación del alcance por el usuario: consultorio pequeño, primer change de turnos sin solapamientos de profesional y box; propuestas técnicas y preguntas abiertas conservadas como pendientes.
 - [x] Investigar Argentina, Latinoamérica y referencias internacionales con fuentes públicas, URL y fecha; accesos fallidos registrados.
 - [x] Relevar los campos por producto en quince fichas, conservando límites y datos **No evidenciados**.
-- [x] A: comparar 15 sistemas, ordenados por relevancia para Argentina. Material para revisión, sin aprobación final.
+- [x] A: comparar 15 sistemas, ordenados por relevancia para Argentina. Once puntos documentales confirmados; comprobación personal de fuentes pendiente.
 - [x] B: matriz de 0 a 5, total ponderado, escala y tratamiento de datos no evidenciados.
 - [x] C: estándares, diferenciadores, lagunas documentales y oportunidades como hipótesis; no se afirma un vacío de mercado por ausencia de fuentes.
 - [x] D: cinco prioridades para demo futura, tres referencias de UX y un MVP acotado. Las demos no se realizaron.
 - [x] Distinguir documentación de funciones, afirmaciones comerciales y falta de evidencia; sin pruebas funcionales de los proveedores.
 - [ ] Verificación humana: comprobar personalmente al menos cinco fuentes de distintos tipos; registrar afirmación, hallazgo y corrección. La revisión del agente no sustituye esta comprobación.
-- [ ] Entregar `docs/discovery/informe-discovery.md`, su PDF y el resultado estructurado de los once puntos en la misma carpeta.
+- [x] Preparar localmente `docs/discovery/informe-discovery.md`, su PDF y los once puntos en `docs/discovery/resumen-para-revision.md`; resultado canónico adicional en `discovery/discovery.md`.
+- [ ] Publicar o entregar la versión actualizada del PDF y documentos; requiere nueva autorización explícita. La preparación local no acredita entrega final.
 
 Pesos de la matriz:
 
@@ -45,13 +47,15 @@ Pesos de la matriz:
 
 ## Etapas 3 a 5 - Fundación
 
-- [ ] `knowledge-base/`: diez archivos canónicos de visión, descripción, actores, modelos de datos, reglas de negocio, features, flujos, arquitectura, decisiones y preguntas abiertas.
+- [x] [`knowledge-base/`](../knowledge-base/README.md): diez archivos canónicos de visión, descripción, actores, modelos de datos, reglas de negocio, features, flujos, arquitectura, decisiones y preguntas abiertas, más un índice; generados desde los documentos existentes.
 - [ ] Revisar coherencia con el Discovery, incluyendo duración de prestaciones, sillones/boxes, solapamientos y preguntas sin evidencia.
 - [ ] `CHANGES.md`: dependencias, asignaciones con contexto, camino crítico y riesgos, alineados con el MVP.
 - [ ] `find-skill`: decidir qué recomendaciones instalar o descartar, con justificación de una línea por recomendación.
 - [ ] Generar `.atl/skill-registry.md`.
 - [ ] Revisar y confirmar las reglas candidatas; generar `AGENTS.md` y `CLAUDE.md` en raíz. Agregar reglas del dominio cuando corresponda.
 - [ ] Registrar inspección y decisión humana de cada etapa.
+
+La generación local de la base de conocimiento no acredita su revisión humana ni resuelve por defecto stack, persistencia, intervalos o concurrencia.
 
 ## Etapa 6 - Un change completo
 

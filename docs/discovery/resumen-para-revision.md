@@ -1,8 +1,8 @@
-# Discovery: once puntos para revisión
+# Discovery: once puntos confirmados
 
-**2026-10-15 - BORRADOR PARA REVISIÓN.** Este documento permite revisar el contenido antes de aprobarlo. No cierra Discovery ni sustituye la revisión personal de fuentes exigida al estudiante.
+**2026-10-15 - ONCE PUNTOS CONFIRMADOS.** Confirmé explícitamente los once puntos y autoricé continuar con `discovery-research`. Esta confirmación cierra la revisión del alcance; no sustituye mi verificación personal de al menos cinco fuentes, que sigue pendiente.
 
-El usuario confirmó: **consultorio pequeño y primer change de turnos**. Se interpreta como recepción que agenda varios profesionales/boxes; el primer change evita solapamientos de profesional y box. WhatsApp, pagos e historia clínica se postergan. Lo siguiente es un resumen para confirmar/corregir, no una lista de decisiones ya aprobadas.
+Elegí una entrega propia desde cero para un **consultorio pequeño y un primer change de turnos**: recepción agenda varios profesionales y boxes, evitando solapamientos de profesional y box. Postergo WhatsApp, pagos e historia clínica. Trabajo con investigación documental asistida por IA. La confirmación abarca estos once puntos, incluidas las preguntas que permanecen abiertas; no convierte las propuestas técnicas en decisiones aprobadas.
 
 ## 1. Problema
 
@@ -21,7 +21,7 @@ Recepción registra turnos. Los profesionales son recursos de agenda; paciente y
 
 ## 4. Competidores y soluciones existentes
 
-Quince fichas y matriz de evidencia en [informe Discovery](informe-discovery.md). Orden por relación con Argentina, no por puntuación. La investigación usa fuentes públicas y distingue DOCUMENTADO, AFIRMACIÓN COMERCIAL y No evidenciado. No se probó software. Seis comprobaciones del agente están registradas; revisión personal del estudiante pendiente.
+Quince fichas y matriz de evidencia en [informe Discovery](informe-discovery.md). Orden por relación con Argentina, no por puntuación. La investigación documental asistida por IA usa fuentes públicas y distingue DOCUMENTADO, AFIRMACIÓN COMERCIAL y No evidenciado. No se probó software. Seis comprobaciones del agente están registradas; queda pendiente mi verificación personal de al menos cinco fuentes.
 
 ## 5. Funcionalidades necesarias
 
@@ -51,8 +51,8 @@ Riesgos: confundir campos visuales con controles; decidir límites temporales du
 
 Antes de implementar deben acordarse: stack; API o módulo; persistencia; estrategia y prueba de concurrencia; identidad mínima del paciente; doble turno del paciente; duración; horarios; zona horaria; estados/cancelación; límites y adyacencia; compatibilidad profesional-box e idempotencia. También falta identificar expresamente al integrante/autor de la entrega y registrar la revisión personal de fuentes. No se eligen respuestas por defecto.
 
-## Gate final pendiente
+## Confirmación registrada y siguiente paso
 
-Primero abrir y revisar [informe](informe-discovery.md) y [PDF](informe-discovery.pdf). Corregir lo necesario y dejar explícita la decisión **Continuar / Ajustar / Parar acá**. La confirmación debe abarcar estos once puntos y distinguir las decisiones que se aceptan de las preguntas que se mantienen abiertas.
+Confirmé explícitamente los once puntos y autoricé continuar con `discovery-research` el **2026-10-15**. El resultado canónico está en [Discovery](../../discovery/discovery.md) y alimenta la base de conocimiento. La confirmación conserva las propuestas y preguntas abiertas con su estado pendiente.
 
-La skill instalada exige confirmación antes del resultado canónico y el estado; por ello este borrador no escribe `discovery/discovery.md` ni `state.discovery`. Tras aprobación, seguir el flujo de fundación; no saltar directamente a implementación.
+La revisión personal de al menos cinco fuentes sigue pendiente y se documentará cuando se realice. El siguiente paso del flujo de fundación es la base de conocimiento, antes del roadmap y la propuesta del primer change. No se afirma que estén realizados capturas o video ni se salta directamente a implementación.

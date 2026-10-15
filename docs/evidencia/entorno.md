@@ -20,7 +20,7 @@ Registro de preparación del 2026-10-15. Este inventario distingue disponibilida
 - `openspec init --tools codex --language es --no-animation`: código de salida 0.
 - `openspec/config.yaml`: esquema `spec-driven`.
 - Seis skills de proyecto en `.agents/skills/`: `openspec-explore`, `openspec-propose`, `openspec-update-change`, `openspec-apply-change`, `openspec-sync-specs` y `openspec-archive-change`.
-- `.active-orchestrator-state.json`: versión 4, paso siguiente `discovery`, pendiente de revisión e inicio.
+- `.active-orchestrator-state.json`: versión 4, fase actual `kb`; Discovery documental confirmado y registrado en su sección propia.
 - `openspec list --json`: código de salida 0, `changes: []`, raíz `N:/Nueva carpeta/TP-ODONTOLOGIA`.
 
 Estos resultados verifican inicialización y estado del flujo. Todavía no existen pruebas de comportamiento de producto.
@@ -37,7 +37,10 @@ No se incluyen configuraciones globales, credenciales ni datos personales en est
 
 ## Investigación y exportación
 
-- Quince fichas de producto; 105 notas de matriz en rango 0 a 5 y totales ponderados recalculados. Las 92 URLs de las fichas son referencias; el conteo incluye accesos fallidos registrados y no equivale a 92 verificaciones exitosas.
+- Quince fichas de producto; 105 notas de matriz en rango 0 a 5 y totales ponderados recalculados en la revisión anterior. Las URLs de las fichas son referencias; incluyen accesos fallidos registrados y su número no equivale a verificaciones exitosas.
 - Seis comprobaciones documentales del agente; verificación personal del estudiante pendiente.
 - `tools/render_discovery.py` utiliza `reportlab` y `pypdf` del runtime disponible para regenerar el informe y su matriz. No ejecuta servicios externos ni cambia el estado de Active Stack.
-- La revisión de Discovery continúa pendiente; no existe aún código de producto ni suite de comportamiento.
+- El usuario confirmó los once puntos de Discovery y autorizó continuar el 2026-10-15. `discovery/discovery.md` y `state.discovery` registran el cierre documental, sin acreditar verificación personal de fuentes.
+- La [base de conocimiento](../../knowledge-base/README.md) está generada desde los documentos existentes: diez canónicos y un índice. Conserva abiertas las decisiones de stack, persistencia, intervalos y concurrencia; no acredita revisión humana de la KB. No existe aún código de producto ni suite de comportamiento.
+- La edición del informe y del PDF usa primera persona sólo para elecciones veraces del estudiante y declara la investigación documental asistida por IA. No atribuye al estudiante las comprobaciones del agente.
+- La instrucción vigente permite trabajo local y exige nueva autorización explícita para commit, push o publicación. Los resultados de la nueva revisión del PDF se registrarán después de ejecutarse.

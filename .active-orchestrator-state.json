@@ -1,5 +1,275 @@
 {
   "version": 4,
-  "step": "discovery",
-  "owner": "active-orchestrator"
+  "step": "kb",
+  "owner": "active-orchestrator",
+  "discovery": {
+    "created_by": "discovery-research",
+    "sources": [
+      "https://agendapro.com/ar/dental/software-odontologico",
+      "https://ayuda.agendapro.com/es/articles/6486845-como-usar-la-seccion-agenda",
+      "https://agendapro.com/ar/planes",
+      "https://agendapro.com/ar/politica-de-privacidad",
+      "https://carestack.com/company",
+      "https://developer.carestack.com/",
+      "https://carestack.com/pricing",
+      "https://carestack.zendesk.com/hc/en-us/articles/35330253336340-5-39-Release-Features",
+      "https://carestack.com/dental-software/faq",
+      "https://carestack.zendesk.com/hc/en-us/articles/13007543408404-5-30-Release-Features",
+      "https://clinic-cloud.com/tarifas",
+      "https://clinic-cloud.com/blog/clinic-cloud-software-para-consultorio-odontologico",
+      "https://clinic-cloud.com/faq/agenda-y-comunicaciones/configuracion-de-agendas",
+      "https://clinic-cloud.com/faq/agenda-y-comunicaciones/como-dar-una-cita-en-mi-agenda",
+      "https://clinic-cloud.com/faq/agenda-y-comunicaciones/calendario-online-en-p%C3%A1gina-web-de-cl%C3%ADnica",
+      "https://clinic-cloud.com/faq/configuracion-centro/recodatorio-de-citas-via-whatsapp",
+      "https://clinic-cloud.com/faq/agenda-y-comunicaciones",
+      "https://clinic-cloud.com/blog/el-sistema-de-gestion-de-clinicas-clinic-cloud-ii",
+      "https://www.dentaloffice.com.br/",
+      "https://www.dentaloffice.com.br/planos/",
+      "https://www.dentaloffice.com.br/agenda-para-dentistas/",
+      "https://www.dentaloffice.com.br/prontuario/",
+      "https://www.softwaredentalink.com/",
+      "https://web-ar.softwaredentalink.com/",
+      "https://ayuda.softwaredentalink.com/es/articles/9488188-agenda-la-primera-cita",
+      "https://ayuda.softwaredentalink.com/es/articles/9493139-configura-tu-agenda-online",
+      "https://ayuda.softwaredentalink.com/es/articles/17061686-gerty",
+      "https://ayuda.softwaredentalink.com/es/collections/13749514-potencia-tu-gestion-clinica",
+      "https://ayuda.softwaredentalink.com/es/articles/9493465-reportes-excel",
+      "https://ayuda.softwaredentalink.com/es/articles/9493109-nueva-seccion-mi-perfil",
+      "https://www.softwaredentalink.com/soporte",
+      "https://softwaredentalink.com/comenzar",
+      "https://www.denteo.com.ar/privacidad.html",
+      "https://denteo.com.ar/clinica.html",
+      "https://denteo.com.ar/docs/clinica-agenda.html",
+      "https://denteo.com.ar/docs/clinica-historia-clinica.html",
+      "https://denteo.com.ar/precios.html",
+      "https://app.dentidesk.com/terminos.php",
+      "https://www.dentidesk.com/",
+      "https://www.dentidesk.cl/dentidesk/feature",
+      "https://www.dentidesk.com/?from=MEDICALDESK",
+      "https://dentidesk.freshdesk.com/support/solutions",
+      "https://dentisoft.com/corporate.html",
+      "https://www.dentisoft.com/compare.html",
+      "https://www.dentisoft.com/index.php/pricing.html",
+      "https://www.dentisoft.com/index.php/hipaa.html",
+      "https://www.dentrixascend.com/",
+      "https://www.dentrixascend.com/about-us/why-dentrix-ascend/",
+      "https://hsps.pro/DentrixAscend/Help/Scheduling_appointments_for_existing_patients.htm",
+      "https://hsps.pro/DentrixAscend/Help/Scheduling.htm",
+      "https://hsps.pro/DentrixAscend/Help/Handling_the_double-booking_of_providers.htm",
+      "https://learn.dentrixascend.com/new-online-booking-service/",
+      "https://www.dentrixascend.com/dental-solutions/dentrix-ascend-packages-and-suites/",
+      "https://hsps.pro/DentrixAscend/Help/Filling_openings.htm",
+      "https://hsps.pro/DentrixAscend/Help/Patient_Clinical_Report.htm",
+      "https://pro.doctoralia.com/ar/agenda-doctoralia-para-especialistas",
+      "https://pro.doctoralia.com/ar/guias/configuracion-de-la-reserva-de-cita",
+      "https://pro.doctoralia.com/ar/precio",
+      "https://www.infomedsoftware.com/condiciones_generales_venta/",
+      "https://www.infomedsoftware.com/software/gesden/gesden-one/",
+      "https://www.infomedsoftware.com/wp-content/themes/softwareinfomed/_pdfs/multi_manuales/infomed_manual_gesden-g5-cita-online.pdf",
+      "https://www.infomedsoftware.com/wp-content/themes/softwareinfomed/_pdfs/multi_manuales/infomed_manual_gesden-g5-automation.pdf",
+      "https://www.infomedsoftware.com/soporte/manuales/",
+      "https://www.infomedsoftware.com/migracion-datos-seguridad-software-gesden-infomed-digitalizacion-garantizar-ciberseguridad-proteccion-escalabilidad-optimizacion-actualizaciones-rendimiento/",
+      "https://www.argentina.gob.ar/normativa/nacional/64790/actualizacion",
+      "https://www.argentina.gob.ar/normativa/nacional/ley-26529-160432/actualizacion",
+      "https://gbsystems.com/os/",
+      "https://gbsystems.com/os/producto.htm",
+      "https://gbsystems.com/os/manual/manual_odontosoft_demo.pdf",
+      "https://odontosoft.com/security.htm",
+      "https://odontosoft.com/prices.htm",
+      "https://odontosys.com/",
+      "https://odontosys.com/privacidad.html",
+      "https://help.odontosys.com/knowledge-base/como-instalar-odontosys/",
+      "https://help.odontosys.com/knowledge-base/como-crear-una-cita/",
+      "https://help.odontosys.com/knowledge-base/para-que-sirve-la-configuracion-minima-y-predeterminada-de-la-agenda/",
+      "https://help.odontosys.com/article-categories/agenda/",
+      "https://help.odontosys.com/knowledge-base/confirmacion-de-asistencia/",
+      "https://help.odontosys.com/",
+      "https://www.opendental.com/site/contact.html",
+      "https://www.opendental.com/site/fees.html",
+      "https://www.opendental.com/manual/appointments.html",
+      "https://www.opendental.com/manual/appointmentrules.html",
+      "https://www.opendental.com/manual/webschednewpatsetup.html",
+      "https://www.opendental.com/manual/chart.html",
+      "https://www.opendental.com/manual/modules.html",
+      "https://www.opendental.com/manual/account.html",
+      "https://www.opendental.com/site/apiappointments.html",
+      "https://www.opendental.com/manual/permissions.html",
+      "https://www.opendental.com/manual/backups.html",
+      "https://www.simplesdental.com/",
+      "https://www.simplesdental.com/agenda-online",
+      "https://www.simplesdental.com/prontuario-digital",
+      "https://www.simplesdental.com/planos-e-precos"
+    ],
+    "competitors": [
+      {
+        "name": "Denteo",
+        "notes_file": "docs/discovery/fuentes/denteo.md"
+      },
+      {
+        "name": "Dentalink",
+        "notes_file": "docs/discovery/fuentes/dentalink.md"
+      },
+      {
+        "name": "DENTIDESK",
+        "notes_file": "docs/discovery/fuentes/dentidesk.md"
+      },
+      {
+        "name": "OdontoSoft Millennium",
+        "notes_file": "docs/discovery/fuentes/odontosoft.md"
+      },
+      {
+        "name": "Doctoralia Argentina",
+        "notes_file": "docs/discovery/fuentes/doctoralia-argentina.md"
+      },
+      {
+        "name": "AgendaPro",
+        "notes_file": "docs/discovery/fuentes/agendapro.md"
+      },
+      {
+        "name": "Odontosys",
+        "notes_file": "docs/discovery/fuentes/odontosys.md"
+      },
+      {
+        "name": "Simples Dental",
+        "notes_file": "docs/discovery/fuentes/simples-dental.md"
+      },
+      {
+        "name": "Dental Office",
+        "notes_file": "docs/discovery/fuentes/dental-office.md"
+      },
+      {
+        "name": "Clinic Cloud",
+        "notes_file": "docs/discovery/fuentes/clinic-cloud.md"
+      },
+      {
+        "name": "GESDEN ONE/G5",
+        "notes_file": "docs/discovery/fuentes/gesden.md"
+      },
+      {
+        "name": "Open Dental",
+        "notes_file": "docs/discovery/fuentes/open-dental.md"
+      },
+      {
+        "name": "Dentrix Ascend",
+        "notes_file": "docs/discovery/fuentes/dentrix-ascend.md"
+      },
+      {
+        "name": "CareStack",
+        "notes_file": "docs/discovery/fuentes/carestack.md"
+      },
+      {
+        "name": "Dentisoft",
+        "notes_file": "docs/discovery/fuentes/dentisoft.md"
+      }
+    ],
+    "problema": "Registrar turnos en un consultorio odontológico pequeño de Argentina sin ocupar simultáneamente al mismo profesional ni al mismo box; no se cuantificó demanda real mediante entrevistas.",
+    "usuarios": [
+      "Recepción registra los turnos de varios profesionales y boxes.",
+      "Profesionales como recursos de agenda, sin acceso propio requerido.",
+      "Pacientes y boxes identificados con datos ficticios; autenticación y RBAC fuera del primer change."
+    ],
+    "casos_de_uso": [
+      "Recepción registra un turno con profesional, box e intervalo válidos.",
+      "Recepción recibe un rechazo claro ante conflicto de profesional, aunque el box sea distinto.",
+      "Recepción recibe un rechazo claro ante conflicto de box, aunque el profesional sea distinto.",
+      "El estudiante ejecuta pruebas vinculadas con los escenarios aprobados."
+    ],
+    "funcionalidades_necesarias": [
+      "Alta de un turno.",
+      "Datos mínimos y validación explícita.",
+      "Exclusión temporal del profesional y del box.",
+      "Errores comprensibles y catálogos ficticios mínimos.",
+      "Pruebas de casos válidos, conflictos y bordes.",
+      "Concretar modelo y demostración de atomicidad concurrente antes de declararla garantizada."
+    ],
+    "funcionalidades_opcionales": [
+      "WhatsApp.",
+      "Reserva pública.",
+      "Pagos y señas.",
+      "Facturación y obras sociales.",
+      "Historia clínica y odontograma.",
+      "Informes extensos, IA, portal del paciente, multisede y UI completa."
+    ],
+    "reglas_de_negocio": [
+      "Confirmado: no permitir solapamientos del mismo profesional.",
+      "Confirmado: no permitir solapamientos del mismo box.",
+      "Propuestas pendientes: intervalos [inicio, fin), adyacencia permitida e inicio anterior al fin.",
+      "Pendiente: estados que ocupan recursos, duración por prestación, horarios, cruce de día, disponibilidad, compatibilidad profesional-box y solapamiento del paciente.",
+      "No se presupone una política de sobreturnos."
+    ],
+    "integraciones": [
+      "Ninguna integración real para el primer change.",
+      "No HTTP, SOAP, credenciales, certificados, ARCA/AFIP real ni servicios externos en el ejercicio.",
+      "Engram y OpenSpec son herramientas del proceso, no integraciones clínicas."
+    ],
+    "restricciones": [
+      "Entrega propia desde cero y un change completo.",
+      "Cambios incrementales, evidencia real y revisión humana por etapas.",
+      "Datos exclusivamente ficticios y pruebas del contrato acordado.",
+      "Stack, API o módulo, persistencia y despliegue no elegidos.",
+      "Requisitos y capturas de instalación Full y Go pendientes según inventario.",
+      "No se presume aceptación docente de Codex frente a las herramientas citadas por la consigna.",
+      "No se afirma que estén realizados capturas o video."
+    ],
+    "riesgos": [
+      "Confundir campos visuales con controles.",
+      "Decidir límites temporales durante implementación.",
+      "Demostrar sólo secuencia y afirmar concurrencia.",
+      "Heredar requisitos de productos grandes.",
+      "Trasladar cumplimiento extranjero a Argentina.",
+      "Omitir revisión personal de fuentes.",
+      "H1 sin validar: recepción valora errores que identifiquen el recurso.",
+      "H2 sin validar: contrato de intervalos reduce ambigüedad.",
+      "H3 sin validar: una porción terminada aporta mejor evidencia académica."
+    ],
+    "preguntas_abiertas": [
+      "Stack.",
+      "API o módulo.",
+      "Persistencia.",
+      "Estrategia y prueba de concurrencia.",
+      "Identidad mínima del paciente.",
+      "Doble turno del paciente.",
+      "Duración.",
+      "Horarios.",
+      "Zona horaria.",
+      "Estados y cancelación.",
+      "Límites y adyacencia.",
+      "Compatibilidad profesional-box.",
+      "Idempotencia.",
+      "Identificación expresa del integrante/autor de la entrega.",
+      "Revisión personal de al menos cinco fuentes."
+    ],
+    "confirmed_by": "user",
+    "confirmation_date": "2026-10-15",
+    "personal_source_verification": "pending",
+    "report_path": "docs/discovery/informe-discovery.pdf",
+    "canonical_document": "discovery/discovery.md",
+    "source_notes_directory": "docs/discovery/fuentes",
+    "research_method": "Investigación documental asistida por IA; seis comprobaciones del agente no sustituyen la revisión personal del estudiante."
+  },
+  "kb": {
+    "created_by": "kb-creator",
+    "source": "ingest",
+    "discovery": {
+      "problem": "Registrar turnos en un consultorio odontológico pequeño de Argentina sin ocupar simultáneamente al mismo profesional ni al mismo box; no se cuantificó demanda real mediante entrevistas.",
+      "system_type": "pendiente: módulo de dominio o API",
+      "domain": "odontología / agenda de turnos",
+      "scale": "team",
+      "stack": "pendiente de definición en fundación",
+      "needs_infra": false
+    },
+    "files": [
+      "knowledge-base/01_vision_y_objetivos.md",
+      "knowledge-base/02_descripcion_general.md",
+      "knowledge-base/03_actores_y_roles.md",
+      "knowledge-base/04_modelo_de_datos.md",
+      "knowledge-base/05_reglas_de_negocio.md",
+      "knowledge-base/06_funcionalidades.md",
+      "knowledge-base/07_flujos_principales.md",
+      "knowledge-base/08_arquitectura_propuesta.md",
+      "knowledge-base/09_decisiones_y_supuestos.md",
+      "knowledge-base/10_preguntas_abiertas.md",
+      "knowledge-base/README.md"
+    ]
+  }
 }

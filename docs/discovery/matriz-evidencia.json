@@ -1,5 +1,5 @@
 {
-  "estado": "BORRADOR PARA REVISIÓN",
+  "estado": "Once puntos confirmados; verificación personal pendiente",
   "fecha": "2026-10-15",
   "metrica": "Cobertura documental pública; no calidad real",
   "formula": "sum(peso * puntaje / 5)",

@@ -6,9 +6,9 @@ Repositorio: [Nixus32xD/TP-ODONTOLOGIA](https://github.com/Nixus32xD/TP-ODONTOLO
 
 ## Estado actual
 
-OpenSpec inicializado y Discovery en revisión: quince sistemas relevados, matriz ponderada y propuesta para un consultorio pequeño. El usuario confirmó como primer change crear turnos evitando solapamientos por profesional y box. Todavía no hay código de producto ni pruebas de comportamiento; el stack y la persistencia se decidirán durante la fundación.
+OpenSpec inicializado y Discovery documental confirmado: quince sistemas relevados, matriz ponderada y once puntos aceptados el 2026-10-15 para un consultorio pequeño. Elegí como primer change crear turnos evitando solapamientos por profesional y box. La investigación documental está asistida por IA; queda pendiente mi verificación personal de al menos cinco fuentes. Todavía no hay código de producto ni pruebas de comportamiento.
 
-Se ejecutó `openspec init --tools codex --language es --no-animation`: configuración `spec-driven` y seis skills OPSX. Se incorporó `discovery-research` sólo en este proyecto. El estado de Active Stack conserva `version: 4` y `step: discovery`: el informe está para revisar, sin aprobación final ni cierre de la fase.
+Se ejecutó `openspec init --tools codex --language es --no-animation`: configuración `spec-driven` y seis skills OPSX. Se incorporó `discovery-research` sólo en este proyecto. El estado de Active Stack conserva `version: 4` y avanza a `step: kb`: Discovery está registrado y la [base de conocimiento](knowledge-base/README.md) contiene diez documentos canónicos más su índice, generados desde las fuentes existentes. Stack, API o módulo, persistencia, límites temporales y estrategia de concurrencia permanecen abiertos; confirmar el alcance no decide esos contratos.
 
 Para consultar el estado desde PowerShell con OpenSpec disponible en PATH:
 
@@ -17,7 +17,7 @@ Set-Location -LiteralPath 'N:\Nueva carpeta\TP-ODONTOLOGIA'
 openspec list --json
 ```
 
-La consulta actual devuelve `changes: []`. Sigue la revisión del informe y de sus once puntos antes de completar el resultado canónico de Discovery y pasar a la base de conocimiento. Los pendientes del entorno y de evidencia quedan documentados para la entrega.
+La última consulta registrada devuelve `changes: []`. La base de conocimiento está generada localmente; su revisión humana no se da por realizada. El siguiente artefacto del flujo es el roadmap. Los pendientes del entorno y de evidencia quedan documentados para la entrega.
 
 Esta entrega comienza desde cero. El alcance inicial es una funcionalidad terminada de agenda, con datos ficticios y sin integraciones clínicas reales.
 
@@ -32,7 +32,7 @@ Esta entrega comienza desde cero. El alcance inicial es una funcionalidad termin
 6. Completar un change: Explore, Propose, Apply, Verify y Archive.
 7. Demostrar memoria y recuperación de contexto con Engram.
 
-Se registrarán avances mediante commits y push por hitos. Las revisiones humanas y las decisiones Continuar / Ajustar / Parar acá se documentarán cuando ocurran; no se darán por realizadas automáticamente.
+Los primeros hitos se publicaron con autorización. La instrucción vigente exige nueva autorización explícita antes de realizar commit, push o publicación; el avance actual queda local. Las revisiones humanas y las decisiones Continuar / Ajustar / Parar acá se documentan cuando ocurren.
 
 ## Documentación
 
@@ -40,7 +40,8 @@ Se registrarán avances mediante commits y push por hitos. Las revisiones humana
 - [Bitácora del proceso](docs/BITACORA.md).
 - [Inventario y pendientes del entorno](docs/evidencia/entorno.md).
 - [Informe Discovery](docs/discovery/informe-discovery.md) y [PDF](docs/discovery/informe-discovery.pdf).
-- [Once puntos para revisión](docs/discovery/resumen-para-revision.md).
+- [Discovery canónico](discovery/discovery.md) y [once puntos confirmados](docs/discovery/resumen-para-revision.md).
+- [Base de conocimiento: índice y diez documentos](knowledge-base/README.md).
 - [Comprobaciones documentales y revisión personal pendiente](docs/discovery/verificacion-fuentes.md).
 
 ## Regenerar el informe PDF

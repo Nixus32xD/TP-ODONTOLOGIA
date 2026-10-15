@@ -4,37 +4,37 @@
 
 **Fecha de consulta y edición:** 15 de octubre de 2026.
 
-**Estado:** BORRADOR PARA REVISIÓN. No acredita aprobación del Discovery ni revisión personal del estudiante.
+**Estado:** Once puntos de Discovery confirmados; verificación personal de fuentes pendiente. Informe de trabajo, no entrega académica final.
 
 **Responsable de revisión:** estudiante. **Integrante/autor de la entrega:** pendiente de identificación expresa.
 
 ## Resumen ejecutivo
 
-El proyecto se orienta a un consultorio odontológico pequeño de Argentina, con recepción, varios profesionales y boxes. El usuario confirmó ese segmento y eligió como primer change el alta de turnos que evite solapamientos de profesional y box. Se propone una entrega propia desde cero, con datos ficticios y una única funcionalidad verificable; WhatsApp, pagos e historia clínica quedan para etapas posteriores.
+Elegí orientar mi proyecto a un consultorio odontológico pequeño de Argentina, con recepción, varios profesionales y boxes. Para el primer change, elegí el alta de turnos que evite solapamientos de profesional y box. Mi entrega parte desde cero, con datos ficticios y una única funcionalidad verificable; dejo WhatsApp, pagos e historia clínica para etapas posteriores.
 
-Se relevaron quince sistemas mediante páginas comerciales, ayudas, manuales y condiciones oficiales. La comparación distingue funciones documentadas de afirmaciones del proveedor y de características no evidenciadas. La matriz mide cobertura documental pública, no calidad real, seguridad efectiva, aceptación clínica ni relación precio/calidad. Su orden prioriza la relación con Argentina y el problema del TP; no es un ranking comercial.
+Usé asistencia de IA para el relevamiento documental de quince sistemas mediante páginas comerciales, ayudas, manuales y condiciones oficiales. Organizo esta comparación para distinguir funciones documentadas, afirmaciones del proveedor y características no evidenciadas. La matriz mide cobertura documental pública, no calidad real, seguridad efectiva, aceptación clínica ni relación precio/calidad. Priorizo la relación con Argentina y el problema del TP al ordenar los productos; no elaboro un ranking comercial.
 
 La agenda por profesional, los recordatorios, la ficha clínica y la administración aparecen en varias ofertas, con alcances y planes diferentes. Las fuentes más útiles para este primer change describen duración, recursos, bloqueos y excepciones: una advertencia de doble reserva, una sala de espera o una escala visual de calendario no equivalen a impedir un solapamiento. Tampoco la existencia de una API genérica prueba integración argentina.
 
-La oportunidad propuesta es académica y debe validarse: demostrar con un contrato pequeño y pruebas que un intervalo no ocupa simultáneamente al mismo profesional o box. No se afirma que exista un vacío de mercado. Se mantienen abiertas la duración, los horarios, el tratamiento de estados, el solapamiento del paciente, la persistencia, la concurrencia y la forma de exposición del módulo. El stack se elegirá durante la fundación, después de revisar esas decisiones.
+Planteo una oportunidad académica que todavía debo validar: demostrar con un contrato pequeño y pruebas que un intervalo no ocupa simultáneamente al mismo profesional o box. No afirmo que exista un vacío de mercado. Mantengo abiertas la duración, los horarios, el tratamiento de estados, el solapamiento del paciente, la persistencia, la concurrencia y la forma de exposición del módulo. Elegiré el stack durante la fundación, después de revisar esas decisiones.
 
-Este material incluye fichas, puntuación reproducible, recomendaciones, seis comprobaciones documentales del agente y referencias. La revisión personal de al menos cinco fuentes por el estudiante continúa pendiente. No se contactaron proveedores, se crearon cuentas ni se usaron datos reales. Discovery no se cierra con este borrador.
+En este informe presento fichas, puntuación reproducible, recomendaciones, seis comprobaciones documentales realizadas por agentes de IA y referencias. Confirmé los once puntos de Discovery y autoricé continuar con la fundación. Esa confirmación no equivale a verificar personalmente las fuentes: todavía debo revisar al menos cinco. No hubo contacto con proveedores, creación de cuentas ni uso de datos reales.
 
 # A. Comparación de sistemas
 
 ## Método, alcance y etiquetas
 
-Fecha común de consulta: **2026-10-15**. Se consultaron fuentes públicas y se registraron los accesos fallidos; no se probó ningún sistema. Las fichas conservan las limitaciones de plan, variante, región, antigüedad y accesibilidad. El PDF incorpora su contenido como anexo; en Markdown cada nombre enlaza la ficha detallada.
+Fecha del relevamiento documental asistido por IA: **2026-10-15**. El relevamiento se basó en fuentes públicas y registró accesos fallidos; no incluyó pruebas de los sistemas. En las fichas conservo las limitaciones de plan, variante, región, antigüedad y accesibilidad. Incorporo su contenido como anexo del PDF; en Markdown cada nombre enlaza la ficha detallada. Mi verificación personal de fuentes sigue pendiente.
 
 - **DOCUMENTADO (D):** manual, ayuda, contrato o política oficial describe un flujo, control o condición. Una declaración en política documenta lo que dice el proveedor; no certifica su ejecución.
 - **AFIRMACIÓN COMERCIAL (C):** landing, ficha de venta, comparación de planes o cifra promocional del proveedor. No equivale a verificación funcional independiente.
 - **No evidenciado (NE):** no se encontró respaldo suficiente en el material consultado. No demuestra inexistencia, indisponibilidad ni incumplimiento.
 
-Las cifras de adopción se registran únicamente cuando las publica el proveedor; conservan su unidad, variante y región. No se transforman profesionales, usuarios o descargas en número de clínicas. Los importes corresponden a la fecha y condiciones de la página; no constituyen cotización ni se convierten monedas ambiguas.
+Incluyo cifras de adopción únicamente cuando las publica el proveedor y conservo su unidad, variante y región. No transformo profesionales, usuarios o descargas en número de clínicas. Los importes corresponden a la fecha y condiciones de la página; no constituyen cotización. Mantengo sin convertir las monedas ambiguas.
 
 ## A.1 Identidad y relevancia para Argentina
 
-Orden analítico por presencia/oferta local evidenciada, pertinencia dental y utilidad como referencia. Los productos internacionales sirven para contrastar flujos; su inclusión no acredita oferta argentina.
+Ordeno los productos por presencia/oferta local evidenciada, pertinencia dental y utilidad como referencia. Uso los productos internacionales para contrastar flujos; su inclusión no acredita oferta argentina.
 
 <!-- identity:start -->
 | Producto / ficha | Empresa y país | Segmento | Modalidad | URL y consulta |
@@ -84,7 +84,7 @@ Cada celda conserva la clasificación de evidencia y refiere a la ficha correspo
 
 ## Escala y cálculo
 
-Los siete criterios suman 100 %. Cada nota se toma de la línea `Puntajes:` de la ficha, conservando su justificación. **Total = suma de (peso × nota / 5)**. La matriz y los totales se generan con `tools/render_discovery.py`; `matriz-evidencia.json` conserva notas, pesos, ruta y SHA-256 de cada ficha para detectar cambios de fuente.
+Organizo la matriz en siete criterios cuyos pesos suman 100 %. Cada nota se toma de la línea `Puntajes:` de la ficha, conservando su justificación. **Total = suma de (peso × nota / 5)**. Para hacer reproducible el cálculo, uso `tools/render_discovery.py`; `matriz-evidencia.json` conserva notas, pesos, ruta y SHA-256 de cada ficha para detectar cambios de fuente.
 
 | Nota | Significado |
 |---|---|
@@ -125,15 +125,15 @@ La matriz no reemplaza demos, pruebas de concurrencia, auditorías ni análisis 
 
 ## C.1 Estándares observados en las ofertas
 
-Agenda por profesional, estados, recordatorios y ficha del paciente aparecen en varias fuentes, por ejemplo [AgendaPro](fuentes/agendapro.md), [Doctoralia](fuentes/doctoralia-argentina.md), [Dental Office](fuentes/dental-office.md) y [Open Dental](fuentes/open-dental.md). Esto permite describir capacidades recurrentes en la muestra, no requisitos universales del mercado.
+En el relevamiento asistido por IA, agenda por profesional, estados, recordatorios y ficha del paciente aparecen en varias fuentes, por ejemplo [AgendaPro](fuentes/agendapro.md), [Doctoralia](fuentes/doctoralia-argentina.md), [Dental Office](fuentes/dental-office.md) y [Open Dental](fuentes/open-dental.md). Interpreto estas coincidencias como capacidades recurrentes en la muestra, no como requisitos universales del mercado.
 
-El dato crítico del turno incluye profesional, recurso físico e intervalo. [Clinic Cloud](fuentes/clinic-cloud.md) documenta box opcional y duración puntual; [Open Dental](fuentes/open-dental.md) distingue tiempo con y sin profesional. [Dentrix Ascend](fuentes/dentrix-ascend.md) documenta una advertencia de doble reserva que puede ignorarse. Por eso el TP debe expresar si una regla avisa o rechaza, y probar cada recurso por separado.
+Para mi primer change, considero críticos el profesional, el recurso físico y el intervalo del turno. [Clinic Cloud](fuentes/clinic-cloud.md) documenta box opcional y duración puntual; [Open Dental](fuentes/open-dental.md) distingue tiempo con y sin profesional. [Dentrix Ascend](fuentes/dentrix-ascend.md) documenta una advertencia de doble reserva que puede ignorarse. Por eso especificaré si una regla avisa o rechaza y probaré cada recurso por separado.
 
 La automatización varía: enviar una plantilla desde WhatsApp Web, interpretar una respuesta, publicar un enlace y reservar conversacionalmente son flujos distintos. Las condiciones, versiones y extras de [GESDEN](fuentes/gesden.md), [Odontosys](fuentes/odontosys.md) y [Simples Dental](fuentes/simples-dental.md) impiden agruparlos como una misma capacidad sin matices.
 
 ## C.2 Diferenciadores respaldados y declarados
 
-Se consideran diferenciadores documentales cuando una fuente explica un comportamiento concreto: restricciones de exportación y confirmación manual en [Denteo](fuentes/denteo.md); reglas y excepciones de agenda en [Open Dental](fuentes/open-dental.md); widget/flujo de cita y WhatsApp asistido en [Clinic Cloud](fuentes/clinic-cloud.md). Se proponen como referencias de diseño, sin afirmar superioridad.
+Considero diferenciadores documentales los casos en que una fuente explica un comportamiento concreto: restricciones de exportación y confirmación manual en [Denteo](fuentes/denteo.md); reglas y excepciones de agenda en [Open Dental](fuentes/open-dental.md); widget/flujo de cita y WhatsApp asistido en [Clinic Cloud](fuentes/clinic-cloud.md). Los propongo como referencias de diseño, sin afirmar superioridad.
 
 Los diferenciales comerciales incluyen captación mediante directorio/reseñas en [Doctoralia Argentina](fuentes/doctoralia-argentina.md), API y automatización en planes de [AgendaPro](fuentes/agendapro.md), especialidades y licencia de escritorio en [OdontoSoft](fuentes/odontosoft.md), y ecosistemas de pagos/seguros en productos internacionales. La publicidad de una función, integración o estándar no equivale a prueba de ejecución, certificación examinada ni adecuación argentina.
 
@@ -141,13 +141,13 @@ Los diferenciales comerciales incluyen captación mediante directorio/reseñas e
 
 Las fuentes no permiten comparar uniformemente exclusión atómica bajo solicitudes simultáneas, restauración de backups ejecutada, exportación clínica íntegra, retención y adecuación local. Son lagunas del relevamiento, **no vacíos demostrados del mercado**. Tampoco la ausencia de ARCA, Mercado Pago u obras sociales en una página demuestra que el proveedor no ofrezca alguna integración mediante contrato.
 
-Las jurisdicciones se mantienen separadas. RGPD, HIPAA, LGPD y normas españolas no acreditan cumplimiento argentino. Las [leyes argentinas consultadas](fuentes/marco-argentino.md) justifican minimizar datos y postergar historia clínica; no autorizan a presentar este ejercicio como sistema sanitario certificado.
+Mantengo separadas las jurisdicciones. RGPD, HIPAA, LGPD y normas españolas no acreditan cumplimiento argentino. El [marco argentino relevado con asistencia de IA](fuentes/marco-argentino.md) fundamenta mi decisión de minimizar datos y postergar historia clínica; no presento este ejercicio como sistema sanitario certificado.
 
 Hay incertidumbres explícitas: condiciones de WhatsApp/renovación divergentes entre lecturas de Denteo; tensión entre secciones sobre datos sensibles en AgendaPro; manual histórico de OdontoSoft; variantes ONE/G5 de GESDEN; tablas de precios que pierden iconos y disponibilidad regional de servicios. Deben revisarse antes de contratar o convertir anuncios en requisitos.
 
 ## C.4 Oportunidades como hipótesis verificables
 
-- **Hipótesis H1:** recepción necesita saber por qué un turno fue rechazado y qué recurso está ocupado. Validación propuesta: revisar con el estudiante casos de profesional y box independientes; no se entrevistó recepción real.
+- **Hipótesis H1:** recepción necesita saber por qué un turno fue rechazado y qué recurso está ocupado. Propongo validarla mediante casos de profesional y box independientes; este trabajo no aporta entrevistas a recepción.
 - **Hipótesis H2:** un contrato pequeño de intervalos explícitos reduce ambigüedades. Validación propuesta: ejemplos de solapamiento parcial, contención y borde, antes de elegir algoritmo o base de datos.
 - **Hipótesis H3:** demostrar una operación de alta de punta a punta ofrece más evidencia académica que anunciar múltiples módulos incompletos. Validación: escenarios acordados, tests reales y registro de Verify/Archive.
 - **Hipótesis H4:** separación de datos ficticios y funciones posteriores facilita una revisión honesta. Validación: inspección de fixtures y contrato; sin HTTP/SOAP, credenciales, ARCA real ni pacientes reales.
@@ -156,7 +156,7 @@ Hay incertidumbres explícitas: condiciones de WhatsApp/renovación divergentes 
 
 ## D.1 Cinco productos prioritarios para una eventual demo
 
-Son prioridades de revisión futura, no demos realizadas. No se crean cuentas ni se contacta a proveedores en esta entrega.
+Priorizo estos cinco productos para una revisión futura; este trabajo no aporta demos ejecutadas. El alcance de esta entrega no incluye crear cuentas ni contactar a proveedores.
 
 | Producto | Motivo y foco de revisión |
 |---|---|
@@ -176,9 +176,9 @@ Son prioridades de revisión futura, no demos realizadas. No se crean cuentas ni
 
 ## D.3 MVP y primera porción verificable
 
-**Imprescindibles del primer change:** crear un turno con identificadores ficticios de paciente, profesional y box; inicio y fin válidos; rechazar ocupación temporal del mismo profesional o del mismo box; devolver errores comprensibles; cubrir casos válidos, conflictos y bordes con tests. Los catálogos mínimos pueden ser fixtures; no se requiere desarrollar CRUDs completos.
+**Imprescindibles del primer change:** me propongo crear un turno con identificadores ficticios de paciente, profesional y box; validar inicio y fin; rechazar ocupación temporal del mismo profesional o del mismo box; devolver errores comprensibles; y cubrir casos válidos, conflictos y bordes con tests. Los catálogos mínimos pueden ser fixtures; no necesito desarrollar CRUDs completos para esta porción.
 
-**Diferenciadores propuestos para la entrega:** contrato visible de intervalos, error que identifica el recurso en conflicto y trazabilidad entre spec, test y resultado. Son objetivos del TP, no ventajas comerciales probadas. La atomicidad frente a solicitudes concurrentes sólo podrá declararse si el mecanismo elegido y su prueba lo demuestran.
+**Diferenciadores propuestos para mi entrega:** contrato visible de intervalos, error que identifica el recurso en conflicto y trazabilidad entre spec, test y resultado. Los planteo como objetivos del TP, no como ventajas comerciales probadas. Sólo declararé atomicidad frente a solicitudes concurrentes si el mecanismo elegido y su prueba la demuestran.
 
 **Postergados:** WhatsApp, reservas públicas, pagos/señas, facturación/ARCA, obras sociales, historia clínica/odontograma, reportes amplios, IA, portal del paciente, multisede y una interfaz completa. Autenticación y permisos de producción no se simulan como resueltos por el módulo académico.
 
@@ -186,7 +186,7 @@ Son prioridades de revisión futura, no demos realizadas. No se crean cuentas ni
 
 **Nombre propuesto:** `crear-turno-sin-solapamientos`.
 
-Recepción necesita registrar un turno sin asignar simultáneamente al mismo profesional ni al mismo box. Esta porción permite acordar reglas, implementarlas y verificar errores de negocio y bordes con datos ficticios. El usuario confirmó el objetivo; el contrato detallado se discutirá durante fundación/Propose. No se creó todavía un change de OpenSpec.
+Elegí resolver el registro de un turno sin asignar simultáneamente al mismo profesional ni al mismo box. Esta porción me permite acordar reglas, implementarlas y verificar errores de negocio y bordes con datos ficticios. Confirmé este objetivo; definiré el contrato detallado durante fundación/Propose. Todavía no se creó un change de OpenSpec.
 
 | Ejemplo candidato | Resultado a especificar |
 |---|---|
@@ -197,11 +197,11 @@ Recepción necesita registrar un turno sin asignar simultáneamente al mismo pro
 | Un turno empieza exactamente al finalizar otro | Propuesta: permitir adyacencia con intervalo [inicio, fin); decisión todavía pendiente. |
 | Dos altas simultáneas por el mismo recurso | Mecanismo y evidencia de atomicidad pendientes de elegir persistencia. |
 
-**Decisiones abiertas:** stack; API o módulo; persistencia; concurrencia; zona horaria/representación temporal; duración fija o por prestación; horarios habilitados y cruces de día; estados que ocupan recurso; cancelación; doble turno del paciente; disponibilidad/compatibilidad profesional-box y política de idempotencia. No se eligen silenciosamente en este informe.
+**Decisiones abiertas:** stack; API o módulo; persistencia; concurrencia; zona horaria/representación temporal; duración fija o por prestación; horarios habilitados y cruces de día; estados que ocupan recurso; cancelación; doble turno del paciente; disponibilidad/compatibilidad profesional-box y política de idempotencia. Las mantengo explícitas para resolverlas antes de implementar; confirmar los once puntos de Discovery no las convierte en decisiones tomadas.
 
 # Verificación de fuentes
 
-**Comprobación documental del agente; revisión personal del estudiante PENDIENTE.** Se contrastaron páginas públicas, no el software. La consigna exige revisión personal del estudiante y esa evidencia no se sustituye con este registro. Fecha: 2026-10-15.
+**Seis comprobaciones documentales realizadas por agentes de IA; mi verificación personal de al menos cinco fuentes sigue PENDIENTE.** Las comprobaciones contrastaron páginas públicas, no el software. No las presento como comprobaciones personales: debo aportar mi propia revisión para cumplir esa parte de la consigna. Fecha del registro asistido: 2026-10-15.
 
 | Fuente y tipo | Afirmación examinada | Hallazgo, clasificación y corrección |
 |---|---|---|
@@ -212,11 +212,11 @@ Recepción necesita registrar un turno sin asignar simultáneamente al mismo pro
 | [Denteo: precios](https://denteo.com.ar/precios.html). Oferta comercial. | Cupos WhatsApp y modalidad Mercado Pago/renovación son condiciones uniformes. | Lecturas públicas divergentes; no se fija condición definitiva. Corrección: registrar incertidumbre, no confundir pago de suscripción con cobro clínico y requerir confirmación vigente. Revisión personal pendiente. |
 | [AgendaPro: privacidad](https://agendapro.com/ar/politica-de-privacidad). Política del proveedor. | La oferta clínica basta para demostrar admisión de datos sensibles. | Las secciones 6 y 8 requieren aclaración conjunta sobre datos sensibles remitidos por comercios. Se registra una pregunta contractual, sin concluir ilegalidad ni aptitud clínica. Revisión personal pendiente. |
 
-Las seis comprobaciones cubren ayuda, condiciones contractuales, página comercial, precios y política de privacidad. Las interpretaciones examinadas son riesgos de lectura, no errores atribuidos al estudiante. El registro ampliado está en [verificación de fuentes](verificacion-fuentes.md). Se recomienda abrir estos enlaces, contrastar personalmente cada afirmación, anotar fecha, hallazgo y corrección propia, y revisar las dos leyes del marco argentino. No se fabrican capturas ni verificaciones personales.
+Las seis comprobaciones asistidas cubren ayuda, condiciones contractuales, página comercial, precios y política de privacidad. Las interpretaciones examinadas son riesgos de lectura, no errores atribuidos a mi revisión personal. Conservo el registro ampliado en [verificación de fuentes](verificacion-fuentes.md). Mi siguiente tarea personal es abrir al menos cinco fuentes de tipos distintos, contrastar cada afirmación y anotar fecha, hallazgo y corrección propia. También debo revisar las dos leyes del marco argentino. No incluyo capturas ni verificaciones personales que no haya realizado.
 
 # Referencias y trazabilidad
 
-Las referencias de cada producto están en su ficha, con fecha, clasificación y límites. El PDF añade todas las fichas como anexos. Las URLs siguientes se extraen de esas notas; la fecha de consulta común es 2026-10-15, salvo fecha editorial indicada por cada fuente. Que una URL figure aquí no significa que sea accesible permanentemente ni que se haya operado una cuenta.
+Presento las referencias de cada producto en su ficha, con fecha, clasificación y límites, y añado todas las fichas como anexos del PDF. Las URLs siguientes se extraen de esas notas; la fecha común del relevamiento asistido por IA es 2026-10-15, salvo fecha editorial indicada por cada fuente. Incluir una URL no acredita accesibilidad permanente, uso de una cuenta ni verificación personal de mi parte.
 
 <!-- references:start -->
 ## Denteo
@@ -365,6 +365,6 @@ Las referencias de cada producto están en su ficha, con fecha, clasificación y
 
 ## Limitaciones y próxima revisión
 
-No hubo entrevistas, demos ejecutadas, compra, contacto comercial, auditoría técnica/legal ni datos reales. Las páginas son susceptibles de cambio, algunas tablas pierden indicadores visuales y ciertos manuales son históricos. Se registran en cada ficha los accesos fallidos o insuficientes; no se atribuyen capacidades a una fuente inaccesible.
+Este informe no aporta entrevistas, demos ejecutadas, compras, contacto comercial ni auditorías técnicas o legales. Trabajo exclusivamente con datos ficticios para el alcance del TP. Las páginas son susceptibles de cambio, algunas tablas pierden indicadores visuales y ciertos manuales son históricos. Conservo en cada ficha los accesos fallidos o insuficientes; no atribuyo capacidades a una fuente inaccesible.
 
-El siguiente paso es revisar este informe y el [resumen de once puntos](resumen-para-revision.md), corregir supuestos y decidir Continuar, Ajustar o Parar acá. Sólo después de la confirmación explícita corresponde escribir el resultado canónico `discovery/discovery.md` y actualizar `state.discovery`. La base de conocimiento, el roadmap y Propose siguen pendientes.
+Confirmé el [resumen de once puntos](resumen-para-revision.md) y autoricé continuar con la fundación. El resultado canónico está en `discovery/discovery.md` y sirve de entrada a la base de conocimiento. Mantengo las preguntas abiertas para resolverlas en la etapa correspondiente, antes de implementar. Mi pendiente personal de esta investigación sigue siendo revisar al menos cinco fuentes y registrar esa evidencia; la confirmación del alcance no reemplaza esa tarea.

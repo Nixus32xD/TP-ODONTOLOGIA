@@ -1,4 +1,4 @@
-"""Consolida la matriz y crea el PDF borrador a partir de Markdown y fichas.
+"""Consolida la matriz y crea el informe PDF a partir de Markdown y fichas.
 
 Requiere reportlab y pypdf. Ejecutar desde cualquier directorio con Python 3.
 No consulta servicios externos ni modifica el estado de Active Stack/OpenSpec.
@@ -28,6 +28,7 @@ from pypdf import PdfReader
 ROOT = Path(__file__).resolve().parents[1]
 OUT = ROOT / "docs" / "discovery"
 DATE = "2026-10-15"
+STATUS = "Once puntos confirmados; verificación personal pendiente"
 WEIGHTS = {
     "turnos": 25, "clinica": 20, "integraciones": 15,
     "administracion": 15, "paciente": 10, "seguridad": 10, "precio": 5,
@@ -115,7 +116,7 @@ def consolidate() -> dict:
     document = replace_section(document, "matrix", markdown_table(["Producto", "T 25", "C 20", "I 15", "A 15", "P 10", "S 10", "Pr 5", "Total"], score_rows))
     document = replace_section(document, "references", "\n".join(ref_lines))
     document_path.write_text(document, encoding="utf-8", newline="\n")
-    result = {"estado": "BORRADOR PARA REVISIÓN", "fecha": DATE, "metrica": "Cobertura documental pública; no calidad real", "formula": "sum(peso * puntaje / 5)", "pesos": WEIGHTS, "productos": matrix, "urls_unicas_en_fichas_productos": len(distinct), "leyes_referenciadas": len(laws)}
+    result = {"estado": STATUS, "fecha": DATE, "metrica": "Cobertura documental pública; no calidad real", "formula": "sum(peso * puntaje / 5)", "pesos": WEIGHTS, "productos": matrix, "urls_unicas_en_fichas_productos": len(distinct), "leyes_referenciadas": len(laws)}
     (OUT / "matriz-evidencia.json").write_text(json.dumps(result, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     return result
 
@@ -150,6 +151,7 @@ def register_fonts() -> None:
 def styles():
     base = getSampleStyleSheet()
     base.add(ParagraphStyle(name="BodyAR", fontName="Arial", fontSize=9.4, leading=13, textColor=colors.HexColor("#243447"), spaceAfter=7, splitLongWords=True))
+    base.add(ParagraphStyle(name="LeadAR", parent=base["BodyAR"], keepWithNext=True))
     base.add(ParagraphStyle(name="HeadingAR", fontName="ArialBold", fontSize=21, leading=27, textColor=colors.HexColor("#112E45"), spaceAfter=16, keepWithNext=True))
     base.add(ParagraphStyle(name="SubAR", fontName="ArialBold", fontSize=12.2, leading=17, textColor=colors.HexColor("#087F8C"), spaceBefore=12, spaceAfter=8, keepWithNext=True))
     base.add(ParagraphStyle(name="CellAR", fontName="Arial", fontSize=8.0, leading=11.2, textColor=colors.HexColor("#243447"), spaceAfter=0, splitLongWords=True))
@@ -192,7 +194,9 @@ def render_markdown(text: str, st, width: float, skip_top_title=False, reference
     in_refs = references
     def flush():
         if paragraph:
-            flow.append(Paragraph(inline(" ".join(paragraph)), st["RefAR"] if in_refs else st["BodyAR"]))
+            body = " ".join(paragraph)
+            style = st["RefAR"] if in_refs else st["LeadAR"] if body.startswith("**Nombre propuesto:**") else st["BodyAR"]
+            flow.append(Paragraph(inline(body), style))
             paragraph.clear()
     while index < len(lines):
         line = lines[index].strip()
@@ -245,7 +249,7 @@ def footer(canvas, doc):
         canvas.line(42, height - 35, width - 42, height - 35)
         canvas.setFont("Arial", 7.6)
         canvas.setFillColor(colors.HexColor("#476477"))
-        canvas.drawString(42, height - 27, "TP-ODONTOLOGIA | Discovery | BORRADOR PARA REVISIÓN")
+        canvas.drawString(42, height - 27, "TP-ODONTOLOGIA | Discovery | Informe de trabajo")
     canvas.setFont("Arial", 7.5)
     canvas.setFillColor(colors.HexColor("#476477"))
     canvas.drawString(42, 25, "15/10/2026 | Datos ficticios | Revisión personal del estudiante pendiente")
@@ -258,10 +262,10 @@ def create_pdf(matrix: dict):
     st = styles()
     width = A4[0] - 84
     pdf_path = OUT / "informe-discovery.pdf"
-    doc = SimpleDocTemplate(str(pdf_path), pagesize=A4, rightMargin=42, leftMargin=42, topMargin=52, bottomMargin=47, title="Discovery - Gestión de turnos odontológicos - Borrador", author="Responsable de revisión: estudiante; integrante pendiente", subject="Relevamiento documental para Metodología I", pageCompression=1)
+    doc = SimpleDocTemplate(str(pdf_path), pagesize=A4, rightMargin=42, leftMargin=42, topMargin=52, bottomMargin=47, title="Discovery - Gestión de turnos odontológicos - Informe de trabajo", author="Responsable de revisión: estudiante; integrante pendiente", subject="Relevamiento documental asistido por IA para Metodología I", pageCompression=1)
     cover_title = ParagraphStyle("CoverTitle", fontName="ArialBold", fontSize=32, leading=40, textColor=colors.HexColor("#112E45"), spaceAfter=24)
     cover_small = ParagraphStyle("CoverSmall", parent=st["BodyAR"], fontSize=12, leading=19, spaceAfter=18)
-    flow = [Spacer(1, 54), Paragraph("METODOLOGÍA I", st["SubAR"]), Spacer(1, 18), Paragraph("Discovery<br/>Gestión de turnos<br/>odontológicos", cover_title), HRFlowable(width="100%", thickness=3, color=colors.HexColor("#087F8C")), Spacer(1, 24), Paragraph("BORRADOR PARA REVISIÓN", cover_small), Paragraph("Consultorio pequeño de Argentina<br/>Primer change: profesional y box sin solapamientos", cover_small), Spacer(1, 36), Paragraph("15 de octubre de 2026<br/>Responsable de revisión: estudiante<br/>Integrante/autor de la entrega: pendiente de identificación", st["BodyAR"]), Spacer(1, 24), Paragraph(f"15 productos | 7 criterios | {matrix['urls_unicas_en_fichas_productos']} URLs referenciadas en fichas<br/>Investigación documental. Sin demos ejecutadas ni aprobación de fase.", st["BodyAR"]), PageBreak()]
+    flow = [Spacer(1, 54), Paragraph("METODOLOGÍA I", st["SubAR"]), Spacer(1, 18), Paragraph("Discovery<br/>Gestión de turnos<br/>odontológicos", cover_title), HRFlowable(width="100%", thickness=3, color=colors.HexColor("#087F8C")), Spacer(1, 24), Paragraph("INFORME DE TRABAJO", cover_small), Paragraph("Consultorio pequeño de Argentina<br/>Primer change: profesional y box sin solapamientos", cover_small), Spacer(1, 24), Paragraph("15 de octubre de 2026<br/>Integrante/autor de la entrega: pendiente de identificación", st["BodyAR"]), Spacer(1, 18), Paragraph(f"15 productos | 7 criterios | {matrix['urls_unicas_en_fichas_productos']} URLs referenciadas en fichas<br/>Relevamiento documental con asistencia de IA. Sin demos ejecutadas.", st["BodyAR"]), Paragraph("Confirmé los once puntos de Discovery y continuaré con la fundación.<br/>Mi verificación personal de al menos cinco fuentes sigue pendiente.<br/>Este informe todavía no constituye la entrega académica final.", st["BodyAR"]), PageBreak()]
     main = (OUT / "informe-discovery.md").read_text(encoding="utf-8")
     # La portada Markdown queda en la fuente; en PDF tiene diseño independiente.
     main = "## Resumen ejecutivo" + main.split("## Resumen ejecutivo", 1)[1]
@@ -273,12 +277,12 @@ def create_pdf(matrix: dict):
         flow.extend(render_markdown(note, st, width, skip_top_title=True))
     flow.extend([PageBreak(), Paragraph("Anexo 16. Marco argentino", st["HeadingAR"])])
     flow.extend(render_markdown((OUT / "fuentes" / "marco-argentino.md").read_text(encoding="utf-8"), st, width, skip_top_title=True))
-    flow.extend([PageBreak(), Paragraph("Anexo 17. Once puntos para revisión", st["HeadingAR"])])
+    flow.extend([PageBreak(), Paragraph("Anexo 17. Once puntos confirmados", st["HeadingAR"])])
     flow.extend(render_markdown((OUT / "resumen-para-revision.md").read_text(encoding="utf-8"), st, width, skip_top_title=True))
     doc.build(flow, onFirstPage=footer, onLaterPages=footer)
     reader = PdfReader(str(pdf_path))
     text = "\n".join(page.extract_text() or "" for page in reader.pages)
-    required = ["BORRADOR PARA REVISIÓN", "Resumen ejecutivo", "A. Comparación", "B. Matriz", "C. Hallazgos", "D. Referencias", "Verificación de fuentes", "Anexo 17", *[product[1] for product in PRODUCTS]]
+    required = ["INFORME DE TRABAJO", "Resumen ejecutivo", "A. Comparación", "B. Matriz", "C. Hallazgos", "D. Referencias", "Verificación de fuentes", "Anexo 17", *[product[1] for product in PRODUCTS]]
     absent = [item for item in required if item not in text]
     if absent:
         raise ValueError(f"Texto esperado ausente en PDF: {absent}")
