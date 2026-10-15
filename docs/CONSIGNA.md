@@ -15,7 +15,7 @@ Este checklist resume requisitos de la consigna; no acredita su cumplimiento. La
 
 - [x] Inicializar OpenSpec: `openspec init --tools codex --language es --no-animation`, finalizado con código 0. El flujo completo de Active Stack continúa pendiente.
 - [x] Elegir Discovery en la bifurcación; el usuario confirmó continuar el 2026-10-15.
-- [x] Incluir `.active-orchestrator-state.json` con el estado real: versión 4, fase `roadmap`; Discovery documental y base de conocimiento registrados.
+- [x] Incluir `.active-orchestrator-state.json` con el estado real: versión 4, fase `find-skill`; Discovery documental y base de conocimiento registrados.
 - [x] Registrar inspección y decisión de continuar desde la inicialización; confirmación explícita de los once puntos de Discovery el 2026-10-15.
 
 ## Etapa 2 - Discovery
@@ -29,9 +29,11 @@ Este checklist resume requisitos de la consigna; no acredita su cumplimiento. La
 - [x] C: estándares, diferenciadores, lagunas documentales y oportunidades como hipótesis; no se afirma un vacío de mercado por ausencia de fuentes.
 - [x] D: cinco prioridades para demo futura, tres referencias de UX y un MVP acotado. Las demos no se realizaron.
 - [x] Distinguir documentación de funciones, afirmaciones comerciales y falta de evidencia; sin pruebas funcionales de los proveedores.
+- [x] Revisión adicional delegada: [seis fuentes oficiales contrastadas](discovery/revision-documental-2026-10-15.md), con ajustes de precisión y límites de acceso registrados. No acredita lecturas personales.
 - [ ] Verificación humana: comprobar personalmente al menos cinco fuentes de distintos tipos; registrar afirmación, hallazgo y corrección. La revisión del agente no sustituye esta comprobación.
 - [x] Preparar localmente `docs/discovery/informe-discovery.md`, su PDF y los once puntos en `docs/discovery/resumen-para-revision.md`; resultado canónico adicional en `discovery/discovery.md`.
-- [ ] Publicar o entregar la versión actualizada del PDF y documentos; requiere nueva autorización explícita. La preparación local no acredita entrega final.
+- [x] Autorizar la publicación en `main` del PDF y documentos de este avance: permiso explícito del usuario registrado; la autorización no acredita por sí sola ejecución del push.
+- [ ] Realizar la entrega docente final del PDF y documentos; publicar el repositorio no acredita esa entrega.
 
 Pesos de la matriz:
 
@@ -51,7 +53,7 @@ Pesos de la matriz:
 - [ ] Revisar coherencia con el Discovery, incluyendo duración de prestaciones, sillones/boxes, solapamientos y preguntas sin evidencia.
 - [x] [`CHANGES.md`](../CHANGES.md): dependencias, asignaciones con contexto, camino crítico y riesgos del único change candidato `C-01: crear-turno-sin-solapamientos`, alineado con el MVP.
 - [ ] Revisar humanamente el roadmap y registrar la decisión; generarlo no acredita su aprobación.
-- [ ] `find-skill`: decidir qué recomendaciones instalar o descartar, con justificación de una línea por recomendación.
+- [x] `find-skill`: [selección documentada](fundacion/seleccion-skills.md), con reutilización de existentes, React descartado y UI/pruebas específicas diferidas; no se instalaron skills nuevas.
 - [ ] Generar `.atl/skill-registry.md`.
 - [ ] Revisar y confirmar las reglas candidatas; generar `AGENTS.md` y `CLAUDE.md` en raíz. Agregar reglas del dominio cuando corresponda.
 - [ ] Registrar inspección y decisión humana de cada etapa.

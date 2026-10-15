@@ -1,6 +1,6 @@
 {
   "version": 4,
-  "step": "roadmap",
+  "step": "find-skill",
   "owner": "active-orchestrator",
   "discovery": {
     "created_by": "discovery-research",
@@ -275,6 +275,17 @@
   "roadmap": {
     "created_by": "roadmap-generator",
     "source": "CHANGES.md",
-    "changes": ["C-01"]
+    "changes": [
+      "C-01"
+    ]
+  },
+  "skills": {
+    "created_by": "find-skill",
+    "recommended": [
+      "openspec-local-existing",
+      "discovery-research-local-existing",
+      "active-stack-foundation-global-existing"
+    ],
+    "installed": []
   }
 }
