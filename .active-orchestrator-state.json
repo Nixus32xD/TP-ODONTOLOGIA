@@ -1,6 +1,6 @@
 {
   "version": 4,
-  "step": "find-skill",
+  "step": "registry",
   "owner": "active-orchestrator",
   "discovery": {
     "created_by": "discovery-research",
@@ -287,5 +287,9 @@
       "active-stack-foundation-global-existing"
     ],
     "installed": []
+  },
+  "registry": {
+    "created_by": "skill-registry",
+    "file": ".atl/skill-registry.md"
   }
 }

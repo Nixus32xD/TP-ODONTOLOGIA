@@ -20,7 +20,7 @@ Registro de preparación del 2026-10-15. Este inventario distingue disponibilida
 - `openspec init --tools codex --language es --no-animation`: código de salida 0.
 - `openspec/config.yaml`: esquema `spec-driven`.
 - Seis skills de proyecto en `.agents/skills/`: `openspec-explore`, `openspec-propose`, `openspec-update-change`, `openspec-apply-change`, `openspec-sync-specs` y `openspec-archive-change`.
-- `.active-orchestrator-state.json`: versión 4, fase actual `find-skill`; Discovery documental y base de conocimiento registrados en sus secciones propias.
+- `.active-orchestrator-state.json`: versión 4, fase actual `registry`; Discovery documental y base de conocimiento registrados en sus secciones propias.
 - `openspec list --json`: código de salida 0, `changes: []`, raíz `N:/Nueva carpeta/TP-ODONTOLOGIA`.
 
 Estos resultados verifican inicialización y estado del flujo. Todavía no existen pruebas de comportamiento de producto.
@@ -44,8 +44,8 @@ No se incluyen configuraciones globales, credenciales ni datos personales en est
 - La [base de conocimiento](../../knowledge-base/README.md) está generada desde los documentos existentes: diez canónicos y un índice. Conserva abiertas las decisiones de stack, persistencia, intervalos y concurrencia; no acredita revisión humana de la KB. No existe aún código de producto ni suite de comportamiento.
 - La edición del informe y del PDF usa primera persona sólo para elecciones veraces del estudiante y declara la investigación documental asistida por IA. No atribuye al estudiante las comprobaciones del agente.
 - El PDF actualizado tiene 56 páginas y SHA-256 `d9faa8743d5cffae94a82f90589fbd81563069406656defb38290ae2040c126e`. Incluye anexo 18 con la revisión documental delegada, conserva 105 puntajes y declara pendientes las cinco lecturas personales. La QA actual está registrada en la [bitácora](../BITACORA.md).
-- El usuario autorizó commit y push de este avance a `main`; Discovery/KB y roadmap se publicaron hasta `e581b94e6c9605dac8f4d26afd41ccce906b1e78`, verificado por el coordinador. Esta revisión y selección de skills forman parte del avance autorizado para publicar en `main`; la entrega docente final sigue pendiente y no se presume permiso universal futuro.
+- Discovery/KB, roadmap, revisión documental y selección de skills quedaron publicados hasta `5d5a4a90895164c86e0a51aa0d1eb771421bfcb1`. El usuario autorizó generar, comitear y publicar el registro de skills en `main`; el nuevo push se verificará al ejecutarlo. La entrega docente final sigue pendiente y no se presume permiso universal futuro.
 - El [roadmap](../../CHANGES.md) está generado para un único change candidato de turnos; su revisión humana permanece pendiente. No decide stack, persistencia, contratos temporales ni concurrencia, y no crea artefactos Propose ni código.
 
-- La [selección de skills](../fundacion/seleccion-skills.md) reutiliza existentes y no instala herramientas nuevas; generar el registro sigue pendiente.
+- La [selección de skills](../fundacion/seleccion-skills.md) reutiliza existentes y no instala herramientas nuevas. El [registro del proyecto](../../.atl/skill-registry.md) documenta su uso; siguen pendientes las reglas candidatas y la generación de `AGENTS.md` y `CLAUDE.md`.
 - La [revisión delegada de seis fuentes](../discovery/revision-documental-2026-10-15.md) precisó Denteo, Dentalink e Infomed. La comprobación personal requerida por la consigna permanece no acreditada.
