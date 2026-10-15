@@ -2,73 +2,27 @@
 
 ## Alcance del modelo
 
-Modelo **conceptual propuesto**, derivado del alta acordada; todavía no es esquema de almacenamiento. Los tipos `Identificador`, `Etiqueta` y `ValorTemporal` son abstractos. No se eligieron SQL, UUID, formato de fecha, zona horaria, precisión ni serialización.
-
-## Dominios
-
-- Agenda: turno e intervalo ocupado.
-- Recursos: profesional y box/sillón.
-- Identificación mínima: paciente ficticio, sin historia clínica.
-
-Prestación, horarios, disponibilidad y estados sólo se incorporarán si se acuerdan para esta porción. No se crean entidades para funciones postergadas.
-
-## ERD conceptual
-
-```text
-Paciente     1 ---- 0..* Turno 0..* ---- 1 Profesional
-                         |
-                        0..*
-                         |
-                         1
-                        Box
-```
-
-Propuesta: cada turno referencia un paciente, un profesional y un box; cada recurso puede tener varios turnos en momentos compatibles. La cardinalidad y obligación exacta del paciente deben concretarse con su identidad mínima. `Box` representa provisionalmente el recurso físico; no define que sala y sillón sean equivalentes en todos los consultorios.
+Modelo implementado en [agenda.py](../odontologia/agenda.py) según el [diseño](../openspec/changes/crear-turno-sin-solapamientos/design.md). Sólo datos ficticios, sin información clínica ni contactos.
 
 ## Entidades propuestas
 
-### Turno
+El encabezado conserva la navegación inicial; estas entidades ya están representadas en el módulo.
 
-| Atributo | Tipo conceptual | Estado |
+| Entidad | Representación | Contrato |
 | --- | --- | --- |
-| identificador | Identificador | Mecanismo de generación pendiente |
-| paciente | Referencia a Paciente | Datos mínimos y validación pendientes |
-| profesional | Referencia a Profesional | Recurso confirmado |
-| box | Referencia a Box | Recurso confirmado |
-| inicio | ValorTemporal | Representación y límites pendientes |
-| fin | ValorTemporal | Relación con inicio pendiente de especificación |
+| Paciente | pacientes, ID TEXT PRIMARY KEY | paciente-A/B; sin exclusión de simultaneidad |
+| Profesional | profesionales, ID TEXT PRIMARY KEY | profesional-A/B; exclusión por intervalo |
+| Box | boxes, ID TEXT PRIMARY KEY | box-A/B; recurso exclusivo |
+| Turno | turnos y valor inmutable Turno | ID INTEGER PRIMARY KEY positivo, tres referencias e inicio/fin |
 
-Relaciones: un profesional y un box por turno; vínculo mínimo al paciente propuesto. Constraints confirmados: no solapar profesional ni box. Predicado exacto de solapamiento, estados que ocupan y garantía concurrente pendientes. No hay atributo `estado` aprobado ni catálogo de estados supuesto.
+Cada turno referencia exactamente un paciente, profesional y box. FK activadas/verificadas por conexión; CHECK inicio anterior a fin. Catálogos sin CRUD.
 
-Índices: no definidos; dependen del almacenamiento y consultas reales. No se propone un índice SQL antes de elegir persistencia.
-
-### Profesional
-
-- Atributos propuestos: `identificador: Identificador`, `etiqueta: Etiqueta` ficticia.
-- Relación: cero o más turnos.
-- Constraints propuestos: referencia reconocida en los ejemplos; sin login, matrícula real ni especialidad obligatoria.
-- Índices: pendientes del almacenamiento; no hay esquema físico.
-
-### Box
-
-- Atributos propuestos: `identificador: Identificador`, `etiqueta: Etiqueta` ficticia.
-- Relación: cero o más turnos.
-- Constraints: exclusión temporal confirmada; capacidad, equivalencia sala/sillón y compatibilidad con profesionales pendientes.
-- Índices: pendientes; no se decide duplicar recursos ni asignar capacidad múltiple.
-
-### Paciente
-
-- Atributos propuestos: `identificador: Identificador`; etiqueta ficticia sólo si aporta al ejemplo.
-- Relación: cero o más turnos; prohibición de simultaneidad del paciente no acordada.
-- Constraints: no almacenar datos personales reales, información clínica ni adjuntos.
-- Índices: pendientes; no se necesita una búsqueda por DNI/contacto para el alcance confirmado.
+Persistir inicio_minuto/fin_minuto como enteros desde epoch UTC. API recibe datetime con offset y precisión de minuto, retorna UTC, sin float ni redondeo. Índices por profesional/inicio y box/inicio; no son restricciones únicas de intervalo: la exclusión depende del control e inserción dentro de BEGIN IMMEDIATE.
 
 ## Seed data inicial propuesto
 
-Dos profesionales `profesional-A` y `profesional-B`, dos boxes `box-A` y `box-B` y dos pacientes `paciente-A` y `paciente-B` bastan como etiquetas de ejemplos para separar conflictos. Son nombres didácticos, no formato de identificador implementado ni cantidad fija de recursos del producto.
+Bootstrap implementado: paciente-A/B, profesional-A/B, box-A/B y cero turnos. Reserva sólo un archivo nuevo, sin crear padres ni reemplazar archivos. Demo/tests usan TemporaryDirectory del sistema; las DB no se versionan.
 
-Los fixtures deberán incluir agenda vacía y un turno existente en un intervalo ilustrativo 09:00–09:30 de una fecha ficticia, cuando se acuerde la representación temporal. No se fija una prestación de treinta minutos: ese intervalo sólo ejemplifica una ocupación.
+## Límites que afectan el modelo
 
-## Pendientes que afectan el modelo
-
-Persistencia, concurrencia, identidad del paciente, duración por prestación, horarios, estados/cancelación, zona horaria y compatibilidad de recursos. Ver [reglas](05_reglas_de_negocio.md) y [preguntas](10_preguntas_abiertas.md) antes de convertir este modelo en código.
+Sin estados/cancelación, disponibilidad, prestaciones ni compatibilidad profesional-box. Cada fila ocupa recursos. Paciente simultáneo permitido si ambos recursos difieren. Sin idempotencia, excepción de sobreturno ni garantías para SQL directo externo. Estos límites académicos no son recomendaciones clínicas.

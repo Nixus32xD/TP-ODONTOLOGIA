@@ -29,7 +29,7 @@ Generada el 2026-10-15 mediante `kb-creator`, modo de ingestión de documentos. 
 
 La entrega propia parte de cero y se limita a registrar turnos de un consultorio pequeño con varios profesionales y boxes, rechazando solapamientos de cualquiera de esos dos recursos. WhatsApp, pagos, historia clínica y una interfaz completa quedan para después.
 
-La KB documenta requisitos y propuestas; no acredita implementación, pruebas de producto ni revisión personal de fuentes. Stack, forma de exposición, almacenamiento y concurrencia siguen pendientes. El próximo artefacto de fundación es el roadmap; esta etapa no crea changes ni código.
+La KB describe requisitos y contrato aplicado; la implementación y sus pruebas se acreditan en el código y la evidencia, no por la mera existencia de estos documentos. La revisión personal de fuentes sigue pendiente. C-01 ya implementa módulo Python, SQLite local y exclusión con procesos reales. Ver [evidencia](../docs/evidencia/implementacion-turnos.md). Archive y la entrega académica final siguen pendientes.
 
 ## Fuentes y límites
 

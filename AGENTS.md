@@ -1,20 +1,20 @@
 # TP-ODONTOLOGIA — Instrucciones para Agentes
 
-Instrucciones específicas de esta entrega de Metodología I. Mantener este archivo y `CLAUDE.md` idénticos al actualizarlos. El proyecto parte de cero y todavía no tiene implementación de agenda ni suite de comportamiento.
+Instrucciones específicas de esta entrega de Metodología I. Mantener este archivo y `CLAUDE.md` idénticos al actualizarlos. El proyecto partió de cero y ahora tiene módulo de agenda, demo y 43 tests. Archive y evidencias académicas siguen pendientes.
 
 ## Stack Tecnológico
 
-Tabla tomada de [la descripción general](knowledge-base/02_descripcion_general.md); los pendientes no se convierten en decisiones por generar estas instrucciones.
+Tabla tomada de [la descripción general](knowledge-base/02_descripcion_general.md), sincronizada con el contrato implementado al autorizar continuar con Apply.
 
 | Capa | Tecnología | Versión mínima / estado |
 | --- | --- | --- |
-| Lenguaje y runtime del producto | Pendiente de definición en fundación | Sin decisión |
-| Forma de exposición | Pendiente: módulo de dominio o API | Sin contrato ni transporte definidos |
-| Almacenamiento | Pendiente | No se seleccionó motor, memoria ni formato de archivo |
-| Pruebas del producto | Pendiente del stack | No existe runner del producto confirmado |
-| Interfaz gráfica | No obligatoria para el primer change | No seleccionada |
-| Especificación y flujo | OpenSpec / Active Stack | Inventario observado, no mínimo de runtime |
-| Herramienta del informe | Python, ReportLab y pypdf | Uso documental existente, no elección de stack |
+| Lenguaje y runtime del producto | Python | 3.12+; verificado con 3.12.14 |
+| Forma de exposición | Módulo local odontologia | Sin servidor ni transporte HTTP |
+| Almacenamiento | SQLite mediante sqlite3 estándar | Archivo en disco local; verificado con SQLite 3.53.1 |
+| Pruebas del producto | unittest y multiprocessing estándar | 43 tests; procesos spawn reales |
+| Interfaz gráfica | Fuera de C-01 | Demo por consola |
+| Especificación y flujo | OpenSpec / Active Stack | Change activo; Archive pendiente |
+| Herramienta del informe | Python, ReportLab y pypdf | Dependencias documentales separadas del producto |
 
 ## Base de Conocimiento
 
@@ -23,15 +23,15 @@ Leer el [índice de la KB](knowledge-base/README.md) y los documentos pertinente
 | Documento | Qué resuelve |
 | --- | --- |
 | [01 — Visión y objetivos](knowledge-base/01_vision_y_objetivos.md) | Propósito y límites de la entrega |
-| [02 — Descripción general](knowledge-base/02_descripcion_general.md) | Stack pendiente y estado actual |
+| [02 — Descripción general](knowledge-base/02_descripcion_general.md) | Stack del módulo y estado actual |
 | [03 — Actores y roles](knowledge-base/03_actores_y_roles.md) | Recepción y recursos conceptuales; sin autenticación aprobada |
-| [04 — Modelo de datos](knowledge-base/04_modelo_de_datos.md) | Entidades propuestas y ejemplos ficticios |
-| [05 — Reglas de negocio](knowledge-base/05_reglas_de_negocio.md) | RN-TU-01/02 confirmadas frente a propuestas pendientes |
+| [04 — Modelo de datos](knowledge-base/04_modelo_de_datos.md) | Entidades del módulo y ejemplos ficticios |
+| [05 — Reglas de negocio](knowledge-base/05_reglas_de_negocio.md) | Reglas de Discovery y contrato temporal aplicado |
 | [06 — Funcionalidades](knowledge-base/06_funcionalidades.md) | US-001 a US-004 y aceptación candidata |
 | [07 — Flujos](knowledge-base/07_flujos_principales.md) | Alta, conflictos, datos inválidos y bordes |
 | [08 — Arquitectura propuesta](knowledge-base/08_arquitectura_propuesta.md) | Responsabilidades, persistencia y evidencia de concurrencia |
 | [09 — Decisiones y supuestos](knowledge-base/09_decisiones_y_supuestos.md) | Procedencia y confianza de cada decisión |
-| [10 — Preguntas abiertas](knowledge-base/10_preguntas_abiertas.md) | Q01–Q08 técnicas; Q09–Q10 de evidencia académica |
+| [10 — Preguntas abiertas](knowledge-base/10_preguntas_abiertas.md) | Q01–Q08 resueltas para C-01; Q09–Q10 de evidencia académica |
 
 El [Discovery canónico](discovery/discovery.md) registra el alcance confirmado. El estado actual y las autorizaciones aplicables se contrastan con la conversación y la [bitácora](docs/BITACORA.md); una entrada histórica no revoca instrucciones posteriores.
 
@@ -48,28 +48,28 @@ Fuente de verdad de nombres, rutas y reglas compactas: [registro de skills](.atl
 | Revisión | Revisar un diff sin modificarlo | `review-agent` |
 | Documentación de entrega | Editar y verificar los artefactos pedidos | `pdf`; `documents` o `visualize` sólo cuando corresponda al formato solicitado |
 
-Los compact rules los resuelve el delegador desde `.atl/skill-registry.md`, generado por `skill-registry` y **versionado en este repositorio por pedido del usuario**. No duplicarlos aquí. Las rutas globales describen el equipo donde se generó el registro: comprobar disponibilidad antes de usarlas. Las skills de stack y pruebas específicas siguen pendientes; no inventar una skill ni instalarla para completar esta tabla.
+Los compact rules los resuelve el delegador desde `.atl/skill-registry.md`, generado por `skill-registry` y **versionado en este repositorio por pedido del usuario**. No duplicarlos aquí. Las rutas globales describen el equipo donde se generó el registro: comprobar disponibilidad antes de usarlas. El producto usa unittest estándar; no fue necesario instalar nuevas skills ni dependencias para implementar este contrato.
 
 ## Roadmap de Changes
 
-El plan está en [CHANGES.md](CHANGES.md): un único change funcional, **C-01 `crear-turno-sin-solapamientos`**, con Propose generado y revisión del contrato pendiente. El [diseño del change](openspec/changes/crear-turno-sin-solapamientos/design.md) propone Python, SQLite y reglas temporales; todavía no son decisiones humanas aprobadas. Bootstrap, modelos ficticios y pruebas son tareas internas del mismo change.
+El plan está en [CHANGES.md](CHANGES.md): un único change funcional, **C-01 `crear-turno-sin-solapamientos`**, con Apply implementado y verificación técnica completa. El [diseño del change](openspec/changes/crear-turno-sin-solapamientos/design.md) define Python, SQLite y reglas temporales, implementadas al autorizar el usuario continuar. No se atribuye lectura personal del spec a partir de esa autorización. Bootstrap, modelos ficticios y pruebas son tareas internas del mismo change.
 
 Camino crítico: contrato revisado → alta sin solapamientos → suite completa → Archive. WhatsApp, pagos, historia clínica, autenticación, multisede y UI completa permanecen fuera de esta porción.
 
-Antes de Propose, leer las precondiciones y los documentos «Leer antes» del roadmap. Resolver las decisiones indispensables de Q01–Q08 para el contrato afectado antes de Apply; Q09–Q10 siguen siendo pendientes de entrega y no se dan por cumplidas al generar documentación.
+Antes de Propose, leer las precondiciones y los documentos «Leer antes» del roadmap. Q01–Q08 se resolvieron para C-01; ante cambios materiales volver a Propose antes de modificar el contrato; Q09–Q10 siguen siendo pendientes de entrega y no se dan por cumplidas al generar documentación.
 
 ## Reglas Duras (específicas del proyecto)
 
-Estas reglas consolidan instrucciones ya confirmadas del usuario y restricciones de la consigna; no agregan reglas técnicas de un stack aún no elegido. No se encontró `~/.claude/CLAUDE.md` al generar estos archivos: no se presume herencia de reglas globales ausentes. Las instrucciones del usuario y del entorno tienen prioridad.
+Estas reglas consolidan instrucciones ya confirmadas del usuario y restricciones de la consigna; reflejan el contrato aplicado sin agregar módulos ni reglas clínicas nuevas. No se encontró `~/.claude/CLAUDE.md` al generar estos archivos: no se presume herencia de reglas globales ausentes. Las instrucciones del usuario y del entorno tienen prioridad.
 
 - **R-01 — Alcance:** implementar sólo el alta de turno acordada. Rechazar conflictos del mismo profesional o del mismo box por separado (RN-TU-01/02); no introducir sobreturnos ni otros módulos por analogía con los competidores.
 - **R-02 — Datos:** nunca guardar datos reales de pacientes, información clínica real, secretos, credenciales o certificados en el repositorio, ejemplos o pruebas → usar exclusivamente datos ficticios.
 - **R-03 — Integraciones:** no ejecutar integraciones externas, HTTP/SOAP, ARCA/AFIP real ni servicios de proveedores desde el ejercicio. Las consultas públicas para investigación y las herramientas del proceso no acreditan integraciones clínicas. Elegir API requiere aclarar antes el alcance permitido del transporte.
-- **R-04 — Contrato:** nunca elegir silenciosamente stack, persistencia, concurrencia o políticas temporales → preparar opciones y registrar la decisión aplicable antes de implementar. `[inicio, fin)`, adyacencia y RN-TU-03 a RN-TU-07 siguen siendo propuestas. Ante un hueco, volver a Propose.
+- **R-04 — Contrato:** nunca elegir silenciosamente stack, persistencia, concurrencia o políticas temporales → preparar opciones y registrar la decisión aplicable antes de implementar. `[inicio, fin)`, adyacencia y RN-TU-03 a RN-TU-07 son el contrato de C-01 aplicado tras autorización de continuar. Ante un hueco, volver a Propose.
 - **R-05 — Cambios y errores:** inspeccionar documentos, código y pruebas existentes; realizar cambios mínimos y reutilizar la lógica disponible. Validar entradas explícitamente y devolver errores claros; no corregir datos inválidos silenciosamente para aceptarlos.
 - **R-06 — Pruebas:** cuando exista runner, seguir TDD del roadmap: baseline existente, RED ejecutado antes de producción, GREEN mínimo, triangulación y refactor con pruebas verdes. Cubrir todos los escenarios aprobados y ejecutar la suite completa; reportar fallos previos y no archivar con pruebas fallando. Una prueba secuencial no demuestra concurrencia.
 - **R-07 — Evidencia:** distinguir hechos, publicidad, propuestas y «No evidenciado». Registrar comandos y resultados reales; no atribuir al estudiante verificaciones realizadas por IA ni afirmar revisión humana, tests, capturas, video o cumplimiento que no se acreditaron. Las cinco comprobaciones personales de fuentes continúan pendientes.
-- **R-08 — Git:** validar antes de cada commit local autorizado por la preferencia vigente; usar mensajes descriptivos y separar cambios ajenos. Push o publicación requieren autorización explícita aplicable a ese avance. No extender el permiso concedido al registro a esta generación de instrucciones ni a publicaciones futuras.
+- **R-08 — Git:** validar antes de cada commit local autorizado por la preferencia vigente; usar mensajes descriptivos y separar cambios ajenos. Push o publicación requieren autorización explícita aplicable a ese avance. No extender permisos de push de commits ya revisados a avances nuevos o publicaciones futuras.
 
 ## Flujo de Trabajo
 
@@ -81,4 +81,4 @@ Estas reglas consolidan instrucciones ya confirmadas del usuario y restricciones
 6. Verificar la suite completa y archivar con `/opsx:archive crear-turno-sin-solapamientos` cuando corresponda. Confirmar el resultado del CLI antes de marcar C-01 terminado.
 7. Actualizar la bitácora y las decisiones en Engram para este proyecto, sin exportar memoria de otros proyectos ni confundir memoria con revisión humana. Informar archivos, verificaciones y pendientes.
 
-Generar AGENTS.md y CLAUDE.md no inicia Apply, no resuelve el stack y no completa por sí solo la entrega académica.
+Estas instrucciones no acreditan por sí solas pruebas, Archive ni entrega académica final. Verificar evidencia y estado real del CLI.

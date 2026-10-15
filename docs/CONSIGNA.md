@@ -67,9 +67,9 @@ La generación local de la base de conocimiento no acredita su revisión humana 
 - [x] Conservar el [relevamiento del problema y checkout](exploracion/alta-turno.md) previo a la propuesta; no acredita implementación.
 - [x] Propose: generar propuesta, diseño, [spec](../openspec/changes/crear-turno-sin-solapamientos/specs/alta-turnos/spec.md) y [tareas](../openspec/changes/crear-turno-sin-solapamientos/tasks.md); validar estructura mediante OpenSpec.
 - [ ] Revisar humanamente el spec completo y registrar las correcciones reales solicitadas con Ajustar; la validación del agente no acredita esta revisión.
-- [x] Especificar escenarios dado/cuando/entonces: feliz, conflictos, bordes, fallos y competencia. Son contratos propuestos, no tests ejecutados.
-- [ ] Apply: implementar el contrato aprobado. Si falta una decisión, volver a Propose.
-- [ ] Verify: ejecutar tests por cada escenario y health checks aplicables; documentar comandos y resultados. No archivar con pruebas fallando.
+- [x] Especificar escenarios dado/cuando/entonces: feliz, conflictos, bordes, fallos y competencia. Su trazabilidad actual está en la evidencia de 43 tests ejecutados.
+- [x] Apply: contrato implementado tras autorización de continuar, con datos ficticios y pruebas. Ante cambios de contrato, volver a Propose.
+- [x] Verify técnico: 43 tests, trazabilidad de los 29 escenarios y demo ejecutada; ver [evidencia](evidencia/implementacion-turnos.md). Sin health check HTTP porque no hay servidor. No acredita revisión humana ni Archive.
 - [ ] Archive: archivar el change y actualizar las especificaciones y el estado.
 
 La implementación puede ser API o módulo de dominio; la interfaz gráfica no es obligatoria. La elección del stack deriva de la base de conocimiento.
@@ -82,7 +82,7 @@ La implementación puede ser API o módulo de dominio; la interfaz gráfica no e
 ## Entrega final
 
 - [ ] Repositorio con fundación, Discovery, specs vigentes, change archivado, implementación y tests.
-- [ ] README suficiente para clonar, instalar y ejecutar las pruebas.
+- [x] README con requisito Python 3.12+, comandos de suite/demo y distinción de dependencias del PDF.
 - [ ] Historial de commits que muestre el proceso, no un único commit final; participación individual demostrable si es grupal.
 - [ ] PDF profesional: portada, resumen ejecutivo de hasta una página, A, B, C, D, verificación de fuentes y referencias completas.
 - [ ] Video de 8 a 12 minutos, con pantalla trabajando realmente, revisión de Propose y Ajustar, tests, Archive y consulta Engram. Cada integrante participa y enciende cámara al presentarse.

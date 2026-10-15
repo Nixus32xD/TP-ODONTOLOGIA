@@ -20,12 +20,12 @@ Elegí una entrega propia desde cero y un primer change de turnos. El objetivo a
 
 - Alta de un turno con paciente, profesional, box e intervalo, todos ficticios.
 - Catálogos mínimos de recursos para los ejemplos, sin CRUDs completos obligatorios.
-- Validación explícita de los datos según un contrato todavía por concretar.
+- Validación explícita según el contrato aplicado de C-01.
 - Rechazo ante solapamiento del mismo profesional o del mismo box.
 - Errores comprensibles y pruebas de casos válidos, conflictos y límites acordados.
 - Un consultorio con varios profesionales y boxes; no es un SaaS multitenant.
 
-El nombre candidato es `crear-turno-sin-solapamientos`. Su mención no crea un change de OpenSpec. La forma de exposición, los límites de intervalo y las garantías concurrentes se decidirán antes de implementar.
+El change activo es `crear-turno-sin-solapamientos`: módulo Python, SQLite local, intervalos semiabiertos y concurrencia limitada al mismo archivo mediante la operación. Ver [evidencia](../docs/evidencia/implementacion-turnos.md). Archive sigue pendiente.
 
 ## Fuera de alcance
 
@@ -44,7 +44,7 @@ El nombre candidato es `crear-turno-sin-solapamientos`. Su mención no crea un c
 4. Cada afirmación de comportamiento se vincula con especificación y resultado de prueba.
 5. No se declara concurrencia segura sin mecanismo y evidencia adecuados al almacenamiento elegido.
 
-Estos criterios orientan la futura propuesta; todavía no son resultados logrados. Las métricas de ausentismo, productividad o satisfacción carecen de medición en este ejercicio.
+Estos criterios se verifican mediante los 43 tests del contrato implementado; no acreditan la entrega docente final. Las métricas de ausentismo, productividad o satisfacción carecen de medición en este ejercicio.
 
 ## Procedencia
 

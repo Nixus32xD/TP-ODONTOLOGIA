@@ -7,7 +7,7 @@
 | Recepción | Actor principal confirmado | Solicita el alta y recibe el resultado |
 | Profesional ficticio | Recurso humano de la agenda | Se referencia en el turno; no requiere cuenta |
 | Paciente ficticio | Entidad mínima del turno | Se referencia sin acceso propio ni datos clínicos |
-| Box/sillón ficticio | Recurso físico | Se asigna al turno; equivalencia exacta pendiente |
+| Box/sillón ficticio | Recurso físico | Se asigna al turno; recurso exclusivo del intervalo en C-01 |
 | Estudiante | Autor/revisor de la entrega | Revisa artefactos y ejecuta pruebas; autor nominal pendiente |
 
 Un administrador de producción, el acceso propio del profesional y el portal del paciente quedan para después. No se infiere un rol de usuario por cada entidad del modelo.
@@ -34,7 +34,7 @@ No hay rutas públicas definidas ni reserva abierta. Si se elige una API, sus co
 
 ## Datos y responsabilidad
 
-Sólo se usan identificadores y etiquetas ficticias. Identidad mínima del paciente, validación de referencias y compatibilidad entre profesional y box requieren definición antes de convertirse en aceptación ejecutable. No se agregan DNI, teléfonos, emails ni datos de salud por su presencia en productos comerciales.
+Sólo se usan identificadores y etiquetas ficticias. El contrato usa paciente-A/B, referencias conocidas y ninguna restricción adicional de compatibilidad profesional-box. La simultaneidad del paciente está permitida si ambos recursos difieren; no es una recomendación clínica. No se agregan DNI, teléfonos, emails ni datos de salud por su presencia en productos comerciales.
 
 ## Procedencia
 

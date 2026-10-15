@@ -20,20 +20,20 @@ Estas dudas se registran para continuar sin inventar decisiones. No constituyen 
 
 | ID / prioridad | Pregunta | Bloquea | Decisor / evidencia necesaria |
 | --- | --- | --- | --- |
-| Q01 / Alta | ¿Módulo de dominio o API, y qué significa API dentro de la restricción de no ejecutar HTTP/servicios externos? `[DISCOVERY] system_type` no puede inferirse con confianza | Contrato de exposición | Estudiante, con consigna e instrucciones vigentes |
-| Q02 / Alta | ¿Qué lenguaje, dependencias mínimas y runner se usarán? `[DISCOVERY] stack` pendiente de definición en fundación | Diseño, instalación y TDD | Estudiante; comparar opciones según una porción pequeña, no el renderer del PDF |
-| Q03 / Alta | ¿Qué persistencia y modelo de ejecución se necesitan, y qué concurrencia se garantiza y prueba? `[DISCOVERY] needs_infra` de baja confianza | Almacenamiento, atomicidad y evidencia | Estudiante; `false` provisional no descarta DB ni elige memoria |
-| Q04 / Alta | ¿Se aprueban intervalos `[inicio, fin)`, adyacencia e inicio anterior al fin? ¿Qué precisión, zona horaria y errores por valores inválidos? | Predicado de solapamiento y bordes | Estudiante; ejemplos de RN-TU-03/04/05 |
-| Q05 / Alta | ¿Duración libre, fija o por prestación? ¿Horarios, descansos, disponibilidad y cruce de día forman parte de este change? | Datos y aceptación temporal | Estudiante; no hay duración ni horario confirmados |
-| Q06 / Alta | ¿Qué estados ocupan los recursos y cómo se trata la cancelación? ¿Se necesita un estado en esta porción? | Consulta de ocupación | Estudiante; evitar implementar cancelación por defecto |
-| Q07 / Alta | ¿Cuál es la identidad mínima ficticia del paciente y se rechaza su doble turno? | Modelo y validación de referencias | Estudiante; simultaneidad del paciente no deducida de profesional/box |
-| Q08 / Alta | ¿Box equivale a un sillón exclusivo? ¿Hay compatibilidad profesional-box, sobreturnos, idempotencia o prioridad entre errores concurrentes de recursos? | Reglas adicionales y contrato de error | Estudiante; no introducir excepciones ni deduplicación implícitas |
+| Q01 / Resuelto para C-01 | Módulo local sin HTTP ni servidor. | No bloquea Apply | Contrato publicado y continuación autorizada; no acredita revisión personal |
+| Q02 / Resuelto para C-01 | Python 3.12+, unittest y biblioteca estándar, sin dependencias externas de producto. | No bloquea Apply | Contrato publicado y continuación autorizada; no acredita revisión personal |
+| Q03 / Resuelto para C-01 | SQLite local, BEGIN IMMEDIATE y pruebas spawn sobre mismo archivo; sin infraestructura externa. | No bloquea Apply | Contrato publicado y continuación autorizada; no acredita revisión personal |
+| Q04 / Resuelto para C-01 | [inicio, fin), adyacencia, inicio anterior a fin, offset explícito, UTC/minuto exacto. | No bloquea Apply | Contrato publicado y continuación autorizada; no acredita revisión personal |
+| Q05 / Resuelto para C-01 | Duración positiva libre y cruce de día; horarios/descansos/disponibilidad excluidos. | No bloquea Apply | Contrato publicado y continuación autorizada; no acredita revisión personal |
+| Q06 / Resuelto para C-01 | Sin estados/cancelación; todas las filas confirmadas ocupan recursos. | No bloquea Apply | Contrato publicado y continuación autorizada; no acredita revisión personal |
+| Q07 / Resuelto para C-01 | IDs ficticios paciente-A/B y referencias conocidas; paciente simultáneo permitido con recursos diferentes. | No bloquea Apply | Contrato publicado y continuación autorizada; no acredita revisión personal |
+| Q08 / Resuelto para C-01 | Box exclusivo; sin compatibilidad adicional, sobreturnos o idempotencia; prioridad de profesional. | No bloquea Apply | Contrato publicado y continuación autorizada; no acredita revisión personal |
 | Q09 / Alta para entrega | ¿Cuándo se registrará la revisión personal de al menos cinco fuentes de distintos tipos, con hallazgo y corrección? | Evidencia de verificación del TP | Estudiante; sigue pendiente, aunque el resumen fue confirmado |
 | Q10 / Media para fundación, alta para entrega | ¿Quién es el integrante/autor y cómo se acreditan Full/harnesses, Go, capturas, video, reflexión y uso de Codex frente a agentes de la consigna? | Preparación/entrega completa | Estudiante y docente para la aceptación de diferencias |
 
 ## Cinco grupos de evidencia pendiente del relevamiento
 
-**Respuestas propuestas disponibles:** [diseño de C-01](../openspec/changes/crear-turno-sin-solapamientos/design.md) responde Q01–Q08 con decisiones o exclusiones explícitas. Su aceptación humana sigue pendiente; no se modifican estas prioridades por generar artefactos. Q09–Q10 continúan siendo evidencia de entrega pendiente.
+**Respuestas aplicadas disponibles:** [diseño de C-01](../openspec/changes/crear-turno-sin-solapamientos/design.md) responde Q01–Q08 con decisiones o exclusiones explícitas. El usuario autorizó continuar con Apply después de presentar la propuesta; no se atribuye por ello lectura personal completa del spec. Q09–Q10 continúan siendo evidencia de entrega pendiente.
 
 `No evidenciado` no prueba inexistencia. Esta tabla mantiene trazabilidad de las dudas de mercado; resolverlas no amplía automáticamente el MVP ni autoriza contactar proveedores.
 
@@ -49,4 +49,4 @@ Las URLs y fechas originales permanecen en cada ficha y en el [informe](../docs/
 
 ## Próxima decisión de implementación
 
-El roadmap puede organizar dependencias y estas dudas sin elegir respuestas silenciosas. Antes de Apply deben quedar acordados los contratos que afecten el primer change; ante un hueco de negocio se vuelve a Propose. No se bloquea la edición documental rutinaria ni se generan código, tests o publicación desde esta KB.
+Q01–Q08 están implementadas conforme al contrato de C-01. Ante un cambio de comportamiento se actualiza Propose antes de modificar código. Q09–Q10 y evidencias humanas siguen pendientes; generación de documentación, memoria o tests no las reemplazan.

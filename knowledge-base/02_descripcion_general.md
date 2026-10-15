@@ -2,58 +2,34 @@
 
 ## Estado actual
 
-El repositorio contiene documentación del TP, Discovery, herramientas para producir el informe y configuración de OpenSpec/Active Stack. No hay implementación de agenda ni suite de comportamiento del producto. Las herramientas de documentación no determinan el stack del producto.
-
-El alcance es un consultorio pequeño con recepción y múltiples profesionales/boxes. La clasificación de escala `team` describe ese contexto funcional; no demuestra soporte multiusuario concurrente ni implica multitenencia.
+C-01 implementa el alta de turnos ficticios en un módulo local. El usuario pidió publicar la propuesta y continuar con Apply; esa autorización no acredita lectura personal completa del spec. Ver [evidencia](../docs/evidencia/implementacion-turnos.md). Consultorio pequeño, recepción y múltiples profesionales/boxes; escala funcional team, sin SaaS ni multitenencia.
 
 ## Stack tecnológico
 
 | Capa | Tecnología | Versión mínima / estado |
 | --- | --- | --- |
-| Lenguaje y runtime del producto | Pendiente de definición en fundación | Sin decisión |
-| Forma de exposición | Pendiente: módulo de dominio o API | Sin contrato ni transporte definidos |
-| Almacenamiento | Pendiente | No se seleccionó motor, memoria ni formato de archivo |
-| Pruebas del producto | Pendiente del stack | No existe runner del producto confirmado |
-| Interfaz gráfica | No obligatoria para el primer change | No seleccionada |
-| Especificación y flujo | OpenSpec / Active Stack | Inventario observado, no mínimo de runtime |
-| Herramienta del informe | Python, ReportLab y pypdf | Uso documental existente, no elección de stack |
+| Lenguaje y runtime del producto | Python | 3.12+; verificado con 3.12.14 |
+| Forma de exposición | Módulo local odontologia | Sin servidor ni transporte HTTP |
+| Almacenamiento | SQLite mediante sqlite3 estándar | Archivo en disco local; verificado con SQLite 3.53.1 |
+| Pruebas del producto | unittest y multiprocessing estándar | 43 tests; procesos spawn reales |
+| Interfaz gráfica | Fuera de C-01 | Demo por consola |
+| Especificación y flujo | OpenSpec / Active Stack | Change activo; Archive pendiente |
+| Herramienta del informe | Python, ReportLab y pypdf | Dependencias documentales separadas del producto |
 
-Las versiones observadas de Git, Node y OpenSpec están en el [inventario](../docs/evidencia/entorno.md). Disponibilidad local no equivale a requisito tecnológico aprobado.
-
-Propose ahora contiene una [elección técnica propuesta](../openspec/changes/crear-turno-sin-solapamientos/design.md): módulo Python 3.12+, SQLite y unittest, sin servidor ni dependencias externas de producto. La tabla conserva el estado de aceptación pendiente hasta revisar el contrato; el renderer no determina esa elección.
+La decisión parte del [diseño](../openspec/changes/crear-turno-sin-solapamientos/design.md) y del alcance acotado, no del renderer. Sin dependencias externas de producto ni instalaciones nuevas. Ver [inventario](../docs/evidencia/entorno.md).
 
 ## Arquitectura general
 
-Propuesta para revisión: una operación de alta recibe datos, valida el contrato, consulta ocupaciones de los recursos y registra o rechaza el turno. El diseño debe definir si consulta y registro necesitan una operación indivisible según el modelo de ejecución acordado.
-
-```text
-Recepción (actor conceptual)
-          |
-          v
-Alta de turno -> validación -> control de ocupación -> registro / error
-                                  |
-                                  v
-                         turnos existentes
-```
-
-Este diagrama es funcional; no afirma que existan frontend, servidor, base de datos ni interfaces implementadas. La estructura técnica propuesta se desarrolla en [08](08_arquitectura_propuesta.md).
+Validar entrada → abrir agenda existente → BEGIN IMMEDIATE → validar referencias y conflictos → insertar → COMMIT → retornar. Una conexión por operación. Ver [arquitectura](08_arquitectura_propuesta.md) y [modelo](04_modelo_de_datos.md).
 
 ## Integraciones externas
 
-| Servicio | Propósito | Estado en el primer change |
-| --- | --- | --- |
-| WhatsApp, pagos y calendarios | Capacidades contrastadas en Discovery | Postergadas; sin conexión |
-| ARCA/AFIP | Fuera de alcance | No usar HTTP, SOAP, credenciales ni certificados reales |
-| OpenSpec, Active Stack y Engram | Herramientas del proceso académico | No son integraciones clínicas |
-
-No se ejecutan servicios externos del producto. La opción de API no autoriza por sí sola transporte HTTP en este ejercicio: su alcance debe aclararse antes de elegirla.
+Ninguna. WhatsApp, pagos, calendarios, ARCA/AFIP, HTTP/SOAP, credenciales y certificados reales están fuera del producto. OpenSpec y Engram son herramientas del proceso.
 
 ## API (si aplica)
 
-No hay API, rutas ni endpoints aprobados. Se describen entradas y resultados conceptuales en [04](04_modelo_de_datos.md) y [07](07_flujos_principales.md). Elegir módulo o API sigue pendiente, sin inventar URLs ni contratos REST.
+API de módulo: inicializar_agenda(ruta_db) y crear_turno con paciente, profesional, box, inicio, fin y timeout. Retorna Turno o lanza ErrorAgenda con código/campo estables. Sin endpoints REST. Demo: python -m odontologia.demo.
 
 ## Infraestructura y confianza
 
-No hay necesidad de infraestructura confirmada para esta porción. Por eso `kb.discovery.needs_infra` usa `false` como valor provisional de baja confianza: **no decide usar memoria ni descarta una base de datos futura**. La elección de persistencia podría cambiarlo. No se seleccionaron Docker, colas, caché, hosting, despliegue ni tareas programadas.
-
-Los campos `system_type`, `stack` y `needs_infra` se mantienen como incertidumbres explícitas en [10](10_preguntas_abiertas.md).
+needs_infra:false significa sin servidor o infraestructura externa; no ausencia de almacenamiento. Garantía limitada al mismo archivo SQLite local y escritores que usen el módulo, sin red compartida ni varios archivos/equipos. Pruebas con temporales locales y procesos reales; no acredita operación clínica o producción.

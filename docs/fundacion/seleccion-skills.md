@@ -44,3 +44,8 @@ Ubicación comprobada `C:/Users/Oficina/.agents/skills/`: `active-orchestrator`,
 `state.skills.recommended` registra tres reutilizaciones. `state.skills.installed = []` significa **ninguna instalación nueva realizada por esta fase**, no ausencia de skills existentes. Sólo se actualiza la sección `skills`; se conserva esquema v4 y el paso administrado por el orquestador.
 
 Siguiente paso: registro de skills existentes antes de generar instrucciones del proyecto. No supone empezar Apply ni resolver silenciosamente [Q01–Q08](../../knowledge-base/10_preguntas_abiertas.md). TDD y suite completa corresponden a implementación con runner disponible; esta fase recibe verificación documental.
+
+
+## Actualización durante Apply
+
+El contrato de C-01 se implementó con Python, sqlite3, unittest y multiprocessing estándar. No se instaló pytest, Playwright ni otra skill: las opciones de UI siguen fuera de alcance. Ver [evidencia](../evidencia/implementacion-turnos.md). El inventario original de selección conserva su fecha y las incertidumbres de esa etapa como historial.

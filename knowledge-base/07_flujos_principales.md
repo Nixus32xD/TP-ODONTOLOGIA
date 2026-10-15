@@ -1,65 +1,31 @@
 # Flujos principales
 
-Flujos conceptuales para especificar; no describen componentes existentes. Las horas son ilustrativas en una misma fecha ficticia, sin elegir representación temporal ni duración por prestación.
+Flujos implementados de C-01, con datos ficticios y fechas con offset explícito. [Spec](../openspec/changes/crear-turno-sin-solapamientos/specs/alta-turnos/spec.md) y [evidencia](../docs/evidencia/implementacion-turnos.md).
 
 ## Flujo 1: alta válida
 
-**Disparador:** solicitud de registrar un turno. **Actor:** recepción.
-
-1. Recepción proporciona paciente, profesional, box e intervalo conforme al contrato futuro.
-2. La operación de alta valida los datos mínimos y referencias acordadas.
-3. La operación consulta ocupaciones que cuenten según la política acordada.
-4. Sin conflicto de profesional ni box, registra el turno y devuelve un resultado comprensible.
-5. La prueba observa los datos del resultado y el efecto del alta según el almacenamiento elegido.
-
-**Ejemplo candidato:** agenda vacía, profesional-A y box-A, 09:00–09:30 → alta exitosa.
-
-**Casos de error:** datos inválidos → rechazo explícito; fallo del mecanismo de registro → error sin afirmar éxito. El contrato de fallos y ausencia de efectos parciales debe concretarse en diseño.
+Recepción entrega IDs y datetime con offset/minuto exacto. Validar forma, fechas, intervalo y timeout antes de abrir; abrir agenda existente rw, activar FK, BEGIN IMMEDIATE, validar referencias conocidas, consultar conflictos, insertar, COMMIT y retornar Turno en UTC. Sin servidor ni red. Un alta confirmada se conserva al reabrir conexión.
 
 ## Flujo 2: conflicto de profesional
 
-**Disparador:** solicitud incompatible con profesional ocupado. **Actor:** recepción.
-
-1. Existe un turno de profesional-A y box-A, 09:00–09:30.
-2. Se solicita profesional-A y box-B, 09:15–09:45.
-3. El control encuentra conflicto del profesional y rechaza la solicitud, aunque el box sea distinto.
-4. El resultado explica el conflicto según el contrato de errores por acordar.
-
-**Confirmado:** rechazar por profesional. **Pendiente:** semántica temporal exacta y forma de verificar que no se registró el rechazo.
-
-**Casos de error/borde candidatos:** turno nuevo contenido dentro del existente; turno que lo contiene; recursos diferentes con intervalos iguales. Requieren especificación y pruebas separadas.
+Profesional-A en box-A 09:00–09:30 -03:00; solicitar profesional-A en box-B 09:15–09:45 produce conflicto_profesional, sin insertar. También se prueban igualdad y ambas contenciones. Tiene prioridad ante ambos conflictos.
 
 ## Flujo 3: conflicto de box
 
-**Disparador:** solicitud incompatible con box ocupado. **Actor:** recepción.
+Box-A ocupado por profesional-A 09:00–09:30 -03:00; solicitar profesional-B en box-A 09:15–09:45 produce conflicto_box, sin insertar. Se prueban ambas contenciones y datos previos intactos.
 
-1. Existe profesional-A y box-A, 09:00–09:30.
-2. Se solicita profesional-B y box-A, 09:15–09:45.
-3. El control encuentra conflicto del box y rechaza, aunque el profesional sea distinto.
-4. El resultado explica el recurso ocupado.
+## Flujo 4: entrada inválida y bordes
 
-**Confirmado:** rechazar por box. **Pendiente:** qué devolver si coinciden los conflictos de profesional y box; no se presupone prioridad ni error múltiple.
+Forma inválida produce entrada_invalida/campo; referencia ausente produce recurso_desconocido/campo. No se recortan IDs ni se infiere zona o redondean instantes. Intervalo vacío/invertido rechazado. Adyacencia anterior/posterior permitida; recursos independientes pueden coincidir. Duración positiva libre/cruce de día permitidos, sin disponibilidad clínica ni exclusión de paciente.
 
-## Flujo 4: entrada inválida y borde temporal
+## Flujo 5: solicitudes simultáneas
 
-**Disparador:** entrada con faltantes, referencia desconocida o intervalo cuestionable. **Actor:** recepción.
+Dos procesos usan el mismo archivo local y conexiones propias. BEGIN IMMEDIATE adquiere permiso antes de consultar: uno confirma, el otro observa ese turno y rechaza el recurso compartido. Si agota el timeout, agenda_ocupada sin éxito ficticio; después de liberar el lock puede volver a solicitarse explícitamente. Sin reintento automático ni idempotencia. Pruebas spawn con Event/Queue, tres repeticiones por recurso y una de recursos distintos.
 
-1. La operación recibe los datos.
-2. Valida según tipos, referencias y límites temporales acordados.
-3. Si no cumple el contrato, devuelve error explícito sin modificar silenciosamente el dato.
+## Flujo 6: fallo de almacenamiento
 
-**Ejemplos propuestos:** 09:00–09:00 y 09:30–09:00 → rechazo si se aprueba inicio anterior al fin. Para existente 09:00–09:30 y nuevo 09:30–10:00, se propone permitir adyacencia usando intervalos semiabiertos. Ninguno de estos bordes se toma como decisión aprobada por esta KB.
-
-## Flujo 5: solicitudes simultáneas — pendiente
-
-Dos altas pueden consultar un recurso libre antes de que cualquiera lo registre. La validación secuencial por sí sola no demuestra exclusión en ese caso.
-
-Antes de especificar una garantía deben elegirse modelo de ejecución, almacenamiento, mecanismo de coordinación y prueba pertinente. No se promete atomicidad entre procesos, máquinas o transacciones; tampoco se elige un bloqueo concreto desde documentación de proveedores.
+Fallo controlado anterior al commit produce almacenamiento_error; rollback y cierre conservan registros anteriores. Un trigger AFTER INSERT RAISE(FAIL) prueba reversión real y recuperación. No se promete reconciliación de IO extremo ni garantía sobre escritores SQL externos.
 
 ## Autenticación y funciones posteriores
 
-No se define flujo de login, registro público, WhatsApp, pago ni historia clínica. El actor recepción representa el caso de uso académico; no demuestra identidad autenticada.
-
-## Trazabilidad
-
-US-001 → flujo 1; US-002 → flujo 2; US-003 → flujo 3; US-004 → flujo 4. Flujo 5 depende de Q03 de [preguntas abiertas](10_preguntas_abiertas.md). Los escenarios definitivos se escribirán en el futuro change mediante el CLI de OpenSpec.
+Sin login, reserva pública, WhatsApp, pagos o historia clínica. Recepción es actor conceptual, no identidad autenticada de producción.

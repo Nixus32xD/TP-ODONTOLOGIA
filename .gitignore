@@ -19,3 +19,11 @@ build/
 dist/
 coverage/
 *.log
+
+# Agendas locales y archivos auxiliares SQLite
+*.sqlite3
+*.sqlite3-*
+*.sqlite
+*.sqlite-*
+*.db
+*.db-*

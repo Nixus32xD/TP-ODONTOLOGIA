@@ -24,9 +24,13 @@
 
 ### DD-06 — Autorización Git vigente
 
-**Estado:** preferencia confirmada del usuario. **Decisión:** validar cada petición completada y realizar un commit local descriptivo, separando cambios no relacionados; push y publicación requieren autorización explícita aplicable. **Contexto:** esta preferencia reemplaza la prohibición anterior de commits automáticos, sin extender permisos de publicación. El registro se publicó con autorización en `197be16a2eed4b8ea0c0dbcfcfa4cd601a38d59c`; la petición actual de AGENTS.md/CLAUDE.md comprende generación y commit local, sin nuevo permiso de push. **Alternativa descartada:** heredar indefinidamente una prohibición de commit o un permiso de publicación de otra etapa. **Justificación:** instrucciones vigentes y alcance de cada autorización. **Trade-off:** el avance local queda disponible para revisión antes de una publicación futura.
+**Estado:** preferencia confirmada del usuario. **Decisión:** validar cada petición completada y realizar un commit local descriptivo, separando cambios no relacionados; push y publicación requieren autorización explícita aplicable. **Contexto:** esta preferencia reemplaza la prohibición anterior de commits automáticos, sin extender permisos de publicación. El usuario autorizó ahora publicar los commits locales pendientes y continuar: main llegó a `509307025550d183493b5a56fa2d16fd18d0651f`. Apply se guarda como nuevo commit local validado; no se extiende el permiso de push a avances futuros. **Alternativa descartada:** heredar indefinidamente una prohibición de commit o un permiso de publicación de otra etapa. **Justificación:** instrucciones vigentes y alcance de cada autorización. **Trade-off:** el avance local queda disponible para revisión antes de una publicación futura.
 
-## Supuestos inferidos y propuestas
+### DD-07 — Contrato técnico aplicado
+
+**Estado:** implementación autorizada por la petición «hazle push y sigamos con lo siguiente» después de presentar Propose. **Decisión:** módulo Python 3.12+, SQLite local, unittest; intervalos [inicio, fin), UTC/minuto exacto y adyacencia; BEGIN IMMEDIATE y sin idempotencia/políticas clínicas adicionales. **Justificación:** porción pequeña sin servicios externos, archivo persistente y evidencia por procesos. **Alternativas:** memoria sin persistencia o framework/servidor adicional, diferidos. **Trade-off:** sólo un archivo en disco local vía módulo. La autorización no acredita lectura personal del spec. [Evidencia](../docs/evidencia/implementacion-turnos.md).
+
+## Supuestos originales y resolución en C-01
 
 ### SU-01 — Escala funcional `team`
 
@@ -44,9 +48,9 @@
 
 **Propuesta:** intervalos semiabiertos, adyacencia permitida y lógica de validación/ocupación comprobable con pocos archivos. **Origen:** ejemplos candidatos del informe, no decisión del usuario. **Riesgo:** convertir una conveniencia técnica en regla de negocio aprobada. **Cómo validar:** acordar RN-TU-03/04/05 y elegir stack antes de implementar.
 
-## Decisiones aún no adoptadas
+## Decisiones técnicas y pendientes actuales
 
-Stack, API o módulo, persistencia, concurrencia, precisión/zona horaria, duración por prestación, horarios, estados/cancelación, simultaneidad del paciente, compatibilidad profesional-box e idempotencia. Ni Python del informe ni productos comerciales deciden esas opciones. Ver [10](10_preguntas_abiertas.md).
+DD-07 resuelve la implementación técnica de Q01–Q08; los supuestos SU-02/03/04 anteriores documentan el origen histórico, no el estado actual. needs_infra:false significa sin servidor externo, con SQLite local. Q09–Q10 y las revisiones humanas académicas siguen pendientes; no se infieren de las pruebas. Ver [10](10_preguntas_abiertas.md).
 
 ## Procedencia
 
