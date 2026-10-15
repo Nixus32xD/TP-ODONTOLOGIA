@@ -22,9 +22,9 @@
 
 **Estado:** restricción confirmada. **Decisión:** no usar pacientes reales, historia clínica, HTTP/SOAP, credenciales, certificados ni ARCA/AFIP real en el ejercicio. **Contexto:** alcance académico acotado. **Alternativa descartada:** validar contra proveedores reales. **Justificación:** instrucciones del usuario y Discovery. **Trade-off:** las pruebas no podrán acreditar integración externa ni operación clínica real.
 
-### DD-06 — Sin publicación en este avance
+### DD-06 — Autorización Git vigente
 
-**Estado:** instrucción actual del usuario. **Decisión:** no hacer commit, push ni publicación sin autorización explícita. **Contexto:** modifica el permiso anterior por hitos. **Alternativa descartada:** continuar publicando automáticamente. **Justificación:** prevalece la instrucción vigente. **Trade-off:** cambios quedan locales para revisión.
+**Estado:** preferencia confirmada del usuario. **Decisión:** validar cada petición completada y realizar un commit local descriptivo, separando cambios no relacionados; push y publicación requieren autorización explícita aplicable. **Contexto:** esta preferencia reemplaza la prohibición anterior de commits automáticos, sin extender permisos de publicación. El registro se publicó con autorización en `197be16a2eed4b8ea0c0dbcfcfa4cd601a38d59c`; la petición actual de AGENTS.md/CLAUDE.md comprende generación y commit local, sin nuevo permiso de push. **Alternativa descartada:** heredar indefinidamente una prohibición de commit o un permiso de publicación de otra etapa. **Justificación:** instrucciones vigentes y alcance de cada autorización. **Trade-off:** el avance local queda disponible para revisión antes de una publicación futura.
 
 ## Supuestos inferidos y propuestas
 

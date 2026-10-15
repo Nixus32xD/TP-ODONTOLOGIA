@@ -8,7 +8,7 @@ Repositorio: [Nixus32xD/TP-ODONTOLOGIA](https://github.com/Nixus32xD/TP-ODONTOLO
 
 OpenSpec inicializado y Discovery documental confirmado: quince sistemas relevados, matriz ponderada y once puntos aceptados el 2026-10-15 para un consultorio pequeño. Elegí como primer change crear turnos evitando solapamientos por profesional y box. La investigación documental está asistida por IA; queda pendiente mi verificación personal de al menos cinco fuentes. Todavía no hay código de producto ni pruebas de comportamiento.
 
-Se ejecutó `openspec init --tools codex --language es --no-animation`: configuración `spec-driven` y seis skills OPSX. Se incorporó `discovery-research` sólo en este proyecto. El estado de Active Stack conserva `version: 4` y registra `step: registry`: Discovery está registrado y la [base de conocimiento](knowledge-base/README.md) contiene diez documentos canónicos más su índice, generados desde las fuentes existentes. Stack, API o módulo, persistencia, límites temporales y estrategia de concurrencia permanecen abiertos; confirmar el alcance no decide esos contratos.
+Se ejecutó `openspec init --tools codex --language es --no-animation`: configuración `spec-driven` y seis skills OPSX. Se incorporó `discovery-research` sólo en este proyecto. El estado de Active Stack conserva `version: 4` y registra `step: agents`: Discovery está registrado y la [base de conocimiento](knowledge-base/README.md) contiene diez documentos canónicos más su índice, generados desde las fuentes existentes. Stack, API o módulo, persistencia, límites temporales y estrategia de concurrencia permanecen abiertos; confirmar el alcance no decide esos contratos.
 
 Para consultar el estado desde PowerShell con OpenSpec disponible en PATH:
 
@@ -17,7 +17,7 @@ Set-Location -LiteralPath 'N:\Nueva carpeta\TP-ODONTOLOGIA'
 openspec list --json
 ```
 
-La última consulta registrada devuelve `changes: []`. El [roadmap](CHANGES.md) organiza un único change candidato, `C-01: crear-turno-sin-solapamientos`, con dependencias, contexto, camino crítico y riesgos. No crea aún un change de OpenSpec. La revisión humana del contenido de la base de conocimiento y del roadmap sigue pendiente. La [selección de skills](docs/fundacion/seleccion-skills.md) recomienda reutilizar las existentes, descarta React del alcance actual y difiere pruebas de UI hasta definir el stack. No se instalaron herramientas nuevas. El [registro de skills](.atl/skill-registry.md) documenta las herramientas disponibles, su alcance y las tareas a las que aplican. El siguiente paso de fundación es revisar las reglas candidatas y generar `AGENTS.md` y `CLAUDE.md`; los pendientes del entorno y de evidencia quedan documentados para la entrega.
+La última consulta registrada devuelve `changes: []`. El [roadmap](CHANGES.md) organiza un único change candidato, `C-01: crear-turno-sin-solapamientos`, con dependencias, contexto, camino crítico y riesgos. No crea aún un change de OpenSpec. La revisión humana del contenido de la base de conocimiento y del roadmap sigue pendiente. La [selección de skills](docs/fundacion/seleccion-skills.md) recomienda reutilizar las existentes, descarta React del alcance actual y difiere pruebas de UI hasta definir el stack. No se instalaron herramientas nuevas. El [registro de skills](.atl/skill-registry.md) documenta las herramientas disponibles, su alcance y las tareas a las que aplican. Las instrucciones específicas están en [AGENTS.md](AGENTS.md) y [CLAUDE.md](CLAUDE.md), con contenido idéntico y reglas consolidadas desde el alcance y las restricciones ya autorizados. No adoptan un stack ni resuelven contratos abiertos. El siguiente trabajo es explorar las decisiones pendientes de C-01 antes de Propose; los pendientes del entorno y de evidencia quedan documentados para la entrega.
 
 Esta entrega comienza desde cero. El alcance inicial es una funcionalidad terminada de agenda, con datos ficticios y sin integraciones clínicas reales.
 
@@ -32,7 +32,7 @@ Esta entrega comienza desde cero. El alcance inicial es una funcionalidad termin
 6. Completar un change: Explore, Propose, Apply, Verify y Archive.
 7. Demostrar memoria y recuperación de contexto con Engram.
 
-El usuario autorizó commits locales separados por petición completada, validación previa y cambios no relacionados separados. Discovery/KB, roadmap, revisión documental delegada y selección de skills quedaron publicados hasta `5d5a4a90895164c86e0a51aa0d1eb771421bfcb1`. Para el registro de skills, el usuario autorizó expresamente generación, commit y push a `main`; su publicación se comprobará después de ejecutarse. La entrega docente final sigue pendiente. Este permiso no constituye autorización universal para publicaciones futuras. Las revisiones humanas se documentan cuando ocurren.
+El usuario autorizó commits locales separados por petición completada, validación previa y cambios no relacionados separados. El registro de skills quedó publicado en `main` en `197be16a2eed4b8ea0c0dbcfcfa4cd601a38d59c`. Para esta petición de instrucciones del proyecto se conserva la preferencia de commit local validado; no se presume nueva autorización de push. La entrega docente final sigue pendiente. Este permiso no constituye autorización universal para publicaciones futuras. Las revisiones humanas se documentan cuando ocurren.
 
 ## Documentación
 
@@ -47,6 +47,7 @@ El usuario autorizó commits locales separados por petición completada, validac
 - [Nueva revisión documental delegada: seis fuentes y motivos de ajuste](docs/discovery/revision-documental-2026-10-15.md).
 - [Selección y justificación de skills](docs/fundacion/seleccion-skills.md).
 - [Registro de skills del proyecto](.atl/skill-registry.md).
+- [Instrucciones para agentes](AGENTS.md) y [versión equivalente para Claude](CLAUDE.md).
 
 ## Regenerar el informe PDF
 

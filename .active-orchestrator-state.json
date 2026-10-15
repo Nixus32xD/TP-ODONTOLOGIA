@@ -1,6 +1,6 @@
 {
   "version": 4,
-  "step": "registry",
+  "step": "agents",
   "owner": "active-orchestrator",
   "discovery": {
     "created_by": "discovery-research",
@@ -291,5 +291,24 @@
   "registry": {
     "created_by": "skill-registry",
     "file": ".atl/skill-registry.md"
+  },
+  "agents": {
+    "created_by": "agent-instruction",
+    "files": [
+      "AGENTS.md",
+      "CLAUDE.md"
+    ],
+    "reglas_applied": [
+      "R-01",
+      "R-02",
+      "R-03",
+      "R-04",
+      "R-05",
+      "R-06",
+      "R-07",
+      "R-08"
+    ],
+    "rules_source": "existing-confirmed-instructions",
+    "new_stack_decisions": false
   }
 }

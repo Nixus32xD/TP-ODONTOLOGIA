@@ -228,18 +228,30 @@ Resúmenes operativos de 5 a 15 líneas por skill. El delegador conserva las res
 
 ## Project Conventions
 
-No existen AGENTS.md, agents.md, CLAUDE.md, .cursorrules, GEMINI.md ni copilot-instructions.md en la raíz de este proyecto. Su generación pertenece a la fase siguiente. No se importan reglas de otros proyectos ni se declara aprobación humana de reglas nuevas.
+[AGENTS.md](../AGENTS.md) y [CLAUDE.md](../CLAUDE.md) existen en la raíz y contienen instrucciones idénticas, consolidadas desde el alcance y las restricciones ya autorizados. No se importan reglas de otros proyectos ni se declara aprobación humana de contratos o reglas técnicas nuevas. Stack, persistencia, intervalos y concurrencia permanecen abiertos.
 
-Lecturas del proyecto, no índices de convenciones ni reglas técnicas aprobadas por este registro:
+Se actualiza únicamente este índice de convenciones: las 21 skills y sus reglas compactas conservan el inventario previo, sin rescaneo ni instalaciones. Las rutas globales de las otras secciones siguen requiriendo comprobación en cada equipo.
+
+Convenciones y todos los documentos referenciados por AGENTS.md/CLAUDE.md:
 
 | File | Path | Notes |
 | --- | --- | --- |
-| Alcance y progreso | `N:/Nueva carpeta/TP-ODONTOLOGIA/README.md` | Resumen y navegación |
-| Consigna | `N:/Nueva carpeta/TP-ODONTOLOGIA/docs/CONSIGNA.md` | Requisitos académicos y pendientes |
-| Discovery | `N:/Nueva carpeta/TP-ODONTOLOGIA/discovery/discovery.md` | Once puntos confirmados, con propuestas diferenciadas |
-| Índice KB | `N:/Nueva carpeta/TP-ODONTOLOGIA/knowledge-base/README.md` | Diez documentos canónicos |
-| Reglas de negocio | `N:/Nueva carpeta/TP-ODONTOLOGIA/knowledge-base/05_reglas_de_negocio.md` | Separar confirmado de propuesto |
-| Preguntas abiertas | `N:/Nueva carpeta/TP-ODONTOLOGIA/knowledge-base/10_preguntas_abiertas.md` | Stack, persistencia y contrato siguen pendientes |
-| Roadmap | `N:/Nueva carpeta/TP-ODONTOLOGIA/CHANGES.md` | Único change crear-turno-sin-solapamientos |
+| 02_descripcion_general.md | `N:/Nueva carpeta/TP-ODONTOLOGIA/knowledge-base/02_descripcion_general.md` | Documento referenciado por las instrucciones del proyecto |
+| README.md | `N:/Nueva carpeta/TP-ODONTOLOGIA/knowledge-base/README.md` | Documento referenciado por las instrucciones del proyecto |
+| 01_vision_y_objetivos.md | `N:/Nueva carpeta/TP-ODONTOLOGIA/knowledge-base/01_vision_y_objetivos.md` | Documento referenciado por las instrucciones del proyecto |
+| 03_actores_y_roles.md | `N:/Nueva carpeta/TP-ODONTOLOGIA/knowledge-base/03_actores_y_roles.md` | Documento referenciado por las instrucciones del proyecto |
+| 04_modelo_de_datos.md | `N:/Nueva carpeta/TP-ODONTOLOGIA/knowledge-base/04_modelo_de_datos.md` | Documento referenciado por las instrucciones del proyecto |
+| 05_reglas_de_negocio.md | `N:/Nueva carpeta/TP-ODONTOLOGIA/knowledge-base/05_reglas_de_negocio.md` | Documento referenciado por las instrucciones del proyecto |
+| 06_funcionalidades.md | `N:/Nueva carpeta/TP-ODONTOLOGIA/knowledge-base/06_funcionalidades.md` | Documento referenciado por las instrucciones del proyecto |
+| 07_flujos_principales.md | `N:/Nueva carpeta/TP-ODONTOLOGIA/knowledge-base/07_flujos_principales.md` | Documento referenciado por las instrucciones del proyecto |
+| 08_arquitectura_propuesta.md | `N:/Nueva carpeta/TP-ODONTOLOGIA/knowledge-base/08_arquitectura_propuesta.md` | Documento referenciado por las instrucciones del proyecto |
+| 09_decisiones_y_supuestos.md | `N:/Nueva carpeta/TP-ODONTOLOGIA/knowledge-base/09_decisiones_y_supuestos.md` | Documento referenciado por las instrucciones del proyecto |
+| 10_preguntas_abiertas.md | `N:/Nueva carpeta/TP-ODONTOLOGIA/knowledge-base/10_preguntas_abiertas.md` | Documento referenciado por las instrucciones del proyecto |
+| discovery.md | `N:/Nueva carpeta/TP-ODONTOLOGIA/discovery/discovery.md` | Documento referenciado por las instrucciones del proyecto |
+| BITACORA.md | `N:/Nueva carpeta/TP-ODONTOLOGIA/docs/BITACORA.md` | Documento referenciado por las instrucciones del proyecto |
+| skill-registry.md | `N:/Nueva carpeta/TP-ODONTOLOGIA/.atl/skill-registry.md` | Documento referenciado por las instrucciones del proyecto |
+| CHANGES.md | `N:/Nueva carpeta/TP-ODONTOLOGIA/CHANGES.md` | Documento referenciado por las instrucciones del proyecto |
+| AGENTS.md | `N:/Nueva carpeta/TP-ODONTOLOGIA/AGENTS.md` | Convenciones específicas; pareja idéntica, sin decisiones técnicas nuevas |
+| CLAUDE.md | `N:/Nueva carpeta/TP-ODONTOLOGIA/CLAUDE.md` | Convenciones específicas; pareja idéntica, sin decisiones técnicas nuevas |
 
 Revisar estas lecturas antes de resolver reglas para C-01. No afirmar implementación, pruebas de producto, revisión personal de fuentes ni instalación de harnesses a partir de este inventario.

@@ -15,7 +15,7 @@ Este checklist resume requisitos de la consigna; no acredita su cumplimiento. La
 
 - [x] Inicializar OpenSpec: `openspec init --tools codex --language es --no-animation`, finalizado con código 0. El flujo completo de Active Stack continúa pendiente.
 - [x] Elegir Discovery en la bifurcación; el usuario confirmó continuar el 2026-10-15.
-- [x] Incluir `.active-orchestrator-state.json` con el estado real: versión 4, fase `registry`; Discovery documental y base de conocimiento registrados.
+- [x] Incluir `.active-orchestrator-state.json` con el estado real: versión 4, fase `agents`; Discovery documental y base de conocimiento registrados.
 - [x] Registrar inspección y decisión de continuar desde la inicialización; confirmación explícita de los once puntos de Discovery el 2026-10-15.
 
 ## Etapa 2 - Discovery
@@ -55,7 +55,8 @@ Pesos de la matriz:
 - [ ] Revisar humanamente el roadmap y registrar la decisión; generarlo no acredita su aprobación.
 - [x] `find-skill`: [selección documentada](fundacion/seleccion-skills.md), con reutilización de existentes, React descartado y UI/pruebas específicas diferidas; no se instalaron skills nuevas.
 - [x] Generar el [registro de skills](../.atl/skill-registry.md) con alcance, disponibilidad y aplicación al proyecto; no implica instalación nueva ni cierre de la fundación.
-- [ ] Revisar y confirmar las reglas candidatas; generar `AGENTS.md` y `CLAUDE.md` en raíz. Agregar reglas del dominio cuando corresponda.
+- [x] Generar [AGENTS.md](../AGENTS.md) y [CLAUDE.md](../CLAUDE.md) idénticos desde la KB, roadmap y registro, consolidando sólo alcance y restricciones ya autorizados. No se aprueban reglas técnicas nuevas ni se resuelven preguntas abiertas.
+- [ ] Confirmar reglas duras nuevas si el diseño futuro las requiere; registrar su revisión humana antes de incorporarlas.
 - [ ] Registrar inspección y decisión humana de cada etapa.
 
 La generación local de la base de conocimiento no acredita su revisión humana ni resuelve por defecto stack, persistencia, intervalos o concurrencia.
