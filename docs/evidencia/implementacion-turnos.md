@@ -90,3 +90,42 @@ Refuerzo posterior de 4.4: una ruta con NUL producía ValueError interno. Tras R
 ## Verificación final
 
 43/43 tests verdes y demo con dos altas/dos conflictos y agenda temporal eliminada. OpenSpec validate --strict válido, sin incidencias. Comprobación documental: 264 enlaces, pareja AGENTS/CLAUDE idéntica, stack igual a KB, 21 reglas compactas preservadas y PDF/matriz/renderer intactos. Sin DB ni secretos versionados. No hay servidor, por lo que no corresponde health check HTTP. Las pruebas se ejecutaron en Windows/Python 3.12.14/SQLite 3.53.1; no se extrapola a versiones, discos de red o equipos no comprobados.
+
+## Corrección FastAPI dentro del mismo C-01
+
+El usuario corrigió expresamente el stack a FastAPI y autorizó commit/push tras validar. El módulo SQLite conserva sus reglas y transacciones; se añade sólo un adaptador HTTP, sin otro change ni módulos clínicos. PDF y fuentes personales no se modifican.
+
+### TDD Cycle Evidence — ampliación HTTP
+
+| Task | Test File | Layer | Safety Net | RED | GREEN | TRIANGULATE | REFACTOR |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| 6.1 | tests/test_api.py | HTTP+SQLite real | 43/43 previos | Ejecutado: ModuleNotFoundError odontologia.api | Alta201 persistida pasó | Adyacencia, recursos distintos y entradas inválidas | Descripciones de modelos, suite53/53 |
+| 6.2 | tests/test_api.py | HTTP+SQLite real | AltaHTTP verde | No RED separado: pruebas añadidas ya verdes | Conflictos409,404,422,500,503 pasaron | Ambos recursos, lock real y recuperación, agenda ausente/corrupta | Sin refactor funcional |
+| 6.3 | tests/test_api.py | ASGI+smoke servidor | 53/53 | No RED separado: health/OpenAPI ya implementados al añadir tests | Health/docs/OpenAPI y smoke pasaron | Health sinDB; rutas/esquemas; JSON inválido | Documentación sincronizada |
+
+No se afirma cumplimiento100% del ciclo estricto: los manejadores y health se implementaron con el adaptador tras el primer RED, antes de añadir sus tests específicos. Se conserva la evidencia real sin introducir fallos artificiales. El test de persistencia detectó además una conexión SQLite de verificación abierta: se corrigió el test usando contextlib.closing, sin modificar el dominio.
+
+### Trazabilidad de los seis escenarios HTTP añadidos
+
+| Scenario | Test method (ApiTests) |
+| --- | --- |
+| Alta HTTP persistida | test_alta_201_y_persistencia; test_adyacencia_y_recursos_independientes |
+| JSON inválido o coerción no permitida | test_entrada_invalida_sin_coercion; test_cuerpo_faltante_malformado_y_no_objeto |
+| Conflictos HTTP independientes | test_conflictos_independientes_y_prioridad |
+| Fallo o contención HTTP | test_agenda_ausente_y_no_sqlite_500_sin_fuga; test_lock_real_503_y_recuperacion |
+| Health sin DB | test_health_no_crea_agenda_ni_afirma_readiness |
+| Documentación del único caso de uso | test_openapi_y_docs |
+
+Son seis escenarios HTTP nuevos; los29 escenarios del dominio conservan su trazabilidad previa. test_recurso_desconocido_404 completa el mapeo por cada catálogo.
+
+### Verificación actual ejecutada
+
+- Python3.12.14, SQLite3.53.1, FastAPI0.143.2, Pydantic2.14.1, Uvicorn0.54.0, Starlette1.8.0, HTTPX0.28.1, Windows. Dependencias únicamente en .venv; requirements-lock.txt fija todas las versiones observadas. DNS falló temporalmente durante pip; reintento con PyPI oficial completó instalación.
+- .venv/Scripts/python.exe -m unittest discover -s tests -v: 53 tests, OK (43 anteriores +10 HTTP). Incluye los14 procesos spawn de las siete carreras originales.
+- .venv/Scripts/python.exe -m odontologia.demo: dos altas, conflictos por ambos recursos y temporal eliminado.
+- openspec validate crear-turno-sin-solapamientos --strict --json: un change válido, cero issues.
+- Smoke Uvicorn real: subproceso propio --factory, bind127.0.0.1 puerto efímero, DB temporal propia; GET /health200, POST /turnos201 con ID1 y OpenAPI con dos rutas. Arranque y esperas acotados, terminación en finally, temporal eliminado. No tráfico a proveedores.
+- git diff --check: sin errores; sólo aviso de conversiónLF/CRLF en archivos Windows.
+- Advertencia upstream: Starlette1.8.0 depreca uso de HTTPX en TestClient; no se silencia ni se presenta como fallo. Pruebas actuales pasan.
+
+Health es liveness, no readiness; no crea agenda. API síncrona usa threadpool y una conexión por operación; protección concurrente sigue en el dominio BEGIN IMMEDIATE, no en memoria del servidor. Swagger/ReDoc pueden usar recursosCDN; /openapi.json es completamente local. No se afirma producción, autenticación ni cumplimiento académico final.

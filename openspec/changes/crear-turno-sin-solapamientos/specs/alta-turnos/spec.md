@@ -183,3 +183,42 @@ El sistema SHALL usar por defecto un timeout de 5 segundos y permitir configurar
 - **GIVEN** timeout cero, negativo, infinito, NaN, booleano o cadena
 - **WHEN** se solicita el alta
 - **THEN** se informa `entrada_invalida` para timeout sin acceder a la agenda
+
+### Requirement: Adaptador FastAPI local
+El sistema SHALL exponer POST /turnos mediante FastAPI, reutilizando la operación transaccional existente y devolviendo 201 con el turno persistido en UTC. SHALL aceptar únicamente objetos JSON con los cinco campos requeridos, IDs string sin coerción y fechas-hora ISO 8601 con T, offset explícito y minuto exacto. SHALL rechazar campos adicionales y timestamps numéricos. SHALL NOT inicializar DB al importar, crear la app o recibir una petición.
+
+#### Scenario: Alta HTTP persistida
+- **GIVEN** agenda preparada y cuerpo válido con recursos libres
+- **WHEN** se ejecuta POST /turnos
+- **THEN** devuelve 201, ID positivo e instantes UTC y existe una sola fila persistida
+
+#### Scenario: JSON inválido o coerción no permitida
+- **GIVEN** cuerpo ausente, mal formado, no objeto, campos adicionales, ID numérico o fecha epoch
+- **WHEN** se ejecuta POST /turnos
+- **THEN** devuelve 422 entrada_invalida sin alta ni detalles internos
+
+### Requirement: Errores HTTP del dominio
+El adaptador SHALL mapear entrada_invalida a 422, recurso_desconocido a 404, conflictos de recursos a 409, agenda_ocupada a 503 y almacenamiento_error a 500 mediante JSON con codigo, campo y mensaje público. SHALL conservar reglas, prioridad profesional/box, rollback y ausencia de reintentos del dominio.
+
+#### Scenario: Conflictos HTTP independientes
+- **GIVEN** un turno ocupa profesional-A y box-A
+- **WHEN** se solicita igual intervalo cambiando sólo box o sólo profesional
+- **THEN** responde 409 con el conflicto correspondiente y conserva un único registro
+
+#### Scenario: Fallo o contención HTTP
+- **GIVEN** agenda ausente, corrupta o bloqueada más allá del timeout
+- **WHEN** se solicita alta válida
+- **THEN** responde 500 almacenamiento_error o 503 agenda_ocupada, sin éxito ficticio ni fuga de rutas
+
+### Requirement: Liveness y documentación local
+El sistema SHALL exponer GET /health con 200 y status ok independientemente de la DB, identificándolo como liveness. SHALL publicar el contrato en /openapi.json, /docs y /redoc, con estados y modelos de entrada/salida. SHALL mantener servidor limitado a uso local sin proveedores externos, autenticación ni módulos adicionales.
+
+#### Scenario: Health sin DB
+- **GIVEN** una app configurada con una agenda que no existe
+- **WHEN** se consulta GET /health
+- **THEN** devuelve 200 status ok sin crear el archivo ni afirmar readiness de almacenamiento
+
+#### Scenario: Documentación del único caso de uso
+- **GIVEN** la aplicación creada
+- **WHEN** se consulta OpenAPI y documentación
+- **THEN** OpenAPI contiene sólo POST /turnos y GET /health como operaciones de negocio y los estados esperados, y las páginas responden 200

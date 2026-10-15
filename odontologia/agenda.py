@@ -1,4 +1,4 @@
-"""Alta de turnos ficticios; sin servidor ni integraciones externas."""
+"""Dominio de turnos ficticios, independiente del adaptador HTTP y proveedores."""
 
 from pathlib import Path
 from dataclasses import dataclass

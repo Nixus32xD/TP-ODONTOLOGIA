@@ -252,11 +252,12 @@
     "source": "ingest",
     "discovery": {
       "problem": "Registrar turnos en un consultorio odontológico pequeño de Argentina sin ocupar simultáneamente al mismo profesional ni al mismo box; no se cuantificó demanda real mediante entrevistas.",
-      "system_type": "módulo local de dominio, sin servidor ni HTTP",
+      "system_type": "API HTTP local FastAPI, dominio SQLite sin proveedores externos",
       "domain": "odontología / agenda de turnos",
       "scale": "team",
       "stack": [
         "Python 3.12+",
+        "FastAPI",
         "SQLite",
         "unittest"
       ],

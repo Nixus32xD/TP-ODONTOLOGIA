@@ -30,7 +30,7 @@ CRUD completo de turnos, pacientes, profesionales y boxes no se deriva de esta m
 
 ## Rutas públicas
 
-No hay rutas públicas definidas ni reserva abierta. Si se elige una API, sus contratos deben especificarse sin tratar la ausencia de autenticación académica como seguridad apta para pacientes reales. La restricción de no ejecutar HTTP/servicios externos del ejercicio conserva vigencia.
+La API local expone POST /turnos y GET /health. No hay reserva pública ni autenticación; no es apta para pacientes reales. El usuario autorizó FastAPI local, manteniendo excluidos proveedores externos y publicación pública.
 
 ## Datos y responsabilidad
 

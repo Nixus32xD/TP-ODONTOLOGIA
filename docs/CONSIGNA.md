@@ -67,9 +67,9 @@ La generación local de la base de conocimiento no acredita su revisión humana 
 - [x] Conservar el [relevamiento del problema y checkout](exploracion/alta-turno.md) previo a la propuesta; no acredita implementación.
 - [x] Propose: generar propuesta, diseño, [spec](../openspec/changes/crear-turno-sin-solapamientos/specs/alta-turnos/spec.md) y [tareas](../openspec/changes/crear-turno-sin-solapamientos/tasks.md); validar estructura mediante OpenSpec.
 - [ ] Revisar humanamente el spec completo y registrar las correcciones reales solicitadas con Ajustar; la validación del agente no acredita esta revisión.
-- [x] Especificar escenarios dado/cuando/entonces: feliz, conflictos, bordes, fallos y competencia. Su trazabilidad actual está en la evidencia de 43 tests ejecutados.
+- [x] Especificar escenarios dado/cuando/entonces: feliz, conflictos, bordes, fallos y competencia. Su trazabilidad actual está en la evidencia de 53 tests ejecutados.
 - [x] Apply: contrato implementado tras autorización de continuar, con datos ficticios y pruebas. Ante cambios de contrato, volver a Propose.
-- [x] Verify técnico: 43 tests, trazabilidad de los 29 escenarios y demo ejecutada; ver [evidencia](evidencia/implementacion-turnos.md). Sin health check HTTP porque no hay servidor. No acredita revisión humana ni Archive.
+- [x] Verify técnico: 53 tests, trazabilidad de los 29 escenarios y demo ejecutada; ver [evidencia](evidencia/implementacion-turnos.md). GET /health de liveness, contrato HTTP y OpenAPI verificados; no acredita readiness clínica. No acredita revisión humana ni Archive.
 - [ ] Archive: archivar el change y actualizar las especificaciones y el estado.
 
 La implementación puede ser API o módulo de dominio; la interfaz gráfica no es obligatoria. La elección del stack deriva de la base de conocimiento.

@@ -49,3 +49,7 @@ Siguiente paso: registro de skills existentes antes de generar instrucciones del
 ## Actualización durante Apply
 
 El contrato de C-01 se implementó con Python, sqlite3, unittest y multiprocessing estándar. No se instaló pytest, Playwright ni otra skill: las opciones de UI siguen fuera de alcance. Ver [evidencia](../evidencia/implementacion-turnos.md). El inventario original de selección conserva su fecha y las incertidumbres de esa etapa como historial.
+
+## Corrección FastAPI — C-01
+
+El usuario corrigió expresamente el stack a FastAPI y autorizó commit/push tras validar, manteniendo sólo C-01. Adaptador POST /turnos, GET /health y OpenAPI reutilizan SQLite. Dependencias fijadas, instaladas en .venv (sin cambios globales); HTTPX para TestClient. Estado previo sin HTTP conserva valor histórico, no describe el producto actual. Baseline43; suite actual53 tests. No se modifica PDF, datos reales ni proveedores externos. Archive y evidencias personales pendientes.

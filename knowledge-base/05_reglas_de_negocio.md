@@ -39,7 +39,7 @@ Solapamiento: existente.inicio < solicitado.fin y existente.fin > solicitado.ini
 ## Excepciones globales y restricciones confirmadas
 
 - RN-EX-01: sólo datos ficticios, sin información clínica real.
-- RN-EX-02: ninguna integración externa, HTTP/SOAP, credenciales, certificados ni ARCA/AFIP real.
+- RN-EX-02: ninguna integración externa ni SOAP, credenciales, certificados ni ARCA/AFIP real.
 - RN-EX-03: validación explícita, errores claros y ninguna corrección silenciosa.
 - RN-EX-04: pruebas por comportamiento y suite verde antes de finalizar/archivar.
 

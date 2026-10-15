@@ -67,7 +67,7 @@ No hay frontend definido para asignar. Las contribuciones de tres agentes son op
 
 ### [C-01] `crear-turno-sin-solapamientos`
 
-- **Estado**: `[ ]` Apply implementado; suite de 43 tests y demo verdes. Ver [evidencia](docs/evidencia/implementacion-turnos.md). C-01 permanece sin marcar hasta Archive; no confundir tareas completas con entrega final.
+- **Estado**: `[ ]` Apply implementado; suite de 53 tests y demo verdes. Ver [evidencia](docs/evidencia/implementacion-turnos.md). C-01 permanece sin marcar hasta Archive; no confundir tareas completas con entrega final.
 - **Scope**: entregar una operación de alta para recepción, con recursos ficticios y rechazo de conflictos independientes de profesional y box (RN-TU-01/02).
   - Preparar dentro del mismo change el bootstrap mínimo y el runner elegidos; registrar comandos reales, sin scaffolding de módulos postergados ni instalaciones asumidas desde este roadmap.
   - Concretar representaciones mínimas de `Turno`, `Profesional`, `Box` y la identidad ficticia de `Paciente` según Q07; no añadir datos clínicos ni CRUDs completos.
@@ -77,7 +77,7 @@ No hay frontend definido para asignar. Las contribuciones de tres agentes son op
   - Implementar almacenamiento y coordinación sólo conforme a Q03. No fijar DB, archivo, memoria, migraciones, índices ni IDs UUID por completar una plantilla; usar lo necesario para el contrato revisado.
   - Especificar y probar bordes temporales acordados, validación de referencias y políticas pertinentes a esta operación; intervalos semiabiertos y adyacencia forman el contrato aplicado.
   - Vincular cada escenario aprobado con pruebas ejecutables, ejecutar la suite completa y guardar resultados antes de Archive. Actualizar especificaciones mediante el CLI, sin crear manualmente su estructura.
-  - Mantener fuera del change WhatsApp, pagos, historia clínica, autenticación, multisede, interfaz gráfica completa e integraciones externas; sólo datos ficticios y ninguna ejecución HTTP/SOAP o ARCA/AFIP real.
+  - Mantener fuera del change WhatsApp, pagos, historia clínica, autenticación, multisede, interfaz gráfica completa e integraciones externas; sólo datos ficticios y HTTP local FastAPI autorizado, sin SOAP externo o ARCA/AFIP real.
 - **Dependencias**: ninguna; precondiciones de contrato detalladas abajo.
 - **Governance**: MEDIO — lógica de negocio de agenda; implementar con checkpoints y exponer decisiones no obvias. No modifica autenticación, pagos ni seguridad de producción.
 - **Leer antes**:
@@ -93,7 +93,7 @@ Las respuestas aplicadas de Q01–Q08 están en [design.md](openspec/changes/cre
 
 | Pregunta KB | Definición necesaria para C-01 |
 | --- | --- |
-| Q01 | Módulo o API; si se elige API, aclarar cómo se respeta la restricción de no ejecutar HTTP/servicios externos. |
+| Q01 | Resuelto: FastAPI HTTP local por corrección expresa del usuario; sin proveedores externos. |
 | Q02 | Lenguaje, runtime, dependencias mínimas y runner; Python del informe no decide el stack del producto. |
 | Q03 | Persistencia, modelo de ejecución, efecto observable y coordinación de consulta/registro; alcance de concurrencia y prueba que lo demuestra. |
 | Q04 | Semántica del intervalo, adyacencia, inicio/fin inválidos, precisión y zona horaria; RN-TU-03/04/05 aplicadas en C-01. |

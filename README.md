@@ -6,9 +6,9 @@ Repositorio: [Nixus32xD/TP-ODONTOLOGIA](https://github.com/Nixus32xD/TP-ODONTOLO
 
 ## Estado actual
 
-OpenSpec inicializado y Discovery documental confirmado: quince sistemas relevados, matriz ponderada y once puntos aceptados el 2026-10-15 para un consultorio pequeño. Elegí como primer change crear turnos evitando solapamientos por profesional y box. La investigación documental está asistida por IA; queda pendiente mi verificación personal de al menos cinco fuentes. C-01 ya tiene módulo, demo y 43 tests automatizados; Archive y las evidencias personales de entrega siguen pendientes.
+OpenSpec inicializado y Discovery documental confirmado: quince sistemas relevados, matriz ponderada y once puntos aceptados el 2026-10-15 para un consultorio pequeño. Elegí como primer change crear turnos evitando solapamientos por profesional y box. La investigación documental está asistida por IA; queda pendiente mi verificación personal de al menos cinco fuentes. C-01 ya tiene FastAPI, módulo, demo y 53 tests automatizados; Archive y las evidencias personales de entrega siguen pendientes.
 
-Se ejecutó `openspec init --tools codex --language es --no-animation`: configuración `spec-driven` y seis skills OPSX. Se incorporó `discovery-research` sólo en este proyecto. El estado de Active Stack conserva `version: 4` y registra `step: agents`: Discovery está registrado y la [base de conocimiento](knowledge-base/README.md) contiene diez documentos canónicos más su índice, generados desde las fuentes existentes. El usuario autorizó continuar con Apply sobre la propuesta: Python 3.12+, módulo local, SQLite y unittest. El campo step registra la última fase de fundación; el CLI de OpenSpec registra el progreso del change.
+Se ejecutó `openspec init --tools codex --language es --no-animation`: configuración `spec-driven` y seis skills OPSX. Se incorporó `discovery-research` sólo en este proyecto. El estado de Active Stack conserva `version: 4` y registra `step: agents`: Discovery está registrado y la [base de conocimiento](knowledge-base/README.md) contiene diez documentos canónicos más su índice, generados desde las fuentes existentes. El usuario autorizó continuar con Apply sobre la propuesta: FastAPI, Python 3.12+, SQLite y unittest. El campo step registra la última fase de fundación; el CLI de OpenSpec registra el progreso del change.
 
 Para consultar el estado desde PowerShell con OpenSpec disponible en PATH:
 
@@ -17,7 +17,7 @@ Set-Location -LiteralPath 'N:\Nueva carpeta\TP-ODONTOLOGIA'
 openspec list --json
 ```
 
-OpenSpec registra ahora el único change `crear-turno-sin-solapamientos`, con sus cuatro artefactos de planificación completos y 15 de 15 tareas implementadas y verificadas. El [diseño propuesto](openspec/changes/crear-turno-sin-solapamientos/design.md) elige módulo Python 3.12+, SQLite local y unittest; propone intervalos `[inicio, fin)`, fechas con offset y exclusión concurrente limitada al mismo archivo local. La autorización de Apply no se presenta como lectura personal completa del spec; no se confunde suite verde con entrega académica final. El [roadmap](CHANGES.md) organiza un único change candidato, `C-01: crear-turno-sin-solapamientos`, con dependencias, contexto, camino crítico y riesgos. El change fue creado mediante el CLI, sin specs principales previas. La revisión humana del contenido de la base de conocimiento y del roadmap sigue pendiente. La [selección de skills](docs/fundacion/seleccion-skills.md) recomienda reutilizar las existentes, descarta React del alcance actual y difiere pruebas de UI hasta definir el stack. No se instalaron herramientas nuevas. El [registro de skills](.atl/skill-registry.md) documenta las herramientas disponibles, su alcance y las tareas a las que aplican. Las instrucciones específicas están en [AGENTS.md](AGENTS.md) y [CLAUDE.md](CLAUDE.md), con contenido idéntico y reglas consolidadas desde el alcance y las restricciones ya autorizados. Reflejan el contrato aplicado sin agregar módulos ni decisiones clínicas ajenas a C-01. El siguiente trabajo es revisar el resultado y archivar el change; los pendientes del entorno y de evidencia quedan documentados para la entrega.
+OpenSpec registra ahora el único change `crear-turno-sin-solapamientos`, con sus cuatro artefactos de planificación completos y 18 de 18 tareas implementadas y verificadas. El [diseño propuesto](openspec/changes/crear-turno-sin-solapamientos/design.md) define FastAPI, Python 3.12+, SQLite local y unittest; propone intervalos `[inicio, fin)`, fechas con offset y exclusión concurrente limitada al mismo archivo local. La autorización de Apply no se presenta como lectura personal completa del spec; no se confunde suite verde con entrega académica final. El [roadmap](CHANGES.md) organiza un único change candidato, `C-01: crear-turno-sin-solapamientos`, con dependencias, contexto, camino crítico y riesgos. El change fue creado mediante el CLI, sin specs principales previas. La revisión humana del contenido de la base de conocimiento y del roadmap sigue pendiente. La [selección de skills](docs/fundacion/seleccion-skills.md) recomienda reutilizar las existentes, descarta React del alcance actual y difiere pruebas de UI hasta definir el stack. Se instalaron dependencias del producto sólo en .venv; no nuevas skills. El [registro de skills](.atl/skill-registry.md) documenta las herramientas disponibles, su alcance y las tareas a las que aplican. Las instrucciones específicas están en [AGENTS.md](AGENTS.md) y [CLAUDE.md](CLAUDE.md), con contenido idéntico y reglas consolidadas desde el alcance y las restricciones ya autorizados. Reflejan el contrato aplicado sin agregar módulos ni decisiones clínicas ajenas a C-01. El siguiente trabajo es revisar el resultado y archivar el change; los pendientes del entorno y de evidencia quedan documentados para la entrega.
 
 Esta entrega comienza desde cero. El alcance inicial es una funcionalidad terminada de agenda, con datos ficticios y sin integraciones clínicas reales.
 
@@ -32,7 +32,7 @@ Esta entrega comienza desde cero. El alcance inicial es una funcionalidad termin
 6. Completar un change: Explore, Propose, Apply, Verify y Archive.
 7. Demostrar memoria y recuperación de contexto con Engram.
 
-El usuario autorizó commits locales separados por petición completada, validación previa y cambios no relacionados separados. El registro de skills quedó publicado en `main` en `197be16a2eed4b8ea0c0dbcfcfa4cd601a38d59c`. El usuario autorizó el push de los commits pendientes: AGENTS/CLAUDE y Propose se publicaron hasta 509307025550d183493b5a56fa2d16fd18d0651f. La implementación de esta petición se guardará en commit local validado, sin extender ese permiso de push a avances nuevos. La entrega docente final sigue pendiente. Este permiso no constituye autorización universal para publicaciones futuras. Las revisiones humanas se documentan cuando ocurren.
+El usuario autorizó commits locales separados por petición completada, validación previa y cambios no relacionados separados. El registro de skills quedó publicado en `main` en `197be16a2eed4b8ea0c0dbcfcfa4cd601a38d59c`. El usuario autorizó el push de los commits pendientes: AGENTS/CLAUDE y Propose se publicaron hasta 509307025550d183493b5a56fa2d16fd18d0651f. El usuario autorizó commit y push del avance actual tras corregir el stack a FastAPI, siempre limitado a C-01. La entrega docente final sigue pendiente. Este permiso no constituye autorización universal para publicaciones futuras. Las revisiones humanas se documentan cuando ocurren.
 
 ## Documentación
 
@@ -65,18 +65,37 @@ Todos los ejemplos y pruebas usan datos ficticios, sin secretos ni pacientes rea
 
 ## Ejecutar producto y pruebas
 
-Requisito: Python 3.12 o superior con sqlite3 y unittest estándar. No necesita pip install, servidor ni servicios externos. Desde la raíz del checkout:
+Python 3.12+ y entorno virtual local. Desde la raíz:
 
 ```powershell
-python --version
-python -m unittest discover -s tests -v
-python -m odontologia.demo
+python -m venv .venv
+.\.venv\Scripts\python.exe -m pip install -r requirements-lock.txt
+.\.venv\Scripts\python.exe -m unittest discover -s tests -v
+.\.venv\Scripts\python.exe -m odontologia.demo
 ```
 
-En Windows también puede usarse `py -3.12` en lugar de `python` si está configurado. El comando se verificó con Python 3.12.14 y SQLite 3.53.1. La demo devuelve JSON con un alta válida, conflicto de profesional, conflicto de box y adyacencia: dos registros confirmados. Crea y elimina su agenda temporal propia; es repetible sin archivos DB en el repositorio.
+requirements.txt fija dependencias directas del producto, requirements-dev.txt añade HTTPX y requirements-lock.txt conserva el entorno completo verificado. Python3.12.14/SQLite3.53.1; 53 tests, incluyendo10 HTTP y procesos spawn reales. Starlette1.8.0 emite un aviso de deprecación por HTTPX0.28.1; la compatibilidad actual pasó, no se silencia el aviso.
 
-API: `from odontologia import inicializar_agenda, crear_turno, Turno, ErrorAgenda`. Bootstrap sólo admite archivo nuevo y catálogos ficticios paciente-A/B, profesional-A/B, box-A/B. El alta exige agenda existente, IDs conocidos, datetime con offset y minuto exacto, e inicio anterior a fin. Retorna instantes UTC. Timeout positivo configurable, 5s por defecto.
+Inicializar una agenda ficticia NUEVA en disco local (no asumir N: local), y luego iniciar la API sólo en loopback:
 
-Intervalos [inicio, fin), adyacencia en ambos sentidos y prioridad de profesional si ambos recursos tienen conflicto. Sin cancelación, horarios, prestaciones, exclusión de paciente, idempotencia, UI o HTTP. La garantía concurrente sólo cubre la operación sobre el mismo archivo SQLite en disco local: no red compartida, múltiples archivos/equipos ni SQL externo. Los tests spawn usan temporales del sistema y verifican procesos reales. [Evidencia y trazabilidad](docs/evidencia/implementacion-turnos.md).
+```powershell
+$env:ODONTOLOGIA_DB = Join-Path $env:LOCALAPPDATA 'odontologia-c01.sqlite3'
+.\.venv\Scripts\python.exe -c "import os; from odontologia import inicializar_agenda; inicializar_agenda(os.environ['ODONTOLOGIA_DB'])"
+.\.venv\Scripts\python.exe -m uvicorn odontologia.api:crear_app --factory --host 127.0.0.1 --port 8000
+```
 
-El producto usa únicamente biblioteca estándar. ReportLab/pypdf y las fuentes Arial se requieren sólo para regenerar el PDF de investigación, no para ejecutar agenda, demo o suite.
+Bootstrap rechaza archivos existentes sin sobrescribirlos. Para reutilizar agenda ya preparada, omitir inicialización. Detener servidor con Ctrl+C. Crear app/importar no crea DB. No ejecutar bootstrap sobre agendas ajenas ni borrar archivos para repetir.
+
+GET http://127.0.0.1:8000/health devuelve liveness, no estado de DB. OpenAPI en /openapi.json; Swagger en /docs y ReDoc en /redoc. Las páginas interactivas usan recursos CDN de FastAPI y pueden requerir Internet para cargarlos; OpenAPI es completamente local.
+
+POST /turnos recibe:
+
+```json
+{"paciente_id":"paciente-A","profesional_id":"profesional-A","box_id":"box-A","inicio":"2026-10-15T09:00:00-03:00","fin":"2026-10-15T09:30:00-03:00"}
+```
+
+Devuelve201 con id y fechas UTC después del commit. Errores JSON codigo/campo/mensaje:422 entrada inválida,404 recurso desconocido,409 conflicto,503 contención y500 almacenamiento. Campos adicionales, IDs no string, epoch numérico, fechas sin offset o precisión distinta de minutos se rechazan. El dominio valida IDs conocidos e inicio anterior a fin, sin corrección silenciosa.
+
+Catálogos ficticios paciente-A/B, profesional-A/B y box-A/B. Intervalos [inicio,fin), adyacencia permitida; prioridad del profesional si ambos conflictos existen. Timeout5s configurable en crear_app, no expuesto en JSON. Garantía sólo mismo archivo SQLite local y escritores del módulo, sin red compartida ni SQL externo. Sin autenticación, UI clínica, cancelación, horarios, exclusión de paciente ni idempotencia; no apto para pacientes reales ni despliegue público.
+
+La demo conserva dos registros en su temporal y lo elimina al terminar. [Evidencia y trazabilidad](docs/evidencia/implementacion-turnos.md). Archive, fuentes personales, capturas, video y reflexión siguen pendientes.

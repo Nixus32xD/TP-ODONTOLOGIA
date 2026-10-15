@@ -31,6 +31,6 @@ Ninguna de producto. Ruta como argumento, timeout numérico 5s por defecto. Demo
 
 ## Validación ejecutada
 
-43 tests unittest. Tres carreras por profesional y tres por box, más recursos diferentes; se verifican PIDs, resultados, exitcodes y filas. Contención mantenida, rollback por trigger SQLite real, recuperación y demo con temporales propios. No se asume N: local: DB en TEMP del sistema.
+53 tests unittest, incluidos 10 tests HTTP con TestClient sin red externa. Tres carreras por profesional y tres por box, más recursos diferentes; se verifican PIDs, resultados, exitcodes y filas. Contención mantenida, rollback por trigger SQLite real, recuperación y demo con temporales propios. No se asume N: local: DB en TEMP del sistema.
 
 Comprobaciones que ya pasaban al añadirse están registradas sin fabricar RED. Archive y evidencias humanas de entrega pendientes.

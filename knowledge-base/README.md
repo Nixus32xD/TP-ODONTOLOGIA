@@ -39,3 +39,7 @@ La KB describe requisitos y contrato aplicado; la implementación y sus pruebas 
 - Los PDFs son presentaciones de la consigna y el informe; no agregan aceptación de decisiones ni evidencias de ejecución.
 
 `Confirmado` significa acordado por el usuario o exigido por la consigna. `Propuesta` requiere revisión antes de ser contrato de implementación. `No evidenciado` describe límites de la investigación y no demuestra ausencia de una función.
+
+## Corrección FastAPI — C-01
+
+El usuario corrigió expresamente el stack a FastAPI y autorizó commit/push tras validar, manteniendo sólo C-01. Adaptador POST /turnos, GET /health y OpenAPI reutilizan SQLite. Dependencias fijadas, instaladas en .venv (sin cambios globales); HTTPX para TestClient. Estado previo sin HTTP conserva valor histórico, no describe el producto actual. Baseline43; suite actual53 tests. No se modifica PDF, datos reales ni proveedores externos. Archive y evidencias personales pendientes.

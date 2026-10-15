@@ -228,7 +228,7 @@ Resúmenes operativos de 5 a 15 líneas por skill. El delegador conserva las res
 
 ## Project Conventions
 
-[AGENTS.md](../AGENTS.md) y [CLAUDE.md](../CLAUDE.md) existen en la raíz y contienen instrucciones idénticas, consolidadas desde el alcance y las restricciones ya autorizados. No se importan reglas de otros proyectos ni se declara aprobación humana de contratos o reglas técnicas nuevas. El contrato de C-01 ya se implementó con Python, SQLite y unittest; evidencias personales y Archive siguen pendientes.
+[AGENTS.md](../AGENTS.md) y [CLAUDE.md](../CLAUDE.md) existen en la raíz y contienen instrucciones idénticas, consolidadas desde el alcance y las restricciones ya autorizados. No se importan reglas de otros proyectos ni se declara aprobación humana de contratos o reglas técnicas nuevas. El contrato de C-01 usa FastAPI, Python, SQLite, unittest y TestClient por corrección explícita del usuario; evidencias personales y Archive siguen pendientes.
 
 Se actualiza únicamente este índice de convenciones: las 21 skills y sus reglas compactas conservan el inventario previo, sin rescaneo ni instalaciones. Las rutas globales de las otras secciones siguen requiriendo comprobación en cada equipo.
 

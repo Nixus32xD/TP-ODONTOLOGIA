@@ -32,6 +32,12 @@ El usuario autorizó continuar con Apply después de presentar la propuesta. Los
 - [x] 5.1 Crear demo local con agenda temporal propia que ejercite alta, conflicto de profesional, conflicto de box y adyacencia sin red; verificar su salida y no persistencia fuera de su temporal. Documentar comandos reproducibles `python -m odontologia.demo` y `python -m unittest discover -s tests -v` en README.
 - [x] 5.2 Trazar cada escenario del spec a tests concretos, ejecutar toda la suite y la demo desde checkout limpio de datos, y completar tabla TDD/limitaciones reales. Verificar que no haya secretos, DB generadas ni datos reales versionados y que AGENTS/CLAUDE/KB describan el contrato efectivamente aceptado; no marcar tareas con pruebas fallando.
 
+## 6. Corrección FastAPI solicitada por el usuario (mismo C-01)
+
+- [x] 6.1 Exponer POST /turnos mediante FastAPI reutilizando crear_turno, respuesta 201 persistida y validación JSON estricta sin coerción de IDs ni timestamps. Ejecutar RED antes del adaptador y verificar al menos dos solicitudes válidas/invalidas.
+- [x] 6.2 Mapear errores de dominio a HTTP 422/404/409/503/500, comprobar conflictos independientes, adyacencia, desconocidos, bloqueo y fallo real de almacenamiento sin insertar ni filtrar detalles internos.
+- [x] 6.3 Exponer GET /health de liveness y documentación OpenAPI, fijar dependencias locales, documentar arranque explícito sin crear DB al importar, sincronizar instrucciones/KB y ejecutar suite completa, demo, smoke local y validación estricta. Mantener Archive y evidencias personales pendientes.
+
 ## Workflow follow-up
 
 - Conservar revisión humana real de Propose y los ajustes solicitados; no inventar una aprobación ni un error para el video/reflexión.

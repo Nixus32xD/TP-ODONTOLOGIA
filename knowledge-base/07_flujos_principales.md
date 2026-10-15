@@ -4,7 +4,7 @@ Flujos implementados de C-01, con datos ficticios y fechas con offset explícito
 
 ## Flujo 1: alta válida
 
-Recepción entrega IDs y datetime con offset/minuto exacto. Validar forma, fechas, intervalo y timeout antes de abrir; abrir agenda existente rw, activar FK, BEGIN IMMEDIATE, validar referencias conocidas, consultar conflictos, insertar, COMMIT y retornar Turno en UTC. Sin servidor ni red. Un alta confirmada se conserva al reabrir conexión.
+Recepción entrega IDs y datetime con offset/minuto exacto. Validar forma, fechas, intervalo y timeout antes de abrir; abrir agenda existente rw, activar FK, BEGIN IMMEDIATE, validar referencias conocidas, consultar conflictos, insertar, COMMIT y retornar Turno en UTC. FastAPI recibe JSON ISO 8601 y delega al mismo dominio; Uvicorn sirve únicamente en loopback, sin proveedores externos. Un alta confirmada se conserva al reabrir conexión.
 
 ## Flujo 2: conflicto de profesional
 

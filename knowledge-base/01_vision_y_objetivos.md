@@ -44,7 +44,7 @@ El change activo es `crear-turno-sin-solapamientos`: módulo Python, SQLite loca
 4. Cada afirmación de comportamiento se vincula con especificación y resultado de prueba.
 5. No se declara concurrencia segura sin mecanismo y evidencia adecuados al almacenamiento elegido.
 
-Estos criterios se verifican mediante los 43 tests del contrato implementado; no acreditan la entrega docente final. Las métricas de ausentismo, productividad o satisfacción carecen de medición en este ejercicio.
+Estos criterios se verifican mediante los 53 tests del contrato implementado; no acreditan la entrega docente final. Las métricas de ausentismo, productividad o satisfacción carecen de medición en este ejercicio.
 
 ## Procedencia
 

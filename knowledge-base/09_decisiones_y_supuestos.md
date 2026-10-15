@@ -20,7 +20,7 @@
 
 ### DD-05 — Datos ficticios y sin integraciones reales
 
-**Estado:** restricción confirmada. **Decisión:** no usar pacientes reales, historia clínica, HTTP/SOAP, credenciales, certificados ni ARCA/AFIP real en el ejercicio. **Contexto:** alcance académico acotado. **Alternativa descartada:** validar contra proveedores reales. **Justificación:** instrucciones del usuario y Discovery. **Trade-off:** las pruebas no podrán acreditar integración externa ni operación clínica real.
+**Estado:** restricción confirmada. **Decisión:** no usar pacientes reales, historia clínica, SOAP externo, credenciales, certificados ni ARCA/AFIP real en el ejercicio. **Contexto:** alcance académico acotado. **Alternativa descartada:** validar contra proveedores reales. **Justificación:** instrucciones del usuario y Discovery. **Trade-off:** las pruebas no podrán acreditar integración externa ni operación clínica real.
 
 ### DD-06 — Autorización Git vigente
 
@@ -55,3 +55,7 @@ DD-07 resuelve la implementación técnica de Q01–Q08; los supuestos SU-02/03/
 ## Procedencia
 
 [Discovery canónico](../discovery/discovery.md), [resumen confirmado](../docs/discovery/resumen-para-revision.md), [consigna](../docs/CONSIGNA.md), [bitácora](../docs/BITACORA.md) e instrucciones actuales del usuario. Las entradas de bitácora anteriores describen el momento en que se escribieron; no se leen como estado vigente por encima de la confirmación actual.
+
+## DD-08 — Corrección explícita a FastAPI dentro de C-01
+
+El usuario aclaró que el stack es FastAPI y limitó el trabajo al change 1. Se conserva SQLite y el dominio probado; se añade únicamente el adaptador HTTP local, liveness y documentación. No hay autenticación, UI, CRUD adicional ni servicios externos. DD-07 y decisiones anteriores registran la implementación previa; la exposición actual es FastAPI. La autorización incluye commit y push de este avance validado, sin permiso universal futuro.

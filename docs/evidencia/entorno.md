@@ -63,3 +63,7 @@ No se incluyen configuraciones globales, credenciales ni datos personales en est
 El usuario autorizó publicar los commits pendientes y continuar; remoto main confirmado en 509307025550d183493b5a56fa2d16fd18d0651f. La implementación nueva queda en commit local para revisión, sin nuevo push automático.
 
 Módulo Python 3.12.14/SQLite 3.53.1, sin dependencias nuevas ni servicios externos. 43 tests verdes, siete carreras por suite con 14 procesos spawn reales, rollback/contención y demo verificada. [Evidencia TDD y trazabilidad](implementacion-turnos.md). No se versionaron DB ni datos reales. Archive y revisión personal de fuentes siguen pendientes.
+
+## Corrección FastAPI — C-01
+
+El usuario corrigió expresamente el stack a FastAPI y autorizó commit/push tras validar, manteniendo sólo C-01. Adaptador POST /turnos, GET /health y OpenAPI reutilizan SQLite. Dependencias fijadas, instaladas en .venv (sin cambios globales); HTTPX para TestClient. Estado previo sin HTTP conserva valor histórico, no describe el producto actual. Baseline43; suite actual53 tests. No se modifica PDF, datos reales ni proveedores externos. Archive y evidencias personales pendientes.

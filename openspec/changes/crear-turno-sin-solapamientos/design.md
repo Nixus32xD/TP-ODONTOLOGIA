@@ -2,21 +2,21 @@
 
 ## Context
 
-Ver [proposal.md](proposal.md) para el problema y [exploración](../../../docs/exploracion/alta-turno.md) para el checkout observado. No existe producto, DB ni pruebas que migrar. El contrato conductual propuesto está en [alta-turnos](specs/alta-turnos/spec.md); no hay revisión humana del spec acreditada ni implementación autorizada por esta fase.
+Ver [proposal.md](proposal.md) para el problema y [exploración](../../../docs/exploracion/alta-turno.md) para el checkout observado. La base previa tiene módulo SQLite y 43 tests. El usuario corrigió el stack a FastAPI dentro del mismo C-01. El contrato conductual propuesto está en [alta-turnos](specs/alta-turnos/spec.md); no se acredita lectura personal del spec; la implementación está autorizada por la petición actual.
 
 ## Goals / Non-Goals
 
-**Goals:** una operación sin red, pocos archivos, errores estables, persistencia observable y exclusión demostrable entre procesos sobre un archivo local. Mantener separados resultados del agente y revisiones humanas.
+**Goals:** una API HTTP local sin proveedores externos, pocos archivos, errores estables, persistencia observable y exclusión demostrable entre procesos sobre un archivo local. Mantener separados resultados del agente y revisiones humanas.
 
-**Non-Goals:** diseñar una aplicación clínica completa, ORM, servidor, API HTTP, migraciones de un sistema existente, escalamiento distribuido o CRUD de catálogos. La serialización global de escrituras es suficiente para esta porción; no se promete throughput clínico.
+**Non-Goals:** diseñar una aplicación clínica completa, ORM, API pública, migraciones de un sistema existente, escalamiento distribuido o CRUD de catálogos. La serialización global de escrituras es suficiente para esta porción; no se promete throughput clínico.
 
 ## Decisions
 
-### D-01 — Módulo Python y pruebas estándar (Q01–Q02)
+### D-01 — FastAPI y dominio Python reutilizado (Q01–Q02)
 
-Proponer Python 3.12+, `sqlite3`, `datetime`, `dataclasses`, `unittest` y `multiprocessing` de la biblioteca estándar, sin dependencias externas del producto. Python 3.12.14/SQLite 3.53.1 están disponibles en el runtime observado, pero las pruebas de compatibilidad siguen pendientes.
+Python 3.12+, FastAPI 0.143.2, Pydantic 2.14.1 y Uvicorn 0.54.0. SQLite permanece en sqlite3 estándar; unittest y multiprocessing se conservan, TestClient/HTTPX prueba el adaptador. Instalación sólo en .venv. Python 3.12.14/SQLite 3.53.1 verificados.
 
-La estructura futura mínima será `odontologia/__init__.py`, `odontologia/agenda.py`, `odontologia/demo.py` y `tests/`. No se crea en Propose. El renderer conserva sus dependencias documentales separadas. Laravel con servidor y Node/TypeScript son alternativas viables, diferidas por preparación adicional sin UI ni red necesarias. Memoria sola se descarta para conservar evidencia de persistencia entre conexiones.
+La estructura mínima es `odontologia/__init__.py`, `odontologia/agenda.py`, `odontologia/demo.py` y `tests/`. Se añade odontologia/api.py y tests/test_api.py al producto existente. El renderer conserva sus dependencias documentales separadas. Laravel con servidor y Node/TypeScript son alternativas viables, diferidas por preparación adicional sin UI ni red necesarias. Memoria sola se descarta para conservar evidencia de persistencia entre conexiones.
 
 Interfaz propuesta:
 
@@ -76,8 +76,8 @@ Validar forma de IDs en orden paciente/profesional/box; luego inicio, fin, relac
 - Integración: DB temporal real, referencias, persistencia al reabrir, ningún registro ante rechazo y rollback. Para provocar el fallo anterior al commit, usar una condición de SQLite reproducible que aborte la inserción; no mockear toda la DB ni añadir hooks públicos sólo para el test.
 - Multiproceso: contexto `spawn` y funciones de worker importables, agenda única inicializada antes de arrancar procesos y sincronización con Event/Barrier. Repetir por profesional y por box; comprobar resultados de ambos, códigos de salida y filas reales. No limitarse a hilos ni a dos altas secuenciales.
 - Contención: una conexión mantiene `BEGIN IMMEDIATE`; el competidor usa timeout corto configurable. Verificar `agenda_ocupada`, ausencia del turno y éxito posible tras liberar el lock. Usar límites de espera amplios para evitar cuelgues, sin basar el control de competencia sólo en sleeps.
-- TDD por tarea: prueba RED ejecutada antes del código mínimo, al menos dos entradas/casos por comportamiento, refactor verde y suite completa `python -m unittest discover -s tests -v`. Registrar evidencia real de cada fase; todavía no hay tests ejecutados.
-- Demo `python -m odontologia.demo` futura: inicializa datos ficticios temporales, muestra alta, rechazo por cada recurso y adyacencia. No conservar datos reales ni conectar servicios.
+- TDD por tarea: prueba RED ejecutada antes del código mínimo, al menos dos entradas/casos por comportamiento, refactor verde y suite completa `python -m unittest discover -s tests -v`. Registrar evidencia real de cada fase; baseline previa43 tests ejecutados; ver evidencia actual.
+- Demo `python -m odontologia.demo`: inicializa datos ficticios temporales, muestra alta, rechazo por cada recurso y adyacencia. No conservar datos reales ni conectar servicios.
 
 ## Risks / Trade-offs
 
@@ -90,10 +90,18 @@ Validar forma de IDs en orden paciente/profesional/box; luego inicio, fin, relac
 
 ## Migration Plan
 
-No existen datos ni API a migrar. En Apply, crear paquete, pruebas y demo dentro de este único change después de revisar el contrato. Inicializar sólo nuevas agendas ficticias y rechazar archivos existentes; sin migraciones ni borrados automáticos. Las pruebas usan temporales que les pertenecen. Revertir código por Git no autoriza eliminar agendas ajenas.
+Se mantiene el dominio existente y su esquema; el adaptador no migra datos. El único change C-01 incorpora HTTP local por instrucción expresa. Inicializar sólo nuevas agendas ficticias y rechazar archivos existentes; sin migraciones ni borrados automáticos. Las pruebas usan temporales que les pertenecen. Revertir código por Git no autoriza eliminar agendas ajenas.
 
 ## Open Questions
 
-No quedan decisiones técnicas omitidas para este contrato propuesto: Q01–Q08 tienen respuesta o exclusión explícita arriba. La aceptación humana de estas respuestas sigue pendiente; no se marca aprobada. Q09–Q10 (lecturas personales, autor y evidencia de entrega) continúan fuera del cambio funcional y no alteran su spec. Un cambio solicitado durante la revisión requiere ajustar los artefactos antes de Apply.
+No quedan decisiones técnicas omitidas para este contrato propuesto: Q01–Q08 tienen respuesta o exclusión explícita arriba. La corrección FastAPI y continuación están autorizadas expresamente; esto no acredita revisión académica personal del spec. Q09–Q10 (lecturas personales, autor y evidencia de entrega) continúan fuera del cambio funcional y no alteran su spec. Un cambio solicitado durante la revisión requiere ajustar los artefactos antes de Apply.
 
-Fuentes técnicas y fecha de consulta: [exploración](../../../docs/exploracion/alta-turno.md). La propuesta es compatible con documentación oficial, pero su corrección sólo se acreditará con las pruebas futuras.
+Fuentes técnicas y fecha de consulta: [exploración](../../../docs/exploracion/alta-turno.md). La propuesta es compatible con documentación oficial, pero la evidencia actual registra53 tests y smoke HTTP local.
+
+### D-08 — Contrato HTTP local de C-01
+
+crear_app(ruta_db=None, timeout_segundos=5.0) produce la aplicación sin tocar DB. Si no se pasa ruta usa ODONTOLOGIA_DB o agenda.sqlite3; inicialización explícita previa. Uvicorn se ejecuta con --factory y --host 127.0.0.1 (ver README). POST /turnos recibe objeto JSON con los cinco campos del dominio: IDs string estrictos y fechas ISO 8601 con T. Rechazar epoch numérico, campos adicionales, cuerpo inválido y fechas que incumplan offset/minuto; no recortar IDs. El endpoint síncrono permite ejecutar SQLite en el threadpool de FastAPI y usa una conexión por operación.
+
+201 devuelve Turno persistido en UTC. Errores JSON {codigo,campo,mensaje}: entrada_invalida422, recurso_desconocido404, conflicto_profesional/box409, agenda_ocupada503, almacenamiento_error500. No filtrar input, SQL, rutas ni excepciones internas. Pydantic valida estructura antes del dominio; el orden entre múltiples errores estructurales y de dominio no promete la prioridad entre capas, aunque la prioridad de profesional sobre box permanece. Timeout sólo configuración de la fábrica, no entrada pública.
+
+GET /health200 {status:ok} es liveness, no prueba DB. /openapi.json es local; /docs y /redoc sirven HTML con recursos CDN opcionales de FastAPI, sin llamadas de negocio a proveedores. Sin autenticación, UI clínica ni despliegue público. Los escenarios previos se conservan como contrato del dominio.

@@ -1,6 +1,6 @@
 # TP-ODONTOLOGIA — Instrucciones para Agentes
 
-Instrucciones específicas de esta entrega de Metodología I. Mantener este archivo y `CLAUDE.md` idénticos al actualizarlos. El proyecto partió de cero y ahora tiene módulo de agenda, demo y 43 tests. Archive y evidencias académicas siguen pendientes.
+Instrucciones específicas de esta entrega de Metodología I. Mantener este archivo y `CLAUDE.md` idénticos al actualizarlos. El proyecto partió de cero y ahora tiene FastAPI, módulo de agenda, demo y 53 tests. Archive y evidencias académicas siguen pendientes.
 
 ## Stack Tecnológico
 
@@ -9,9 +9,9 @@ Tabla tomada de [la descripción general](knowledge-base/02_descripcion_general.
 | Capa | Tecnología | Versión mínima / estado |
 | --- | --- | --- |
 | Lenguaje y runtime del producto | Python | 3.12+; verificado con 3.12.14 |
-| Forma de exposición | Módulo local odontologia | Sin servidor ni transporte HTTP |
+| Forma de exposición | FastAPI + Uvicorn | FastAPI 0.143.2; HTTP local, sin proveedores externos |
 | Almacenamiento | SQLite mediante sqlite3 estándar | Archivo en disco local; verificado con SQLite 3.53.1 |
-| Pruebas del producto | unittest y multiprocessing estándar | 43 tests; procesos spawn reales |
+| Pruebas del producto | unittest, TestClient y multiprocessing | 53 tests; procesos spawn reales y contrato HTTP |
 | Interfaz gráfica | Fuera de C-01 | Demo por consola |
 | Especificación y flujo | OpenSpec / Active Stack | Change activo; Archive pendiente |
 | Herramienta del informe | Python, ReportLab y pypdf | Dependencias documentales separadas del producto |
@@ -48,11 +48,11 @@ Fuente de verdad de nombres, rutas y reglas compactas: [registro de skills](.atl
 | Revisión | Revisar un diff sin modificarlo | `review-agent` |
 | Documentación de entrega | Editar y verificar los artefactos pedidos | `pdf`; `documents` o `visualize` sólo cuando corresponda al formato solicitado |
 
-Los compact rules los resuelve el delegador desde `.atl/skill-registry.md`, generado por `skill-registry` y **versionado en este repositorio por pedido del usuario**. No duplicarlos aquí. Las rutas globales describen el equipo donde se generó el registro: comprobar disponibilidad antes de usarlas. El producto usa unittest estándar; no fue necesario instalar nuevas skills ni dependencias para implementar este contrato.
+Los compact rules los resuelve el delegador desde `.atl/skill-registry.md`, generado por `skill-registry` y **versionado en este repositorio por pedido del usuario**. No duplicarlos aquí. Las rutas globales describen el equipo donde se generó el registro: comprobar disponibilidad antes de usarlas. El producto usa unittest estándar; se añadieron dependencias FastAPI/Uvicorn/Pydantic y HTTPX de pruebas sólo en .venv, sin nuevas skills.
 
 ## Roadmap de Changes
 
-El plan está en [CHANGES.md](CHANGES.md): un único change funcional, **C-01 `crear-turno-sin-solapamientos`**, con Apply implementado y verificación técnica completa. El [diseño del change](openspec/changes/crear-turno-sin-solapamientos/design.md) define Python, SQLite y reglas temporales, implementadas al autorizar el usuario continuar. No se atribuye lectura personal del spec a partir de esa autorización. Bootstrap, modelos ficticios y pruebas son tareas internas del mismo change.
+El plan está en [CHANGES.md](CHANGES.md): un único change funcional, **C-01 `crear-turno-sin-solapamientos`**, con Apply implementado y verificación técnica completa. El [diseño del change](openspec/changes/crear-turno-sin-solapamientos/design.md) define FastAPI, Python, SQLite y reglas temporales, implementadas al autorizar el usuario continuar. No se atribuye lectura personal del spec a partir de esa autorización. Bootstrap, modelos ficticios y pruebas son tareas internas del mismo change.
 
 Camino crítico: contrato revisado → alta sin solapamientos → suite completa → Archive. WhatsApp, pagos, historia clínica, autenticación, multisede y UI completa permanecen fuera de esta porción.
 
@@ -64,7 +64,7 @@ Estas reglas consolidan instrucciones ya confirmadas del usuario y restricciones
 
 - **R-01 — Alcance:** implementar sólo el alta de turno acordada. Rechazar conflictos del mismo profesional o del mismo box por separado (RN-TU-01/02); no introducir sobreturnos ni otros módulos por analogía con los competidores.
 - **R-02 — Datos:** nunca guardar datos reales de pacientes, información clínica real, secretos, credenciales o certificados en el repositorio, ejemplos o pruebas → usar exclusivamente datos ficticios.
-- **R-03 — Integraciones:** no ejecutar integraciones externas, HTTP/SOAP, ARCA/AFIP real ni servicios de proveedores desde el ejercicio. Las consultas públicas para investigación y las herramientas del proceso no acreditan integraciones clínicas. Elegir API requiere aclarar antes el alcance permitido del transporte.
+- **R-03 — Integraciones:** no ejecutar integraciones externas, SOAP, ARCA/AFIP real ni servicios de proveedores desde el ejercicio. HTTP local de FastAPI está autorizado expresamente para C-01. Las consultas públicas para investigación y las herramientas del proceso no acreditan integraciones clínicas. La API local no tiene autenticación ni autorización de publicación pública.
 - **R-04 — Contrato:** nunca elegir silenciosamente stack, persistencia, concurrencia o políticas temporales → preparar opciones y registrar la decisión aplicable antes de implementar. `[inicio, fin)`, adyacencia y RN-TU-03 a RN-TU-07 son el contrato de C-01 aplicado tras autorización de continuar. Ante un hueco, volver a Propose.
 - **R-05 — Cambios y errores:** inspeccionar documentos, código y pruebas existentes; realizar cambios mínimos y reutilizar la lógica disponible. Validar entradas explícitamente y devolver errores claros; no corregir datos inválidos silenciosamente para aceptarlos.
 - **R-06 — Pruebas:** cuando exista runner, seguir TDD del roadmap: baseline existente, RED ejecutado antes de producción, GREEN mínimo, triangulación y refactor con pruebas verdes. Cubrir todos los escenarios aprobados y ejecutar la suite completa; reportar fallos previos y no archivar con pruebas fallando. Una prueba secuencial no demuestra concurrencia.

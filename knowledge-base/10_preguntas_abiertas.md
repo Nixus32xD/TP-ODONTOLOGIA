@@ -20,8 +20,8 @@ Estas dudas se registran para continuar sin inventar decisiones. No constituyen 
 
 | ID / prioridad | Pregunta | Bloquea | Decisor / evidencia necesaria |
 | --- | --- | --- | --- |
-| Q01 / Resuelto para C-01 | Módulo local sin HTTP ni servidor. | No bloquea Apply | Contrato publicado y continuación autorizada; no acredita revisión personal |
-| Q02 / Resuelto para C-01 | Python 3.12+, unittest y biblioteca estándar, sin dependencias externas de producto. | No bloquea Apply | Contrato publicado y continuación autorizada; no acredita revisión personal |
+| Q01 / Resuelto para C-01 | FastAPI local con POST /turnos, GET /health y documentación OpenAPI; dominio SQLite reutilizado. | No bloquea Apply | Contrato publicado y continuación autorizada; no acredita revisión personal |
+| Q02 / Resuelto para C-01 | Python 3.12+, FastAPI, Pydantic, Uvicorn; unittest y HTTPX/TestClient para pruebas. Dependencias locales fijadas. | No bloquea Apply | Contrato publicado y continuación autorizada; no acredita revisión personal |
 | Q03 / Resuelto para C-01 | SQLite local, BEGIN IMMEDIATE y pruebas spawn sobre mismo archivo; sin infraestructura externa. | No bloquea Apply | Contrato publicado y continuación autorizada; no acredita revisión personal |
 | Q04 / Resuelto para C-01 | [inicio, fin), adyacencia, inicio anterior a fin, offset explícito, UTC/minuto exacto. | No bloquea Apply | Contrato publicado y continuación autorizada; no acredita revisión personal |
 | Q05 / Resuelto para C-01 | Duración positiva libre y cruce de día; horarios/descansos/disponibilidad excluidos. | No bloquea Apply | Contrato publicado y continuación autorizada; no acredita revisión personal |

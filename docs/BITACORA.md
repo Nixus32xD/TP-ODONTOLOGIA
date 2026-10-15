@@ -138,3 +138,7 @@ Cada entrada posterior debe indicar qué cambió, evidencia disponible, resultad
 - **Concurrencia real:** cada suite ejecuta siete carreras con 14 procesos Windows spawn: tres por profesional, tres por box y una con recursos distintos. Se verifican PIDs, códigos de salida, resultados y filas. Contención/timeout y rollback mediante trigger SQLite real tienen pruebas separadas. Garantía limitada al mismo archivo local vía módulo; no redes compartidas, varios equipos, SQL externo ni reconciliación de IO catastrófico.
 - **Estado:** CLI Apply `all_done`, 15/15 tareas. No se archivó C-01 ni se creó la spec principal; checkbox del roadmap queda abierto hasta Archive. KB, instrucciones y metadatos reflejan lo implementado, conservando revisiones humanas y evidencias académicas como pendientes. PDF, matriz y renderer no se modificaron.
 - **Git actual:** la implementación y documentación relacionada se guardan en commit local validado. El permiso de push aplicado a los commits previos no se extiende automáticamente a este avance nuevo.
+
+## Corrección FastAPI — C-01
+
+El usuario corrigió expresamente el stack a FastAPI y autorizó commit/push tras validar, manteniendo sólo C-01. Adaptador POST /turnos, GET /health y OpenAPI reutilizan SQLite. Dependencias fijadas, instaladas en .venv (sin cambios globales); HTTPX para TestClient. Estado previo sin HTTP conserva valor histórico, no describe el producto actual. Baseline43; suite actual53 tests. No se modifica PDF, datos reales ni proveedores externos. Archive y evidencias personales pendientes.
