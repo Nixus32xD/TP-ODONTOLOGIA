@@ -1,5 +1,5 @@
 {
-  "estado": "Once puntos confirmados; verificación personal pendiente",
+  "estado": "Once puntos confirmados; revisión adicional delegada; verificación personal pendiente",
   "fecha": "2026-10-15",
   "metrica": "Cobertura documental pública; no calidad real",
   "formula": "sum(peso * puntaje / 5)",
@@ -16,7 +16,7 @@
     {
       "producto": "Denteo",
       "ficha": "fuentes/denteo.md",
-      "sha256": "bdf544126d5e6c9f2d3dc376fd6ff87c83029c5ffc4385cc7e736d662eed106e",
+      "sha256": "c01aa7df753a5b1d16a57f747ec2b32cf65f79a51f00f15fd9254c1126c3072f",
       "puntajes": {
         "turnos": 4,
         "clinica": 4,

@@ -21,7 +21,7 @@ Recepción registra turnos. Los profesionales son recursos de agenda; paciente y
 
 ## 4. Competidores y soluciones existentes
 
-Quince fichas y matriz de evidencia en [informe Discovery](informe-discovery.md). Orden por relación con Argentina, no por puntuación. La investigación documental asistida por IA usa fuentes públicas y distingue DOCUMENTADO, AFIRMACIÓN COMERCIAL y No evidenciado. No se probó software. Seis comprobaciones del agente están registradas; queda pendiente mi verificación personal de al menos cinco fuentes.
+Quince fichas y matriz de evidencia en [informe Discovery](informe-discovery.md). Orden por relación con Argentina, no por puntuación. La investigación documental asistida por IA usa fuentes públicas y distingue DOCUMENTADO, AFIRMACIÓN COMERCIAL y No evidenciado. No se probó software. Seis comprobaciones del agente y una [revisión adicional delegada](revision-documental-2026-10-15.md) están registradas. Por falta de disponibilidad delegué el contraste documental a IA, sin atribuirme esas lecturas; queda pendiente acreditar mi verificación personal de al menos cinco fuentes.
 
 ## 5. Funcionalidades necesarias
 
@@ -55,4 +55,4 @@ Antes de implementar deben acordarse: stack; API o módulo; persistencia; estrat
 
 Confirmé explícitamente los once puntos y autoricé continuar con `discovery-research` el **2026-10-15**. El resultado canónico está en [Discovery](../../discovery/discovery.md) y alimenta la base de conocimiento. La confirmación conserva las propuestas y preguntas abiertas con su estado pendiente.
 
-La revisión personal de al menos cinco fuentes sigue pendiente y se documentará cuando se realice. El siguiente paso del flujo de fundación es la base de conocimiento, antes del roadmap y la propuesta del primer change. No se afirma que estén realizados capturas o video ni se salta directamente a implementación.
+La revisión personal de al menos cinco fuentes sigue pendiente y se documentará cuando se realice. La base de conocimiento y el roadmap ya están generados. La fundación continúa con selección y registro de skills e instrucciones del agente, antes de la propuesta del primer change. No se afirma que estén realizados capturas o video ni se salta directamente a implementación.

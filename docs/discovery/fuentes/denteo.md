@@ -24,7 +24,7 @@ AFIRMACIÓN COMERCIAL: presupuestos con descuentos y planes de pago; facturas AR
 
 DOCUMENTADO como declaración del proveedor: base en Argentina; archivos/backups en Cloudflare R2 exterior; Cloudflare procesa tránsito; TLS/AES, auditoría y backups diarios; invoca Ley 25.326 y derechos de datos. Esto no acredita cumplimiento legal argentino. [Privacidad](https://www.denteo.com.ar/privacidad.html)
 
-AFIRMACIÓN COMERCIAL: prueba 15 días sin tarjeta; Basic ARS 30.000/mes, Professional ARS 45.000/mes, Enterprise ARS 80.000/mes; límites de usuarios/pacientes/facturas/almacenamiento; soporte y migración asistida. Precio publicado observado, sin compra. Cupos WhatsApp y modalidad de renovación difirieron entre snippets y páginas abiertas: quedan pendientes de confirmación; no se adopta una condición definitiva. [Precios](https://denteo.com.ar/precios.html)
+AFIRMACIÓN COMERCIAL: prueba 15 días sin tarjeta; Basic ARS 30.000/mes, Professional ARS 45.000/mes, Enterprise ARS 80.000/mes; límites de usuarios/pacientes/facturas/almacenamiento; soporte y migración asistida. Precio publicado observado, sin compra. Cupos y renovación difirieron entre lecturas anteriores. La revisión adicional del 2026-10-15 publica Basic 50, Professional 200 y Enterprise 1.000 mensajes WhatsApp por mes; prueba: 50 en total. Describe pago manual o débito automático por MercadoPago para la suscripción. Se conserva el antecedente de divergencias; son condiciones publicadas observadas a esta fecha, no garantía de vigencia futura ni prueba funcional. [Precios](https://denteo.com.ar/precios.html)
 
 Fortaleza inferida: documentación explicita restricciones útiles para diseñar turnos/exportación. Diferenciador comercial: ARCA y migración Bilog. Límite: no se verificó reserva autónoma; exportación clínica parcial documentada. Adopción pública cuantificada: NO EVIDENCIADA; no se deduce de testimonios.
 
@@ -40,7 +40,7 @@ Rúbrica: 0 sin evidencia; 1 genérica; 2 comercial específica; 3 un flujo docu
 | Administración 15 | 2 | Funciones específicas comerciales. |
 | Paciente 10 | 3 | Avisos y confirmación manual detallados. |
 | Seguridad/exportación 10 | 4 | Auditoría/exportación documentadas y política detallada. |
-| Precio 5 | 2 | Tarifas específicas; condiciones divergentes pendientes. |
+| Precio 5 | 2 | Tarifas específicas; nueva lectura fechada aclara cupos y renovación, con antecedente de divergencias. |
 
 Puntajes: turnos=4; clinica=4; integraciones=3; administracion=2; paciente=3; seguridad=4; precio=2
 

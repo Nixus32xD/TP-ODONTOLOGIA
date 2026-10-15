@@ -28,7 +28,7 @@ from pypdf import PdfReader
 ROOT = Path(__file__).resolve().parents[1]
 OUT = ROOT / "docs" / "discovery"
 DATE = "2026-10-15"
-STATUS = "Once puntos confirmados; verificación personal pendiente"
+STATUS = "Once puntos confirmados; revisión adicional delegada; verificación personal pendiente"
 WEIGHTS = {
     "turnos": 25, "clinica": 20, "integraciones": 15,
     "administracion": 15, "paciente": 10, "seguridad": 10, "precio": 5,
@@ -37,7 +37,7 @@ WEIGHTS = {
 # Orden por pertinencia para Argentina y el TP; nunca se ordena por score.
 # Resúmenes editoriales: los detalles y límites viven en las fichas enlazadas.
 PRODUCTS = [
-    ("denteo", "Denteo", "Datasoluciones / Argentina", "Consultorio y clínica dental", "SaaS/navegador", "https://denteo.com.ar/clinica.html", "D: vistas, recursos y bloqueos", "D: odontograma/evoluciones", "D: WhatsApp manual; C: ARCA", "C: ARS/mes; divergencias pendientes"),
+    ("denteo", "Denteo", "Datasoluciones / Argentina", "Consultorio y clínica dental", "SaaS/navegador", "https://denteo.com.ar/clinica.html", "D: vistas, recursos y bloqueos", "D: odontograma/evoluciones", "D: WhatsApp manual; C: ARCA", "C: ARS/mes; cupos fechados; divergencias previas"),
     ("dentalink", "Dentalink", "Healthatom / Chile; oferta Argentina", "Individual, clínica y sucursales", "Nube/navegador", "https://web-ar.softwaredentalink.com/", "D: agenda y reserva con recursos", "C: módulos dentales", "C: WhatsApp/obras sociales AR", "C: cotización; importe NE"),
     ("dentidesk", "DENTIDESK", "DENTIDESK CHILE SpA / Chile", "Clínica dental; académico separado", "SaaS", "https://www.dentidesk.com/", "C: intervalos y reserva web", "C: anamnesis y especialidades", "D: WhatsApp manual; AR NE", "D: prueba 15 días; tarifa NE"),
     ("odontosoft", "OdontoSoft Millennium", "GB Systems / Argentina y USA", "Consultorio y clínica dental", "Windows; web opcional", "https://gbsystems.com/os/", "D histórico: asignación/concurrencia", "D histórico: odontograma/pagos", "WhatsApp y ARCA NE", "C: USD compra; vigencia pendiente"),
@@ -265,7 +265,7 @@ def create_pdf(matrix: dict):
     doc = SimpleDocTemplate(str(pdf_path), pagesize=A4, rightMargin=42, leftMargin=42, topMargin=52, bottomMargin=47, title="Discovery - Gestión de turnos odontológicos - Informe de trabajo", author="Responsable de revisión: estudiante; integrante pendiente", subject="Relevamiento documental asistido por IA para Metodología I", pageCompression=1)
     cover_title = ParagraphStyle("CoverTitle", fontName="ArialBold", fontSize=32, leading=40, textColor=colors.HexColor("#112E45"), spaceAfter=24)
     cover_small = ParagraphStyle("CoverSmall", parent=st["BodyAR"], fontSize=12, leading=19, spaceAfter=18)
-    flow = [Spacer(1, 54), Paragraph("METODOLOGÍA I", st["SubAR"]), Spacer(1, 18), Paragraph("Discovery<br/>Gestión de turnos<br/>odontológicos", cover_title), HRFlowable(width="100%", thickness=3, color=colors.HexColor("#087F8C")), Spacer(1, 24), Paragraph("INFORME DE TRABAJO", cover_small), Paragraph("Consultorio pequeño de Argentina<br/>Primer change: profesional y box sin solapamientos", cover_small), Spacer(1, 24), Paragraph("15 de octubre de 2026<br/>Integrante/autor de la entrega: pendiente de identificación", st["BodyAR"]), Spacer(1, 18), Paragraph(f"15 productos | 7 criterios | {matrix['urls_unicas_en_fichas_productos']} URLs referenciadas en fichas<br/>Relevamiento documental con asistencia de IA. Sin demos ejecutadas.", st["BodyAR"]), Paragraph("Confirmé los once puntos de Discovery y continuaré con la fundación.<br/>Mi verificación personal de al menos cinco fuentes sigue pendiente.<br/>Este informe todavía no constituye la entrega académica final.", st["BodyAR"]), PageBreak()]
+    flow = [Spacer(1, 54), Paragraph("METODOLOGÍA I", st["SubAR"]), Spacer(1, 18), Paragraph("Discovery<br/>Gestión de turnos<br/>odontológicos", cover_title), HRFlowable(width="100%", thickness=3, color=colors.HexColor("#087F8C")), Spacer(1, 24), Paragraph("INFORME DE TRABAJO", cover_small), Paragraph("Consultorio pequeño de Argentina<br/>Primer change: profesional y box sin solapamientos", cover_small), Spacer(1, 24), Paragraph("15 de octubre de 2026<br/>Integrante/autor de la entrega: pendiente de identificación", st["BodyAR"]), Spacer(1, 18), Paragraph(f"15 productos | 7 criterios | {matrix['urls_unicas_en_fichas_productos']} URLs referenciadas en fichas<br/>Relevamiento documental con asistencia de IA. Sin demos ejecutadas.", st["BodyAR"]), Paragraph("Confirmé los once puntos de Discovery y continuaré con la fundación.<br/>Delegué una revisión adicional de seis fuentes a IA.<br/>Mi verificación personal de al menos cinco fuentes sigue pendiente.<br/>Este informe todavía no constituye la entrega académica final.", st["BodyAR"]), PageBreak()]
     main = (OUT / "informe-discovery.md").read_text(encoding="utf-8")
     # La portada Markdown queda en la fuente; en PDF tiene diseño independiente.
     main = "## Resumen ejecutivo" + main.split("## Resumen ejecutivo", 1)[1]
@@ -279,10 +279,15 @@ def create_pdf(matrix: dict):
     flow.extend(render_markdown((OUT / "fuentes" / "marco-argentino.md").read_text(encoding="utf-8"), st, width, skip_top_title=True))
     flow.extend([PageBreak(), Paragraph("Anexo 17. Once puntos confirmados", st["HeadingAR"])])
     flow.extend(render_markdown((OUT / "resumen-para-revision.md").read_text(encoding="utf-8"), st, width, skip_top_title=True))
+    flow.extend([PageBreak(), Paragraph("Anexo 18. Revisión documental delegada", st["HeadingAR"])])
+    review_st = styles()
+    review_st["CellAR"].fontSize = 7.6
+    review_st["CellAR"].leading = 10
+    flow.extend(render_markdown((OUT / "revision-documental-2026-10-15.md").read_text(encoding="utf-8"), review_st, width, skip_top_title=True))
     doc.build(flow, onFirstPage=footer, onLaterPages=footer)
     reader = PdfReader(str(pdf_path))
     text = "\n".join(page.extract_text() or "" for page in reader.pages)
-    required = ["INFORME DE TRABAJO", "Resumen ejecutivo", "A. Comparación", "B. Matriz", "C. Hallazgos", "D. Referencias", "Verificación de fuentes", "Anexo 17", *[product[1] for product in PRODUCTS]]
+    required = ["INFORME DE TRABAJO", "Resumen ejecutivo", "A. Comparación", "B. Matriz", "C. Hallazgos", "D. Referencias", "Verificación de fuentes", "Anexo 17", "Anexo 18", *[product[1] for product in PRODUCTS]]
     absent = [item for item in required if item not in text]
     if absent:
         raise ValueError(f"Texto esperado ausente en PDF: {absent}")
