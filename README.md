@@ -6,7 +6,7 @@ Repositorio: [Nixus32xD/TP-ODONTOLOGIA](https://github.com/Nixus32xD/TP-ODONTOLO
 
 ## Estado actual
 
-OpenSpec inicializado y Discovery documental confirmado: quince sistemas relevados, matriz ponderada y once puntos aceptados el 2026-10-15 para un consultorio pequeño. Elegí como primer change crear turnos evitando solapamientos por profesional y box. La investigación documental está asistida por IA; queda pendiente mi verificación personal de al menos cinco fuentes. C-01 ya tiene FastAPI, módulo, demo y 53 tests automatizados; Archive y las evidencias personales de entrega siguen pendientes.
+OpenSpec inicializado y Discovery documental confirmado: quince sistemas relevados, matriz ponderada y once puntos aceptados el 2026-10-15 para un consultorio pequeño. Elegí como primer change crear turnos evitando solapamientos por profesional y box. La investigación documental está asistida por IA; confirmé mi revisión personal de las seis fuentes del registro el 2026-10-15. C-01 ya tiene FastAPI, módulo, demo y 53 tests automatizados; Archive y las evidencias personales de entrega siguen pendientes.
 
 Se ejecutó `openspec init --tools codex --language es --no-animation`: configuración `spec-driven` y seis skills OPSX. Se incorporó `discovery-research` sólo en este proyecto. El estado de Active Stack conserva `version: 4` y registra `step: agents`: Discovery está registrado y la [base de conocimiento](knowledge-base/README.md) contiene diez documentos canónicos más su índice, generados desde las fuentes existentes. El usuario autorizó continuar con Apply sobre la propuesta: FastAPI, Python 3.12+, SQLite y unittest. El campo step registra la última fase de fundación; el CLI de OpenSpec registra el progreso del change.
 
@@ -43,7 +43,7 @@ El usuario autorizó commits locales separados por petición completada, validac
 - [Discovery canónico](discovery/discovery.md) y [once puntos confirmados](docs/discovery/resumen-para-revision.md).
 - [Base de conocimiento: índice y diez documentos](knowledge-base/README.md).
 - [Roadmap del único change de turnos](CHANGES.md).
-- [Comprobaciones documentales y revisión personal pendiente](docs/discovery/verificacion-fuentes.md).
+- [Comprobaciones documentales y revisión personal confirmada](docs/discovery/verificacion-fuentes.md).
 - [Nueva revisión documental delegada: seis fuentes y motivos de ajuste](docs/discovery/revision-documental-2026-10-15.md).
 - [Selección y justificación de skills](docs/fundacion/seleccion-skills.md).
 - [Registro de skills del proyecto](.atl/skill-registry.md).
@@ -58,7 +58,7 @@ Con Python 3, `reportlab`, `pypdf` y las fuentes Arial de Windows disponibles:
 python tools/render_discovery.py
 ```
 
-El comando consolida tablas, calcula los totales y genera el PDF y `matriz-evidencia.json` desde las fichas. No consulta servicios externos ni modifica el estado de Active Stack. La revisión personal de al menos cinco fuentes continúa pendiente.
+El comando consolida tablas, calcula los totales y genera el PDF y `matriz-evidencia.json` desde las fichas. No consulta servicios externos ni modifica el estado de Active Stack. La revisión personal de las seis fuentes fue confirmada por el estudiante el 2026-10-15; se conserva la atribución de los hallazgos a IA.
 
 Todos los ejemplos y pruebas usan datos ficticios, sin secretos ni pacientes reales.
 
@@ -98,4 +98,4 @@ Devuelve201 con id y fechas UTC después del commit. Errores JSON codigo/campo/m
 
 Catálogos ficticios paciente-A/B, profesional-A/B y box-A/B. Intervalos [inicio,fin), adyacencia permitida; prioridad del profesional si ambos conflictos existen. Timeout5s configurable en crear_app, no expuesto en JSON. Garantía sólo mismo archivo SQLite local y escritores del módulo, sin red compartida ni SQL externo. Sin autenticación, UI clínica, cancelación, horarios, exclusión de paciente ni idempotencia; no apto para pacientes reales ni despliegue público.
 
-La demo conserva dos registros en su temporal y lo elimina al terminar. [Evidencia y trazabilidad](docs/evidencia/implementacion-turnos.md). Archive, fuentes personales, capturas, video y reflexión siguen pendientes.
+La demo conserva dos registros en su temporal y lo elimina al terminar. [Evidencia y trazabilidad](docs/evidencia/implementacion-turnos.md). Archive, evidencias de entrega, video y reflexión siguen pendientes; la revisión personal de fuentes ya está confirmada.

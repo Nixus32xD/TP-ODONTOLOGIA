@@ -1,5 +1,5 @@
 {
-  "estado": "Once puntos confirmados; revisión adicional delegada; verificación personal pendiente",
+  "estado": "Once puntos y revisión personal de seis fuentes confirmados",
   "fecha": "2026-10-15",
   "metrica": "Cobertura documental pública; no calidad real",
   "formula": "sum(peso * puntaje / 5)",

@@ -27,3 +27,13 @@ coverage/
 *.sqlite-*
 *.db
 *.db-*
+
+# Preparación y grabaciones locales del video
+/docs/entrega/guion-video.md
+/docs/entrega/capturas/
+/docs/entrega/video/
+*.mp4
+*.mkv
+*.webm
+*.mov
+*.avi

@@ -28,7 +28,7 @@ from pypdf import PdfReader
 ROOT = Path(__file__).resolve().parents[1]
 OUT = ROOT / "docs" / "discovery"
 DATE = "2026-10-15"
-STATUS = "Once puntos confirmados; revisión adicional delegada; verificación personal pendiente"
+STATUS = "Once puntos y revisión personal de seis fuentes confirmados"
 WEIGHTS = {
     "turnos": 25, "clinica": 20, "integraciones": 15,
     "administracion": 15, "paciente": 10, "seguridad": 10, "precio": 5,
@@ -252,7 +252,7 @@ def footer(canvas, doc):
         canvas.drawString(42, height - 27, "TP-ODONTOLOGIA | Discovery | Informe de trabajo")
     canvas.setFont("Arial", 7.5)
     canvas.setFillColor(colors.HexColor("#476477"))
-    canvas.drawString(42, 25, "15/10/2026 | Datos ficticios | Revisión personal del estudiante pendiente")
+    canvas.drawString(42, 25, "15/10/2026 | Datos ficticios | Revisión personal de fuentes confirmada")
     canvas.drawRightString(width - 42, 25, str(page))
     canvas.restoreState()
 
@@ -265,7 +265,7 @@ def create_pdf(matrix: dict):
     doc = SimpleDocTemplate(str(pdf_path), pagesize=A4, rightMargin=42, leftMargin=42, topMargin=52, bottomMargin=47, title="Discovery - Gestión de turnos odontológicos - Informe de trabajo", author="Responsable de revisión: estudiante; integrante pendiente", subject="Relevamiento documental asistido por IA para Metodología I", pageCompression=1)
     cover_title = ParagraphStyle("CoverTitle", fontName="ArialBold", fontSize=32, leading=40, textColor=colors.HexColor("#112E45"), spaceAfter=24)
     cover_small = ParagraphStyle("CoverSmall", parent=st["BodyAR"], fontSize=12, leading=19, spaceAfter=18)
-    flow = [Spacer(1, 54), Paragraph("METODOLOGÍA I", st["SubAR"]), Spacer(1, 18), Paragraph("Discovery<br/>Gestión de turnos<br/>odontológicos", cover_title), HRFlowable(width="100%", thickness=3, color=colors.HexColor("#087F8C")), Spacer(1, 24), Paragraph("INFORME DE TRABAJO", cover_small), Paragraph("Consultorio pequeño de Argentina<br/>Primer change: profesional y box sin solapamientos", cover_small), Spacer(1, 24), Paragraph("15 de octubre de 2026<br/>Integrante/autor de la entrega: pendiente de identificación", st["BodyAR"]), Spacer(1, 18), Paragraph(f"15 productos | 7 criterios | {matrix['urls_unicas_en_fichas_productos']} URLs referenciadas en fichas<br/>Relevamiento documental con asistencia de IA. Sin demos ejecutadas.", st["BodyAR"]), Paragraph("Confirmé los once puntos de Discovery y continuaré con la fundación.<br/>Delegué una revisión adicional de seis fuentes a IA.<br/>Mi verificación personal de al menos cinco fuentes sigue pendiente.<br/>Este informe todavía no constituye la entrega académica final.", st["BodyAR"]), PageBreak()]
+    flow = [Spacer(1, 54), Paragraph("METODOLOGÍA I", st["SubAR"]), Spacer(1, 18), Paragraph("Discovery<br/>Gestión de turnos<br/>odontológicos", cover_title), HRFlowable(width="100%", thickness=3, color=colors.HexColor("#087F8C")), Spacer(1, 24), Paragraph("INFORME DE TRABAJO", cover_small), Paragraph("Consultorio pequeño de Argentina<br/>Primer change: profesional y box sin solapamientos", cover_small), Spacer(1, 24), Paragraph("15 de octubre de 2026<br/>Integrante/autor de la entrega: pendiente de identificación", st["BodyAR"]), Spacer(1, 18), Paragraph(f"15 productos | 7 criterios | {matrix['urls_unicas_en_fichas_productos']} URLs referenciadas en fichas<br/>Relevamiento documental con asistencia de IA. Sin demos ejecutadas.", st["BodyAR"]), Paragraph("Confirmé los once puntos de Discovery y continuaré con la fundación.<br/>Delegué una revisión adicional de seis fuentes a IA.<br/>Confirmé que vi las seis fuentes y me parecen bien (15/10/2026).<br/>Este informe todavía no constituye la entrega académica final.", st["BodyAR"]), PageBreak()]
     main = (OUT / "informe-discovery.md").read_text(encoding="utf-8")
     # La portada Markdown queda en la fuente; en PDF tiene diseño independiente.
     main = "## Resumen ejecutivo" + main.split("## Resumen ejecutivo", 1)[1]

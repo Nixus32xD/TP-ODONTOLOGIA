@@ -142,3 +142,30 @@ Cada entrada posterior debe indicar qué cambió, evidencia disponible, resultad
 ## Corrección FastAPI — C-01
 
 El usuario corrigió expresamente el stack a FastAPI y autorizó commit/push tras validar, manteniendo sólo C-01. Adaptador POST /turnos, GET /health y OpenAPI reutilizan SQLite. Dependencias fijadas, instaladas en .venv (sin cambios globales); HTTPX para TestClient. Estado previo sin HTTP conserva valor histórico, no describe el producto actual. Baseline43; suite actual53 tests. No se modifica PDF, datos reales ni proveedores externos. Archive y evidencias personales pendientes.
+
+### Publicación verificada y preparación de demostración
+
+Se publicó `b0abe34738d1a669c9ce60c6e52f8cbe23c4b088` en main; `git ls-remote` confirmó la misma revisión y el tracking quedó 0/0. Incluye el commit previo del dominio `a878038`. Verificación final: 53/53 tests, `pip check` sin dependencias rotas, OpenSpec strict sin incidencias y Apply 18/18. Comprobación documental: 268 enlaces locales sin roturas antes de incorporar el índice del guion; AGENTS/CLAUDE idénticos. PDF, matriz y renderer permanecieron intactos.
+
+Se preparó el guion del video como material local de preparación, con tiempos orientativos, demostración real y límites de evidencia. Es preparación documental, no una grabación, reflexión personal ni revisión humana. No se creó C-02 ni se archivó C-01. Esta preparación posterior se guarda en commit local separado; no extiende automáticamente la publicación autorizada de la implementación.
+
+### Ampliación del guion con vistas reales
+
+Por pedido del usuario se amplió el guion con archivos, recorrido en pantalla, comandos, cuerpos JSON y texto orientativo para ensayar. Se capturaron ocho vistas reales de Swagger y health con datos ficticios; su procedencia y resultados están documentados en el material local de preparación. Se ejecutó desde el navegador la secuencia 201, 409 profesional, 409 box, 201 adyacencia, 422 intervalo vacío y 404 recurso desconocido. SQLite confirmó dos filas; servidor detenido y temporal propio eliminado. No se modificó código de producto, PDF, specs ni se creó otro change. La ampliación se guarda en commit local validado, sin push nuevo.
+
+
+## 2026-10-15 — Confirmación personal de fuentes
+
+La revisión personal de las seis fuentes del registro quedó confirmada por el estudiante el 2026-10-15: declaró que ya las vio y le parecen bien. Los hallazgos detallados siguen atribuidos a la investigación asistida; esta conformidad global no acredita pruebas funcionales ni una auditoría independiente.
+
+Declaración textual del estudiante:
+
+> la verificacion humana marcala como correcta de las fuentes ya las vi y me parecen bien
+
+Se actualizan las seis filas del registro y el checklist de fuentes. Los registros anteriores describen el estado histórico antes de esta confirmación. No se modifican producto, C-01 ni Archive. El material local de demostración sólo ajusta sus menciones al estado de revisión de fuentes. La confirmación no equivale a aprobar otras etapas ni a entregar el TP completo. El guion permanece sin publicación por instrucción expresa.
+
+## 2026-10-15 — Preparación de publicación del informe sin material de video
+
+El usuario autorizó publicar el informe actualizado y pidió ignorar el material del video. Se conservó una rama de respaldo exclusivamente local de los tres commits no publicados y se reorganizó el avance sobre la revisión publicada, para que el guion y las capturas tampoco ingresen al historial de `main`. Los archivos de preparación permanecen intactos en el equipo, fuera del índice y cubiertos por reglas de `.gitignore` para el guion, las capturas y las grabaciones de video; no se ignora toda la carpeta de entrega. Se retiraron enlaces públicos a esos archivos locales.
+
+La publicación preparada comprende el informe, PDF, registro de fuentes y documentación de estado relacionada. El PDF aprobado se conserva sin regenerar. No se modifica código de producto, specs ni estado de C-01; no se crea otro change ni se ejecuta Archive. La comprobación del push y su revisión remota se informa después de ejecutarlo.

@@ -2,7 +2,7 @@
 
 **Fecha:** 2026-10-15. **Estado:** once puntos confirmados por el usuario; cierre documental de Discovery autorizado.
 
-Elegí una entrega propia desde cero para un consultorio odontológico pequeño de Argentina. Trabajo con investigación documental asistida por IA. La confirmación de este alcance no acredita entrevistas, pruebas de productos ni revisión personal de fuentes: queda pendiente mi verificación personal de al menos cinco fuentes. El [informe](../docs/discovery/informe-discovery.md), sus [fichas](../docs/discovery/fuentes/) y el [registro de comprobaciones](../docs/discovery/verificacion-fuentes.md) conservan la evidencia y sus límites.
+Elegí una entrega propia desde cero para un consultorio odontológico pequeño de Argentina. Trabajo con investigación documental asistida por IA. La confirmación de este alcance no acredita entrevistas, pruebas de productos ni revisión personal de fuentes: mi revisión personal de las seis fuentes fue confirmada el 2026-10-15. El [informe](../docs/discovery/informe-discovery.md), sus [fichas](../docs/discovery/fuentes/) y el [registro de comprobaciones](../docs/discovery/verificacion-fuentes.md) conservan la evidencia y sus límites.
 
 ## 1. Problema que resuelve
 
@@ -23,7 +23,7 @@ Recepción registra los turnos de varios profesionales y boxes. El profesional e
 
 El relevamiento asistido por IA reúne quince sistemas: Denteo, Dentalink, DENTIDESK, OdontoSoft Millennium, Doctoralia Argentina, AgendaPro, Odontosys, Simples Dental, Dental Office, Clinic Cloud, GESDEN ONE/G5, Open Dental, Dentrix Ascend, CareStack y Dentisoft. La matriz del [informe](../docs/discovery/informe-discovery.md) compara evidencia documental pública, con notas y precios condicionados a variante, región, plan y fecha. Su orden prioriza la relación con Argentina y no constituye un ranking comercial.
 
-Distingo DOCUMENTADO, AFIRMACIÓN COMERCIAL y No evidenciado. No se probó software. Las seis comprobaciones documentales del agente no sustituyen mi revisión personal de al menos cinco fuentes, que sigue pendiente. No afirmo que exista un vacío de mercado.
+Distingo DOCUMENTADO, AFIRMACIÓN COMERCIAL y No evidenciado. No se probó software. Las seis comprobaciones documentales del agente se distinguen de mi revisión personal posterior de esas fuentes, confirmada el 2026-10-15. No afirmo que exista un vacío de mercado.
 
 ## 5. Funcionalidades necesarias
 
@@ -53,8 +53,8 @@ Mantengo tres hipótesis sin validar con usuarios reales: recepción valora erro
 
 ## 11. Preguntas abiertas
 
-Antes de implementar deben acordarse stack, API o módulo, persistencia, estrategia y prueba de concurrencia, identidad mínima del paciente, doble turno del paciente, duración, horarios, zona horaria, estados y cancelación, límites y adyacencia, compatibilidad profesional-box e idempotencia. También falta identificar expresamente al integrante/autor y registrar mi revisión personal de fuentes. No elijo respuestas por defecto.
+Antes de implementar deben acordarse stack, API o módulo, persistencia, estrategia y prueba de concurrencia, identidad mínima del paciente, doble turno del paciente, duración, horarios, zona horaria, estados y cancelación, límites y adyacencia, compatibilidad profesional-box e idempotencia. También falta identificar expresamente al integrante/autor. Mi revisión personal de fuentes ya quedó registrada. No elijo respuestas por defecto.
 
 ## Confirmación y continuación
 
-El usuario confirmó explícitamente los once puntos el 2026-10-15 y autorizó continuar con `discovery-research`. Esta confirmación permite registrar el resultado canónico y alimentar la base de conocimiento. Las preguntas abiertas conservan su carácter pendiente y la revisión personal de fuentes continúa sin completarse. El siguiente paso es la base de conocimiento; después corresponden roadmap y propuesta del primer change, sin saltar directamente a implementación.
+El usuario confirmó explícitamente los once puntos el 2026-10-15 y autorizó continuar con `discovery-research`. Esta confirmación permite registrar el resultado canónico y alimentar la base de conocimiento. Las preguntas abiertas conservan su carácter pendiente y la revisión personal de fuentes quedó confirmada posteriormente el 2026-10-15. El siguiente paso es la base de conocimiento; después corresponden roadmap y propuesta del primer change, sin saltar directamente a implementación.

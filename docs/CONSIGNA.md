@@ -24,13 +24,13 @@ Este checklist resume requisitos de la consigna; no acredita su cumplimiento. La
 - [x] Registrar la confirmación del alcance por el usuario: consultorio pequeño, primer change de turnos sin solapamientos de profesional y box; propuestas técnicas y preguntas abiertas conservadas como pendientes.
 - [x] Investigar Argentina, Latinoamérica y referencias internacionales con fuentes públicas, URL y fecha; accesos fallidos registrados.
 - [x] Relevar los campos por producto en quince fichas, conservando límites y datos **No evidenciados**.
-- [x] A: comparar 15 sistemas, ordenados por relevancia para Argentina. Once puntos documentales confirmados; comprobación personal de fuentes pendiente.
+- [x] A: comparar 15 sistemas, ordenados por relevancia para Argentina. Once puntos documentales y revisión personal de seis fuentes confirmados.
 - [x] B: matriz de 0 a 5, total ponderado, escala y tratamiento de datos no evidenciados.
 - [x] C: estándares, diferenciadores, lagunas documentales y oportunidades como hipótesis; no se afirma un vacío de mercado por ausencia de fuentes.
 - [x] D: cinco prioridades para demo futura, tres referencias de UX y un MVP acotado. Las demos no se realizaron.
 - [x] Distinguir documentación de funciones, afirmaciones comerciales y falta de evidencia; sin pruebas funcionales de los proveedores.
 - [x] Revisión adicional delegada: [seis fuentes oficiales contrastadas](discovery/revision-documental-2026-10-15.md), con ajustes de precisión y límites de acceso registrados. No acredita lecturas personales.
-- [ ] Verificación humana: comprobar personalmente al menos cinco fuentes de distintos tipos; registrar afirmación, hallazgo y corrección. La revisión del agente no sustituye esta comprobación.
+- [x] Verificación humana de fuentes: el estudiante confirmó el 2026-10-15 que vio y considera correctas las seis fuentes de seis tipos del [registro](discovery/verificacion-fuentes.md). Se conservan afirmaciones, hallazgos y correcciones previos de IA; no se inventan observaciones personales por fuente.
 - [x] Preparar localmente `docs/discovery/informe-discovery.md`, su PDF y los once puntos en `docs/discovery/resumen-para-revision.md`; resultado canónico adicional en `discovery/discovery.md`.
 - [x] Autorizar la publicación en `main` del PDF y documentos de este avance: permiso explícito del usuario registrado; la autorización no acredita por sí sola ejecución del push.
 - [ ] Realizar la entrega docente final del PDF y documentos; publicar el repositorio no acredita esa entrega.

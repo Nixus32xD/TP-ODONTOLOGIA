@@ -128,6 +128,6 @@ Agregar a las specs escenarios de contención, recursos diferentes y fallos de r
 
 #### Pendientes de entrega que no son código de C-01
 
-La revisión personal de al menos cinco fuentes de distintos tipos sigue pendiente y no puede sustituirse por comprobaciones del agente. También quedan identificación del autor, evidencias de instalación Full/harnesses y Go, capturas, video, reflexión propia, consulta Engram y revisión humana por etapa; ver [consigna](docs/CONSIGNA.md). El cierre funcional no acredita por sí solo la entrega completa.
+La revisión personal de las seis fuentes de seis tipos quedó confirmada por el estudiante el 2026-10-15; los hallazgos documentales previos siguen atribuidos al agente. También quedan identificación del autor, evidencias de instalación Full/harnesses y Go, capturas, video, reflexión propia, consulta Engram y revisión humana por etapa; ver [consigna](docs/CONSIGNA.md). El cierre funcional no acredita por sí solo la entrega completa.
 
 Los commits locales requieren validación previa y separación de cambios no relacionados. **No hacer push ni publicación hasta revisión y autorización explícita del usuario.**

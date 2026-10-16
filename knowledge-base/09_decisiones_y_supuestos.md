@@ -12,11 +12,11 @@
 
 ### DD-03 — Cierre del resumen Discovery
 
-**Estado:** confirmado el 2026-10-15. **Decisión:** registrar los once puntos y continuar con `discovery-research` y la siguiente etapa pendiente. **Contexto:** había un resumen para revisión. **Alternativas consideradas:** continuar, ajustar o detener la etapa. **Justificación:** confirmación explícita actual. **Trade-off:** conserva preguntas técnicas y revisión personal pendientes; no aprueba respuestas por defecto.
+**Estado:** confirmado el 2026-10-15. **Decisión:** registrar los once puntos y continuar con `discovery-research` y la siguiente etapa pendiente. **Contexto:** había un resumen para revisión. **Alternativas consideradas:** continuar, ajustar o detener la etapa. **Justificación:** confirmación explícita actual. **Trade-off:** conservó preguntas técnicas y revisión personal pendientes en ese hito; esta última fue confirmada posteriormente; no aprueba respuestas por defecto.
 
 ### DD-04 — Investigación asistida y verificación personal separadas
 
-**Estado:** restricción confirmada por consigna y usuario. **Decisión:** no atribuir al estudiante las seis comprobaciones documentales del agente ni afirmar que verificó cinco fuentes. **Contexto:** honestidad de la entrega. **Alternativa descartada:** presentar revisión asistida como revisión personal. **Justificación:** esa revisión sigue pendiente. **Trade-off:** Discovery documental puede alimentar fundación, pero la evidencia de entrega permanece incompleta.
+**Estado:** restricción confirmada por consigna y usuario. **Decisión:** conservar las seis comprobaciones documentales del agente con su atribución; registrar separadamente la confirmación posterior del estudiante, quien declaró haber visto y considerar correctas las seis fuentes el 2026-10-15. **Contexto:** honestidad de la entrega. **Alternativa descartada:** presentar revisión asistida como revisión personal. **Justificación:** existe ahora confirmación expresa del estudiante en el registro de fuentes; no se inventan notas personales por fuente. **Trade-off:** Discovery documental puede alimentar fundación, pero la evidencia de entrega permanece incompleta.
 
 ### DD-05 — Datos ficticios y sin integraciones reales
 
@@ -50,7 +50,7 @@
 
 ## Decisiones técnicas y pendientes actuales
 
-DD-07 resuelve la implementación técnica de Q01–Q08; los supuestos SU-02/03/04 anteriores documentan el origen histórico, no el estado actual. needs_infra:false significa sin servidor externo, con SQLite local. Q09–Q10 y las revisiones humanas académicas siguen pendientes; no se infieren de las pruebas. Ver [10](10_preguntas_abiertas.md).
+DD-07 resuelve la implementación técnica de Q01–Q08; los supuestos SU-02/03/04 anteriores documentan el origen histórico, no el estado actual. needs_infra:false significa sin servidor externo, con SQLite local. Q09 quedó resuelta por confirmación personal de fuentes; Q10 y las otras revisiones humanas académicas siguen pendientes; no se infieren de las pruebas. Ver [10](10_preguntas_abiertas.md).
 
 ## Procedencia
 

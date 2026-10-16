@@ -1,6 +1,6 @@
 # Discovery: once puntos confirmados
 
-**2026-10-15 - ONCE PUNTOS CONFIRMADOS.** Confirmé explícitamente los once puntos y autoricé continuar con `discovery-research`. Esta confirmación cierra la revisión del alcance; no sustituye mi verificación personal de al menos cinco fuentes, que sigue pendiente.
+**2026-10-15 - ONCE PUNTOS CONFIRMADOS.** Confirmé explícitamente los once puntos y autoricé continuar con `discovery-research`. Esta confirmación cierra la revisión del alcance; se distingue de mi revisión personal posterior de las seis fuentes, confirmada el 2026-10-15.
 
 Elegí una entrega propia desde cero para un **consultorio pequeño y un primer change de turnos**: recepción agenda varios profesionales y boxes, evitando solapamientos de profesional y box. Postergo WhatsApp, pagos e historia clínica. Trabajo con investigación documental asistida por IA. La confirmación abarca estos once puntos, incluidas las preguntas que permanecen abiertas; no convierte las propuestas técnicas en decisiones aprobadas.
 
@@ -21,7 +21,7 @@ Recepción registra turnos. Los profesionales son recursos de agenda; paciente y
 
 ## 4. Competidores y soluciones existentes
 
-Quince fichas y matriz de evidencia en [informe Discovery](informe-discovery.md). Orden por relación con Argentina, no por puntuación. La investigación documental asistida por IA usa fuentes públicas y distingue DOCUMENTADO, AFIRMACIÓN COMERCIAL y No evidenciado. No se probó software. Seis comprobaciones del agente y una [revisión adicional delegada](revision-documental-2026-10-15.md) están registradas. Por falta de disponibilidad delegué el contraste documental a IA, sin atribuirme esas lecturas; queda pendiente acreditar mi verificación personal de al menos cinco fuentes.
+Quince fichas y matriz de evidencia en [informe Discovery](informe-discovery.md). Orden por relación con Argentina, no por puntuación. La investigación documental asistida por IA usa fuentes públicas y distingue DOCUMENTADO, AFIRMACIÓN COMERCIAL y No evidenciado. No se probó software. Seis comprobaciones del agente y una [revisión adicional delegada](revision-documental-2026-10-15.md) están registradas. Por falta de disponibilidad delegué el contraste documental a IA, sin atribuirme esas lecturas; posteriormente confirmé que ya vi las seis fuentes y me parecen bien (2026-10-15).
 
 ## 5. Funcionalidades necesarias
 
@@ -49,10 +49,10 @@ Riesgos: confundir campos visuales con controles; decidir límites temporales du
 
 ## 11. Preguntas abiertas
 
-Antes de implementar deben acordarse: stack; API o módulo; persistencia; estrategia y prueba de concurrencia; identidad mínima del paciente; doble turno del paciente; duración; horarios; zona horaria; estados/cancelación; límites y adyacencia; compatibilidad profesional-box e idempotencia. También falta identificar expresamente al integrante/autor de la entrega y registrar la revisión personal de fuentes. No se eligen respuestas por defecto.
+Antes de implementar deben acordarse: stack; API o módulo; persistencia; estrategia y prueba de concurrencia; identidad mínima del paciente; doble turno del paciente; duración; horarios; zona horaria; estados/cancelación; límites y adyacencia; compatibilidad profesional-box e idempotencia. También falta identificar expresamente al integrante/autor de la entrega; la revisión personal de fuentes ya está registrada. No se eligen respuestas por defecto.
 
 ## Confirmación registrada y siguiente paso
 
 Confirmé explícitamente los once puntos y autoricé continuar con `discovery-research` el **2026-10-15**. El resultado canónico está en [Discovery](../../discovery/discovery.md) y alimenta la base de conocimiento. La confirmación conserva las propuestas y preguntas abiertas con su estado pendiente.
 
-La revisión personal de al menos cinco fuentes sigue pendiente y se documentará cuando se realice. La base de conocimiento y el roadmap ya están generados. La fundación continúa con selección y registro de skills e instrucciones del agente, antes de la propuesta del primer change. No se afirma que estén realizados capturas o video ni se salta directamente a implementación.
+La revisión personal de las seis fuentes quedó confirmada el 2026-10-15 en el registro de comprobaciones. La base de conocimiento y el roadmap ya están generados. La fundación continúa con selección y registro de skills e instrucciones del agente, antes de la propuesta del primer change. No se afirma que estén realizados capturas o video ni se salta directamente a implementación.

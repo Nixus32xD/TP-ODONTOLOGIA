@@ -2,6 +2,8 @@
 
 Realizada por un agente de IA a pedido del estudiante, mediante consulta de seis fuentes públicas oficiales. No constituye lectura personal del estudiante, prueba funcional, auditoría de seguridad ni asesoramiento legal. No se crearon cuentas ni se contactaron proveedores. La delegación solicitada permite completar el contraste documental, pero no acredita el requisito de comprobación personal indicado en la consigna.
 
+**Nota de estado:** este registro conserva la revisión delegada previa. La confirmación personal posterior del estudiante está en [verificación de fuentes](verificacion-fuentes.md); no cambia la autoría de estos hallazgos.
+
 ## Resultados y motivos
 
 | Fuente y tipo | Evidencia localizada | Resultado y tratamiento |

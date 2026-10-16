@@ -29,13 +29,13 @@ Generada el 2026-10-15 mediante `kb-creator`, modo de ingestión de documentos. 
 
 La entrega propia parte de cero y se limita a registrar turnos de un consultorio pequeño con varios profesionales y boxes, rechazando solapamientos de cualquiera de esos dos recursos. WhatsApp, pagos, historia clínica y una interfaz completa quedan para después.
 
-La KB describe requisitos y contrato aplicado; la implementación y sus pruebas se acreditan en el código y la evidencia, no por la mera existencia de estos documentos. La revisión personal de fuentes sigue pendiente. C-01 ya implementa módulo Python, SQLite local y exclusión con procesos reales. Ver [evidencia](../docs/evidencia/implementacion-turnos.md). Archive y la entrega académica final siguen pendientes.
+La KB describe requisitos y contrato aplicado; la implementación y sus pruebas se acreditan en el código y la evidencia, no por la mera existencia de estos documentos. La revisión personal de las seis fuentes quedó confirmada por el estudiante el 2026-10-15. C-01 ya implementa módulo Python, SQLite local y exclusión con procesos reales. Ver [evidencia](../docs/evidencia/implementacion-turnos.md). Archive y la entrega académica final siguen pendientes.
 
 ## Fuentes y límites
 
 - [Consigna y checklist](../docs/CONSIGNA.md), [bitácora](../docs/BITACORA.md) e [inventario del entorno](../docs/evidencia/entorno.md).
 - [Informe Discovery](../docs/discovery/informe-discovery.md), [matriz de evidencia](../docs/discovery/matriz-evidencia.json) y quince fichas con sus referencias públicas.
-- [Comprobaciones del agente](../docs/discovery/verificacion-fuentes.md): la revisión personal del estudiante de al menos cinco fuentes continúa pendiente.
+- [Comprobaciones del agente](../docs/discovery/verificacion-fuentes.md): la revisión personal de las seis fuentes quedó confirmada por el estudiante el 2026-10-15.
 - Los PDFs son presentaciones de la consigna y el informe; no agregan aceptación de decisiones ni evidencias de ejecución.
 
 `Confirmado` significa acordado por el usuario o exigido por la consigna. `Propuesta` requiere revisión antes de ser contrato de implementación. `No evidenciado` describe límites de la investigación y no demuestra ausencia de una función.

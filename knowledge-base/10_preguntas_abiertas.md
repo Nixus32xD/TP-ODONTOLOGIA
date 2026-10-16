@@ -6,7 +6,7 @@ Estas dudas se registran para continuar sin inventar decisiones. No constituyen 
 
 ### IN-01 — Estado histórico frente a confirmación actual
 
-**Registro anterior:** consigna/bitácora/inventario describen etapas y pendientes en el momento de cada hito. **Registro actual:** el usuario confirmó los once puntos el 2026-10-15 y existe [Discovery canónico](../discovery/discovery.md). **Impacto:** leer el registro histórico como estado final podría reabrir una aprobación ya recibida. **Resolución:** mantener trazabilidad histórica y usar la confirmación actual para el cierre documental. Esto no completa verificación personal, capturas ni otras etapas.
+**Registro anterior:** consigna/bitácora/inventario describen etapas y pendientes en el momento de cada hito. **Registro actual:** el usuario confirmó los once puntos el 2026-10-15 y existe [Discovery canónico](../discovery/discovery.md). **Impacto:** leer el registro histórico como estado final podría reabrir una aprobación ya recibida. **Resolución:** mantener trazabilidad histórica y usar la confirmación actual para el cierre documental. La revisión personal fue confirmada posteriormente por el estudiante; capturas y otras etapas mantienen su estado propio.
 
 ### IN-02 — Selección de box frente a exclusión real
 
@@ -28,12 +28,12 @@ Estas dudas se registran para continuar sin inventar decisiones. No constituyen 
 | Q06 / Resuelto para C-01 | Sin estados/cancelación; todas las filas confirmadas ocupan recursos. | No bloquea Apply | Contrato publicado y continuación autorizada; no acredita revisión personal |
 | Q07 / Resuelto para C-01 | IDs ficticios paciente-A/B y referencias conocidas; paciente simultáneo permitido con recursos diferentes. | No bloquea Apply | Contrato publicado y continuación autorizada; no acredita revisión personal |
 | Q08 / Resuelto para C-01 | Box exclusivo; sin compatibilidad adicional, sobreturnos o idempotencia; prioridad de profesional. | No bloquea Apply | Contrato publicado y continuación autorizada; no acredita revisión personal |
-| Q09 / Alta para entrega | ¿Cuándo se registrará la revisión personal de al menos cinco fuentes de distintos tipos, con hallazgo y corrección? | Evidencia de verificación del TP | Estudiante; sigue pendiente, aunque el resumen fue confirmado |
+| Q09 / Resuelta por confirmación personal | El estudiante confirmó el 2026-10-15 que vio y considera correctas las seis fuentes de seis tipos del registro. Hallazgos y correcciones previos atribuidos a IA. | Evidencia de fuentes registrada; no acredita auditoría funcional | Confirmación expresa del estudiante, conservada en verificacion-fuentes.md |
 | Q10 / Media para fundación, alta para entrega | ¿Quién es el integrante/autor y cómo se acreditan Full/harnesses, Go, capturas, video, reflexión y uso de Codex frente a agentes de la consigna? | Preparación/entrega completa | Estudiante y docente para la aceptación de diferencias |
 
 ## Cinco grupos de evidencia pendiente del relevamiento
 
-**Respuestas aplicadas disponibles:** [diseño de C-01](../openspec/changes/crear-turno-sin-solapamientos/design.md) responde Q01–Q08 con decisiones o exclusiones explícitas. El usuario autorizó continuar con Apply después de presentar la propuesta; no se atribuye por ello lectura personal completa del spec. Q09–Q10 continúan siendo evidencia de entrega pendiente.
+**Respuestas aplicadas disponibles:** [diseño de C-01](../openspec/changes/crear-turno-sin-solapamientos/design.md) responde Q01–Q08 con decisiones o exclusiones explícitas. El usuario autorizó continuar con Apply después de presentar la propuesta; no se atribuye por ello lectura personal completa del spec. Q09 está resuelta por confirmación personal; Q10 continúa pendiente.
 
 `No evidenciado` no prueba inexistencia. Esta tabla mantiene trazabilidad de las dudas de mercado; resolverlas no amplía automáticamente el MVP ni autoriza contactar proveedores.
 
@@ -49,4 +49,4 @@ Las URLs y fechas originales permanecen en cada ficha y en el [informe](../docs/
 
 ## Próxima decisión de implementación
 
-Q01–Q08 están implementadas conforme al contrato de C-01. Ante un cambio de comportamiento se actualiza Propose antes de modificar código. Q09–Q10 y evidencias humanas siguen pendientes; generación de documentación, memoria o tests no las reemplazan.
+Q01–Q08 están implementadas conforme al contrato de C-01. Ante un cambio de comportamiento se actualiza Propose antes de modificar código. Q09 quedó resuelta por confirmación personal; Q10 y otras evidencias humanas siguen pendientes; generación de documentación, memoria o tests no las reemplazan.
