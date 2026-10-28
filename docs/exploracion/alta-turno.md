@@ -24,7 +24,7 @@ La elección responde a la porción académica, persistencia observable y ausenc
 
 ## Contrato que falta revisar
 
-La propuesta del agente resuelve Q01–Q08 en [design.md](../../openspec/changes/crear-turno-sin-solapamientos/design.md): módulo, runtime, archivo local, serialización de escrituras, fechas con offset, intervalos semiabiertos, duración positiva libre, todos los turnos persistidos ocupantes, paciente ficticio y prioridad de conflicto. Son decisiones propuestas para revisar, no confirmaciones personales inventadas.
+La propuesta del agente resuelve Q01–Q08 en [design.md](../../openspec/changes/archive/2026-10-28-crear-turno-sin-solapamientos/design.md): módulo, runtime, archivo local, serialización de escrituras, fechas con offset, intervalos semiabiertos, duración positiva libre, todos los turnos persistidos ocupantes, paciente ficticio y prioridad de conflicto. Son decisiones propuestas para revisar, no confirmaciones personales inventadas.
 
 Se acota expresamente qué no se controla: horarios/descansos, disponibilidad, duración por prestación, estados, cancelación, solapamiento del paciente, compatibilidad profesional-box e idempotencia de reintentos. El spec debe hacer observable ese límite y evitar convertirlo en una garantía de producto clínico.
 

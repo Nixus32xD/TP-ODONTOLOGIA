@@ -33,7 +33,7 @@ Estas dudas se registran para continuar sin inventar decisiones. No constituyen 
 
 ## Cinco grupos de evidencia pendiente del relevamiento
 
-**Respuestas aplicadas disponibles:** [diseño de C-01](../openspec/changes/crear-turno-sin-solapamientos/design.md) responde Q01–Q08 con decisiones o exclusiones explícitas. El usuario autorizó continuar con Apply después de presentar la propuesta; no se atribuye por ello lectura personal completa del spec. Q09 está resuelta por confirmación personal; Q10 continúa pendiente.
+**Respuestas aplicadas disponibles:** [diseño de C-01](../openspec/changes/archive/2026-10-28-crear-turno-sin-solapamientos/design.md) responde Q01–Q08 con decisiones o exclusiones explícitas. El usuario autorizó continuar con Apply después de presentar la propuesta; no se atribuye por ello lectura personal completa del spec. Q09 está resuelta por confirmación personal; Q10 continúa pendiente.
 
 `No evidenciado` no prueba inexistencia. Esta tabla mantiene trazabilidad de las dudas de mercado; resolverlas no amplía automáticamente el MVP ni autoriza contactar proveedores.
 

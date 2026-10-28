@@ -2,7 +2,7 @@
 
 ## Estado y objetivo
 
-Arquitectura de C-01 aplicada al autorizar continuar: Python 3.12+, SQLite local y biblioteca estándar, sin framework, servidor, ORM ni capas adicionales. Ver [diseño](../openspec/changes/crear-turno-sin-solapamientos/design.md) y [evidencia](../docs/evidencia/implementacion-turnos.md).
+Arquitectura de C-01 aplicada al autorizar continuar: Python 3.12+, SQLite local y biblioteca estándar, sin framework, servidor, ORM ni capas adicionales. Ver [diseño](../openspec/changes/archive/2026-10-28-crear-turno-sin-solapamientos/design.md) y [evidencia](../docs/evidencia/implementacion-turnos.md).
 
 ## Responsabilidades y directorios
 
@@ -33,4 +33,4 @@ Ninguna de producto. Ruta como argumento, timeout numérico 5s por defecto. Demo
 
 53 tests unittest, incluidos 10 tests HTTP con TestClient sin red externa. Tres carreras por profesional y tres por box, más recursos diferentes; se verifican PIDs, resultados, exitcodes y filas. Contención mantenida, rollback por trigger SQLite real, recuperación y demo con temporales propios. No se asume N: local: DB en TEMP del sistema.
 
-Comprobaciones que ya pasaban al añadirse están registradas sin fabricar RED. Archive y evidencias humanas de entrega pendientes.
+Comprobaciones que ya pasaban al añadirse están registradas sin fabricar RED. Archive confirmado el 2026-10-28; las evidencias humanas y la aceptación académica se acreditan por separado.

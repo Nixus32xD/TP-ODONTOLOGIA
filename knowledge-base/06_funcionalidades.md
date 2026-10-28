@@ -57,7 +57,7 @@ C-01 implementa estas cuatro historias. Los checkboxes indican verificación aut
 
 ## Evidencia del proceso
 
-La consigna exige escenarios dado/cuando/entonces de caso feliz, error y borde, revisión real de Propose, pruebas ejecutadas y Archive. La evidencia registra RED/GREEN ejecutados y las comprobaciones que ya pasaron al añadirse, sin fabricar RED. Runner unittest; Archive y revisiones humanas académicas siguen pendientes.
+La consigna exige escenarios dado/cuando/entonces de caso feliz, error y borde, revisión real de Propose, pruebas ejecutadas y Archive. La evidencia registra RED/GREEN ejecutados y las comprobaciones que ya pasaron al añadirse, sin fabricar RED. Runner unittest; Archive confirmado el 2026-10-28. Las revisiones humanas y la aceptación académica se acreditan por separado.
 
 ## Funcionalidades postergadas
 

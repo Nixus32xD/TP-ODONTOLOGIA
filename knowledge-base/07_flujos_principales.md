@@ -1,6 +1,6 @@
 # Flujos principales
 
-Flujos implementados de C-01, con datos ficticios y fechas con offset explícito. [Spec](../openspec/changes/crear-turno-sin-solapamientos/specs/alta-turnos/spec.md) y [evidencia](../docs/evidencia/implementacion-turnos.md).
+Flujos implementados de C-01, con datos ficticios y fechas con offset explícito. [Spec](../openspec/changes/archive/2026-10-28-crear-turno-sin-solapamientos/specs/alta-turnos/spec.md) y [evidencia](../docs/evidencia/implementacion-turnos.md).
 
 ## Flujo 1: alta válida
 

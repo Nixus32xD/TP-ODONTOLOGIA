@@ -13,10 +13,10 @@ C-01 implementa el alta de turnos ficticios mediante FastAPI y un módulo de dom
 | Almacenamiento | SQLite mediante sqlite3 estándar | Archivo en disco local; verificado con SQLite 3.53.1 |
 | Pruebas del producto | unittest, TestClient y multiprocessing | 53 tests; procesos spawn reales y contrato HTTP |
 | Interfaz gráfica | Fuera de C-01 | Demo por consola |
-| Especificación y flujo | OpenSpec / Active Stack | Change activo; Archive pendiente |
+| Especificación y flujo | OpenSpec / Active Stack | C-01 archivado el 2026-10-28 |
 | Herramienta del informe | Python, ReportLab y pypdf | Dependencias documentales separadas del producto |
 
-La decisión parte del [diseño](../openspec/changes/crear-turno-sin-solapamientos/design.md) y del alcance acotado, no del renderer. FastAPI fue corregido por instrucción explícita del usuario; dependencias fijadas en requirements.txt y requirements-dev.txt e instaladas únicamente en .venv. Ver [inventario](../docs/evidencia/entorno.md).
+La decisión parte del [diseño](../openspec/changes/archive/2026-10-28-crear-turno-sin-solapamientos/design.md) y del alcance acotado, no del renderer. FastAPI fue corregido por instrucción explícita del usuario; dependencias fijadas en requirements.txt y requirements-dev.txt e instaladas únicamente en .venv. Ver [inventario](../docs/evidencia/entorno.md).
 
 ## Arquitectura general
 

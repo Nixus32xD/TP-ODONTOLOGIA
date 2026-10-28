@@ -29,7 +29,7 @@ Generada el 2026-10-15 mediante `kb-creator`, modo de ingestión de documentos. 
 
 La entrega propia parte de cero y se limita a registrar turnos de un consultorio pequeño con varios profesionales y boxes, rechazando solapamientos de cualquiera de esos dos recursos. WhatsApp, pagos, historia clínica y una interfaz completa quedan para después.
 
-La KB describe requisitos y contrato aplicado; la implementación y sus pruebas se acreditan en el código y la evidencia, no por la mera existencia de estos documentos. La revisión personal de las seis fuentes quedó confirmada por el estudiante el 2026-10-15. C-01 ya implementa módulo Python, SQLite local y exclusión con procesos reales. Ver [evidencia](../docs/evidencia/implementacion-turnos.md). Archive y la entrega académica final siguen pendientes.
+La KB describe requisitos y contrato aplicado; la implementación y sus pruebas se acreditan en el código y la evidencia, no por la mera existencia de estos documentos. La revisión personal de las seis fuentes quedó confirmada por el estudiante el 2026-10-15. C-01 ya implementa módulo Python, SQLite local y exclusión con procesos reales. Ver [evidencia](../docs/evidencia/implementacion-turnos.md). Archive quedó confirmado el 2026-10-28; este cierre no acredita por sí solo la entrega académica final.
 
 ## Fuentes y límites
 
@@ -42,4 +42,4 @@ La KB describe requisitos y contrato aplicado; la implementación y sus pruebas 
 
 ## Corrección FastAPI — C-01
 
-El usuario corrigió expresamente el stack a FastAPI y autorizó commit/push tras validar, manteniendo sólo C-01. Adaptador POST /turnos, GET /health y OpenAPI reutilizan SQLite. Dependencias fijadas, instaladas en .venv (sin cambios globales); HTTPX para TestClient. Estado previo sin HTTP conserva valor histórico, no describe el producto actual. Baseline43; suite actual53 tests. No se modifica PDF, datos reales ni proveedores externos. Archive y evidencias personales pendientes.
+El usuario corrigió expresamente el stack a FastAPI y autorizó commit/push tras validar, manteniendo sólo C-01. Adaptador POST /turnos, GET /health y OpenAPI reutilizan SQLite. Dependencias fijadas, instaladas en .venv (sin cambios globales); HTTPX para TestClient. Estado previo sin HTTP conserva valor histórico, no describe el producto actual. Baseline43; suite actual53 tests. No se modifica PDF, datos reales ni proveedores externos. Archive confirmado el 2026-10-28; las evidencias personales tienen su propio registro.

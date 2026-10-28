@@ -18,14 +18,14 @@
 
 La aclaración del usuario del 2026-10-28 corrige el índice anterior: **hacer sólo C-01 ahora no significa planificar sólo C-01**. El producto futuro es un sistema para un consultorio odontológico pequeño, con recepción, profesionales y boxes: agenda operativa, catálogos, acceso seguro, interfaz de recepción, recuperación de datos y, después, módulos clínicos, comunicación con pacientes y administración.
 
-- **Entrega actual:** C-01 `crear-turno-sin-solapamientos`, con 18/18 tareas completas en OpenSpec; Archive sigue pendiente. No se cambia su nombre, su spec, su código ni su contrato.
+- **Entrega actual:** C-01 `crear-turno-sin-solapamientos`, con 18/18 tareas completas y Archive confirmado el 2026-10-28; la spec principal es [alta-turnos](openspec/specs/alta-turnos/spec.md). No se cambia su nombre, su spec, su código ni su contrato.
 - **MVP operativo futuro:** C-02 a C-14 completan una agenda de recepción administrable y un despliegue controlado. La seguridad, la auditoría y la restauración deben verificarse antes de habilitar datos reales.
 - **Evolución del producto:** C-15 a C-20 agregan clínica, odontograma/plan de tratamiento, recordatorios, reserva del paciente, cobros y reportes. Se proponen para mostrar el alcance completo; su implementación requiere priorización y contratos propios.
 - **Opciones no comprometidas:** multisede/SaaS multitenant, IA, obras sociales y facturación electrónica ARCA no se vuelven obligatorias por aparecer en productos comparados. Si se eligen, se agregarán changes posteriores con investigación y aprobación específicas. C-19 no incluye emisión fiscal ni conexión con pagos reales.
 
 La KB y las instrucciones existentes documentan principalmente la porción académica C-01. Sus exclusiones siguen vigentes para esa implementación; las capacidades futuras de este roadmap son propuestas nuevas de planificación, no ampliaciones retroactivas de las US-001 a US-004. Para C-02+ faltan criterios específicos que se deben desarrollar en la KB y Propose del change correspondiente. Hasta una autorización posterior se mantienen datos ficticios y ninguna integración externa real.
 
-**Base técnica preservada:** Python/FastAPI y SQLite local. Bootstrap y modelos mínimos ya pertenecen a C-01; no se renumera como `foundation-setup`. C-02 prepara la evolución del esquema. Una migración a otro motor, la tecnología de frontend, el hosting y los proveedores quedan como decisiones futuras justificadas. El contrato actual se consulta en [design.md](openspec/changes/crear-turno-sin-solapamientos/design.md), [spec.md](openspec/changes/crear-turno-sin-solapamientos/specs/alta-turnos/spec.md) y [api.py](odontologia/api.py); los párrafos históricos «sin servidor» y «sin variables» de KB-08 no sustituyen FastAPI, Uvicorn y `ODONTOLOGIA_DB` ya implementados.
+**Base técnica preservada:** Python/FastAPI y SQLite local. Bootstrap y modelos mínimos ya pertenecen a C-01; no se renumera como `foundation-setup`. C-02 prepara la evolución del esquema. Una migración a otro motor, la tecnología de frontend, el hosting y los proveedores quedan como decisiones futuras justificadas. El contrato actual se consulta en [design.md](openspec/changes/archive/2026-10-28-crear-turno-sin-solapamientos/design.md), [spec.md](openspec/changes/archive/2026-10-28-crear-turno-sin-solapamientos/specs/alta-turnos/spec.md) y [api.py](odontologia/api.py); los párrafos históricos «sin servidor» y «sin variables» de KB-08 no sustituyen FastAPI, Uvicorn y `ODONTOLOGIA_DB` ya implementados.
 
 ### Decisiones que habilita la planificación
 
@@ -43,7 +43,7 @@ La KB y las instrucciones existentes documentan principalmente la porción acad�
 ## Árbol de dependencias
 
 ```text
-C-01 crear-turno-sin-solapamientos (implementado; Archive pendiente)
+C-01 crear-turno-sin-solapamientos (implementado y archivado)
 └── C-02 evolucionar-esquema-y-configuracion
     └── C-03 autenticar-y-autorizar-personal
         └── C-04 registrar-auditoria-de-operaciones
@@ -69,11 +69,11 @@ C-11 + C-12
         └── C-20 consultar-reportes-operativos (también C-08, C-09)
 ```
 
-Los números son identificadores estables agrupados por capacidad, no un orden de ejecución por sí solos: C-09 precede a C-08 porque una consulta operativa debe conocer qué estados ocupan recursos. Las dependencias declaradas en cada ficha son el contrato del grafo. Revisar/archivar C-01 es el siguiente trabajo de cierre; no es otro change ni se ejecuta con este documento.
+Los números son identificadores estables agrupados por capacidad, no un orden de ejecución por sí solos: C-09 precede a C-08 porque una consulta operativa debe conocer qué estados ocupan recursos. Las dependencias declaradas en cada ficha son el contrato del grafo. C-01 ya fue verificado y archivado el 2026-10-28. C-02 es el siguiente change planificado; su Propose y su implementación requieren autorización posterior.
 
 ### Paralelismo por fase
 
-Los GATES expresan dependencias del plan futuro, **no estados actualmente completados**. El símbolo `✓` significa «una vez verificado y cerrado». No imponen fases rígidas a OPSX.
+Los GATES expresan dependencias del plan futuro; sólo C-01 está actualmente completado y archivado. El símbolo `✓` significa «una vez verificado y cerrado». No imponen fases rígidas a OPSX.
 
 ```text
 GATE 0: C-01 ✓
@@ -125,7 +125,7 @@ Secuencia compatible con dependencias, sin prometer una optimización temporal n
 
 | Paso | Agente A (Backend Core) | Agente B (Backend Aux) | Agente C (Frontend) |
 | --- | --- | --- | --- |
-| 0 | Revisar y cerrar C-01 existente | — | — |
+| 0 | C-01 cerrado el 2026-10-28 | — | — |
 | 1 | C-02 | — | — |
 | 2 | C-03 | — | — |
 | 3 | C-04 | — | — |
@@ -145,11 +145,11 @@ Secuencia compatible con dependencias, sin prometer una optimización temporal n
 
 ### [C-01] `crear-turno-sin-solapamientos`
 
-- **Estado**: `[ ]` implementación completa: 18/18 tareas según OpenSpec consultado el 2026-10-28; **Archive pendiente**. La [evidencia](docs/evidencia/implementacion-turnos.md) registra 53 pruebas y demo del avance original; no son ejecuciones nuevas de esta planificación.
+- **Estado**: `[x]` implementado y archivado el 2026-10-28: 18/18 tareas completas. Ver [archivo del change](openspec/changes/archive/2026-10-28-crear-turno-sin-solapamientos/), [spec principal](openspec/specs/alta-turnos/spec.md) y [evidencia de cierre](docs/evidencia/implementacion-turnos.md). Se ejecutaron nuevamente 53 pruebas y la demo antes del Archive.
 - **Scope**:
   - Conservar bootstrap explícito de SQLite con `Paciente`, `Profesional`, `Box`, `Turno` ficticios; alta validada con `[inicio, fin)`, minuto exacto y UTC; conflictos independientes y `BEGIN IMMEDIATE` sobre un archivo local.
   - Conservar `POST /turnos` con `201`, errores `422/404/409/503/500`, `GET /health` de liveness y documentación OpenAPI; sin crear DB al importar.
-  - Revisar trazabilidad de US-001 a US-004, tests de entradas/bordes/rollback/concurrencia y demo temporal; verificar y archivar el mismo change, sin reescribir su contrato por este roadmap.
+  - Conservar trazabilidad de US-001 a US-004, tests de entradas/bordes/rollback/concurrencia y demo temporal. El mismo change quedó archivado con su contrato preservado; este cierre no implementa capacidades futuras.
 - **Dependencias**: ninguna; infraestructura y modelos mínimos ya incluidos.
 - **Governance**: MEDIO.
 - **Leer antes**:

@@ -51,7 +51,7 @@ Pesos de la matriz:
 
 - [x] [`knowledge-base/`](../knowledge-base/README.md): diez archivos canónicos de visión, descripción, actores, modelos de datos, reglas de negocio, features, flujos, arquitectura, decisiones y preguntas abiertas, más un índice; generados desde los documentos existentes.
 - [ ] Revisar coherencia con el Discovery, incluyendo duración de prestaciones, sillones/boxes, solapamientos y preguntas sin evidencia.
-- [x] [`CHANGES.md`](../CHANGES.md): dependencias, asignaciones con contexto, camino crítico y riesgos del único change candidato `C-01: crear-turno-sin-solapamientos`, alineado con el MVP.
+- [x] [`CHANGES.md`](../CHANGES.md): roadmap de 20 changes en seis fases para el producto futuro, con dependencias, asignaciones y camino crítico; sólo C-01 implementado y archivado.
 - [ ] Revisar humanamente el roadmap y registrar la decisión; generarlo no acredita su aprobación.
 - [x] `find-skill`: [selección documentada](fundacion/seleccion-skills.md), con reutilización de existentes, React descartado y UI/pruebas específicas diferidas; no se instalaron skills nuevas.
 - [x] Generar el [registro de skills](../.atl/skill-registry.md) con alcance, disponibilidad y aplicación al proyecto; no implica instalación nueva ni cierre de la fundación.
@@ -63,14 +63,14 @@ La generación local de la base de conocimiento no acredita su revisión humana 
 
 ## Etapa 6 - Un change completo
 
-- [x] Elegir la única funcionalidad del MVP y justificarla en [proposal.md](../openspec/changes/crear-turno-sin-solapamientos/proposal.md).
+- [x] Elegir la única funcionalidad del MVP y justificarla en [proposal.md](../openspec/changes/archive/2026-10-28-crear-turno-sin-solapamientos/proposal.md).
 - [x] Conservar el [relevamiento del problema y checkout](exploracion/alta-turno.md) previo a la propuesta; no acredita implementación.
-- [x] Propose: generar propuesta, diseño, [spec](../openspec/changes/crear-turno-sin-solapamientos/specs/alta-turnos/spec.md) y [tareas](../openspec/changes/crear-turno-sin-solapamientos/tasks.md); validar estructura mediante OpenSpec.
+- [x] Propose: generar propuesta, diseño, [spec](../openspec/changes/archive/2026-10-28-crear-turno-sin-solapamientos/specs/alta-turnos/spec.md) y [tareas](../openspec/changes/archive/2026-10-28-crear-turno-sin-solapamientos/tasks.md); validar estructura mediante OpenSpec.
 - [ ] Revisar humanamente el spec completo y registrar las correcciones reales solicitadas con Ajustar; la validación del agente no acredita esta revisión.
 - [x] Especificar escenarios dado/cuando/entonces: feliz, conflictos, bordes, fallos y competencia. Su trazabilidad actual está en la evidencia de 53 tests ejecutados.
 - [x] Apply: contrato implementado tras autorización de continuar, con datos ficticios y pruebas. Ante cambios de contrato, volver a Propose.
 - [x] Verify técnico: 53 tests, trazabilidad de los 29 escenarios y demo ejecutada; ver [evidencia](evidencia/implementacion-turnos.md). GET /health de liveness, contrato HTTP y OpenAPI verificados; no acredita readiness clínica. No acredita revisión humana ni Archive.
-- [ ] Archive: archivar el change y actualizar las especificaciones y el estado.
+- [x] Archive: C-01 archivado mediante OpenSpec el 2026-10-28 y contrato sincronizado en [spec principal](../openspec/specs/alta-turnos/spec.md); cierre técnico verificado, sin acreditar revisiones humanas o aceptación docente.
 
 La implementación puede ser API o módulo de dominio; la interfaz gráfica no es obligatoria. La elección del stack deriva de la base de conocimiento.
 

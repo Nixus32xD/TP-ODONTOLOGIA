@@ -25,7 +25,7 @@ Elegí una entrega propia desde cero y un primer change de turnos. El objetivo a
 - Errores comprensibles y pruebas de casos válidos, conflictos y límites acordados.
 - Un consultorio con varios profesionales y boxes; no es un SaaS multitenant.
 
-El change activo es `crear-turno-sin-solapamientos`: módulo Python, SQLite local, intervalos semiabiertos y concurrencia limitada al mismo archivo mediante la operación. Ver [evidencia](../docs/evidencia/implementacion-turnos.md). Archive sigue pendiente.
+El change archivado es `crear-turno-sin-solapamientos`: módulo Python, SQLite local, intervalos semiabiertos y concurrencia limitada al mismo archivo mediante la operación. Ver [evidencia](../docs/evidencia/implementacion-turnos.md). Archive quedó confirmado el 2026-10-28.
 
 ## Fuera de alcance
 

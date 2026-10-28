@@ -129,3 +129,14 @@ Son seis escenarios HTTP nuevos; los29 escenarios del dominio conservan su traza
 - Advertencia upstream: Starlette1.8.0 depreca uso de HTTPX en TestClient; no se silencia ni se presenta como fallo. Pruebas actuales pasan.
 
 Health es liveness, no readiness; no crea agenda. API síncrona usa threadpool y una conexión por operación; protección concurrente sigue en el dominio BEGIN IMMEDIATE, no en memoria del servidor. Swagger/ReDoc pueden usar recursosCDN; /openapi.json es completamente local. No se afirma producción, autenticación ni cumplimiento académico final.
+
+
+## Cierre técnico de C-01 — 2026-10-28
+
+Antes de archivar se ejecutó `.\.venv\Scripts\python.exe -m unittest discover -s tests -v`: **53 tests, 3.608 s, OK**. La suite incluye contratos HTTP, rollback, contención y procesos reales `spawn`, con archivos temporales propios; no se usó ni modificó la agenda de grabación. La demo `python -m odontologia.demo` confirmó alta, conflicto de profesional, conflicto de box y adyacencia; dos turnos en su temporal y limpieza confirmada. `python -m pip check`: sin dependencias incompatibles. El aviso de deprecación Starlette/HTTPX ya documentado no se silenció.
+
+`openspec validate crear-turno-sin-solapamientos --strict --json`: 1 change válido y cero problemas. Con 18/18 tareas y los cuatro artefactos completos, `openspec archive crear-turno-sin-solapamientos --yes --json` confirmó el archivo [2026-10-28-crear-turno-sin-solapamientos](../../openspec/changes/archive/2026-10-28-crear-turno-sin-solapamientos/) y `specsUpdated: true`: 14 requisitos añadidos, sin modificaciones, bajas ni renombres.
+
+La [spec principal de alta-turnos](../../openspec/specs/alta-turnos/spec.md) conserva el texto de Purpose y todos los requisitos/35 escenarios de la delta, incluidos los escenarios HTTP incorporados después del registro original de 29 escenarios del dominio. Sólo se normalizó el espacio en blanco junto a las cabeceras de la spec principal; no se alteró el contrato. `openspec validate --specs --strict --json`: 1 spec válida y cero problemas. `openspec list --json`: ningún change activo; `openspec list --specs --json`: alta-turnos, 14 requisitos.
+
+Este cierre no crea ni implementa C-02 a C-20, no cambia código o tests y no acredita revisión humana, entrega final ni aceptación docente. La evidencia TDD anterior conserva sus límites y no se inventa un ciclo RED/GREEN nuevo para el archivado. Publicación pendiente de autorización explícita aplicable.

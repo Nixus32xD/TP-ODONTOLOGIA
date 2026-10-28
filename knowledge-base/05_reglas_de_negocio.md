@@ -1,6 +1,6 @@
 # Reglas de negocio
 
-RN-TU-01/02 provienen del Discovery confirmado. RN-TU-03 a RN-TU-07 se propusieron en Propose y se implementaron al autorizar el usuario continuar con Apply; esto no acredita lectura personal completa del spec. Ver [spec](../openspec/changes/crear-turno-sin-solapamientos/specs/alta-turnos/spec.md) y [evidencia](../docs/evidencia/implementacion-turnos.md).
+RN-TU-01/02 provienen del Discovery confirmado. RN-TU-03 a RN-TU-07 se propusieron en Propose y se implementaron al autorizar el usuario continuar con Apply; esto no acredita lectura personal completa del spec. Ver [spec](../openspec/changes/archive/2026-10-28-crear-turno-sin-solapamientos/specs/alta-turnos/spec.md) y [evidencia](../docs/evidencia/implementacion-turnos.md).
 
 ## Dominio: turnos — reglas confirmadas
 

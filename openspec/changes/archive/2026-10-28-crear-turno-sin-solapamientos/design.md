@@ -2,7 +2,7 @@
 
 ## Context
 
-Ver [proposal.md](proposal.md) para el problema y [exploración](../../../docs/exploracion/alta-turno.md) para el checkout observado. La base previa tiene módulo SQLite y 43 tests. El usuario corrigió el stack a FastAPI dentro del mismo C-01. El contrato conductual propuesto está en [alta-turnos](specs/alta-turnos/spec.md); no se acredita lectura personal del spec; la implementación está autorizada por la petición actual.
+Ver [proposal.md](proposal.md) para el problema y [exploración](../../../../docs/exploracion/alta-turno.md) para el checkout observado. La base previa tiene módulo SQLite y 43 tests. El usuario corrigió el stack a FastAPI dentro del mismo C-01. El contrato conductual propuesto está en [alta-turnos](specs/alta-turnos/spec.md); no se acredita lectura personal del spec; la implementación está autorizada por la petición actual.
 
 ## Goals / Non-Goals
 
@@ -96,7 +96,7 @@ Se mantiene el dominio existente y su esquema; el adaptador no migra datos. El �
 
 No quedan decisiones técnicas omitidas para este contrato propuesto: Q01–Q08 tienen respuesta o exclusión explícita arriba. La corrección FastAPI y continuación están autorizadas expresamente; esto no acredita revisión académica personal del spec. Q09–Q10 (lecturas personales, autor y evidencia de entrega) continúan fuera del cambio funcional y no alteran su spec. Un cambio solicitado durante la revisión requiere ajustar los artefactos antes de Apply.
 
-Fuentes técnicas y fecha de consulta: [exploración](../../../docs/exploracion/alta-turno.md). La propuesta es compatible con documentación oficial, pero la evidencia actual registra53 tests y smoke HTTP local.
+Fuentes técnicas y fecha de consulta: [exploración](../../../../docs/exploracion/alta-turno.md). La propuesta es compatible con documentación oficial, pero la evidencia actual registra53 tests y smoke HTTP local.
 
 ### D-08 — Contrato HTTP local de C-01
 

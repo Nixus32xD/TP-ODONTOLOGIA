@@ -2,7 +2,7 @@
 
 ## Alcance del modelo
 
-Modelo implementado en [agenda.py](../odontologia/agenda.py) según el [diseño](../openspec/changes/crear-turno-sin-solapamientos/design.md). Sólo datos ficticios, sin información clínica ni contactos.
+Modelo implementado en [agenda.py](../odontologia/agenda.py) según el [diseño](../openspec/changes/archive/2026-10-28-crear-turno-sin-solapamientos/design.md). Sólo datos ficticios, sin información clínica ni contactos.
 
 ## Entidades propuestas
 

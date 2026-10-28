@@ -1,6 +1,6 @@
 # TP-ODONTOLOGIA — Instrucciones para Agentes
 
-Instrucciones específicas de esta entrega de Metodología I. Mantener este archivo y `CLAUDE.md` idénticos al actualizarlos. El proyecto partió de cero y ahora tiene FastAPI, módulo de agenda, demo y 53 tests. Archive y evidencias académicas siguen pendientes.
+Instrucciones específicas de esta entrega de Metodología I. Mantener este archivo y `CLAUDE.md` idénticos al actualizarlos. El proyecto partió de cero y ahora tiene FastAPI, módulo de agenda, demo y 53 tests. C-01 fue archivado el 2026-10-28; el cierre técnico no acredita aceptación docente ni otras evidencias académicas.
 
 ## Stack Tecnológico
 
@@ -13,7 +13,7 @@ Tabla tomada de [la descripción general](knowledge-base/02_descripcion_general.
 | Almacenamiento | SQLite mediante sqlite3 estándar | Archivo en disco local; verificado con SQLite 3.53.1 |
 | Pruebas del producto | unittest, TestClient y multiprocessing | 53 tests; procesos spawn reales y contrato HTTP |
 | Interfaz gráfica | Fuera de C-01 | Demo por consola |
-| Especificación y flujo | OpenSpec / Active Stack | Change activo; Archive pendiente |
+| Especificación y flujo | OpenSpec / Active Stack | C-01 archivado; spec principal vigente |
 | Herramienta del informe | Python, ReportLab y pypdf | Dependencias documentales separadas del producto |
 
 ## Base de Conocimiento
@@ -43,7 +43,7 @@ Fuente de verdad de nombres, rutas y reglas compactas: [registro de skills](.atl
 | --- | --- | --- |
 | Fundación | Mantener documentación y navegación | `active-orchestrator`, `kb-creator`, `roadmap-generator`, `find-skills`, `agents-md-generator` |
 | Investigación | Contrastar evidencia pública del Discovery | `discovery-research` |
-| Planificación de dominio | Explorar y especificar el único change | `openspec-explore`, `openspec-propose`, `openspec-update-change` |
+| Planificación de dominio | Explorar y especificar el change autorizado | `openspec-explore`, `openspec-propose`, `openspec-update-change` |
 | Implementación y cierre | Aplicar tareas revisadas, sincronizar y archivar | `openspec-apply-change`, `openspec-sync-specs`, `openspec-archive-change` |
 | Revisión | Revisar un diff sin modificarlo | `review-agent` |
 | Documentación de entrega | Editar y verificar los artefactos pedidos | `pdf`; `documents` o `visualize` sólo cuando corresponda al formato solicitado |
@@ -52,11 +52,11 @@ Los compact rules los resuelve el delegador desde `.atl/skill-registry.md`, gene
 
 ## Roadmap de Changes
 
-El plan está en [CHANGES.md](CHANGES.md): un único change funcional, **C-01 `crear-turno-sin-solapamientos`**, con Apply implementado y verificación técnica completa. El [diseño del change](openspec/changes/crear-turno-sin-solapamientos/design.md) define FastAPI, Python, SQLite y reglas temporales, implementadas al autorizar el usuario continuar. No se atribuye lectura personal del spec a partir de esa autorización. Bootstrap, modelos ficticios y pruebas son tareas internas del mismo change.
+El plan está en [CHANGES.md](CHANGES.md): 20 changes en seis fases para el producto futuro. Sólo **C-01 `crear-turno-sin-solapamientos`** está implementado, verificado y archivado el 2026-10-28; C-02 a C-20 permanecen planificados, sin autorización de implementación. El [diseño del change](openspec/changes/archive/2026-10-28-crear-turno-sin-solapamientos/design.md) define FastAPI, Python, SQLite y reglas temporales, implementadas al autorizar el usuario continuar. No se atribuye lectura personal del spec a partir de esa autorización. Bootstrap, modelos ficticios y pruebas son tareas internas del mismo change.
 
-Camino crítico: contrato revisado → alta sin solapamientos → suite completa → Archive. WhatsApp, pagos, historia clínica, autenticación, multisede y UI completa permanecen fuera de esta porción.
+El cierre de C-01 comprende contrato, alta sin solapamientos, suite completa y Archive, ya confirmados técnicamente. El camino crítico y las dependencias de la evolución están en CHANGES.md. Las exclusiones de C-01 siguen vigentes para su implementación; planificar capacidades futuras no autoriza ejecutarlas.
 
-Antes de Propose, leer las precondiciones y los documentos «Leer antes» del roadmap. Q01–Q08 se resolvieron para C-01; ante cambios materiales volver a Propose antes de modificar el contrato; Q09 está resuelta por confirmación personal de fuentes; Q10 sigue pendiente de entrega y no se dan por cumplidas al generar documentación.
+Antes de Propose de un change futuro, obtener autorización y leer las dependencias y los documentos «Leer antes» del roadmap. Q01–Q08 se resolvieron para C-01; ante cambios materiales volver a Propose antes de modificar el contrato; Q09 está resuelta por confirmación personal de fuentes; Q10 sigue pendiente de entrega y no se dan por cumplidas al generar documentación.
 
 ## Reglas Duras (específicas del proyecto)
 
@@ -74,11 +74,11 @@ Estas reglas consolidan instrucciones ya confirmadas del usuario y restricciones
 ## Flujo de Trabajo
 
 1. Leer estas instrucciones, KB pertinente, preguntas abiertas y roadmap; contrastar el estado real del checkout.
-2. Consultar `openspec list --json`. Cuando exista el change, consultar `openspec status --change "crear-turno-sin-solapamientos" --json`; el CLI posee el estado de artefactos y tareas.
-3. Explorar el problema y conservar el relevamiento dentro del alcance autorizado. Proponer mediante `/opsx:propose crear-turno-sin-solapamientos`; usar instrucciones del CLI para crear artefactos y registrar las correcciones reales.
+2. Consultar `openspec list --json`; C-01 ya no está activo. Su archivo y la spec principal conservan la evidencia del cierre; el CLI posee el estado de los changes nuevos que se autoricen.
+3. Explorar y proponer sólo el avance autorizado usando el nombre del roadmap y las instrucciones del CLI; conservar C-01 archivado y no recrearlo como un change nuevo.
 4. Revisar el contrato y resolver las decisiones indispensables. No inventar aceptación humana ni crear manualmente la estructura de OpenSpec.
-5. Aplicar tareas con `/opsx:apply crear-turno-sin-solapamientos`, reglas pertinentes del registro y pruebas del contrato. Marcar tareas sólo tras ejecución comprobada.
-6. Verificar la suite completa y archivar con `/opsx:archive crear-turno-sin-solapamientos` cuando corresponda. Confirmar el resultado del CLI antes de marcar C-01 terminado.
+5. Aplicar únicamente tareas autorizadas del change activo, con las reglas del registro y pruebas del contrato. Marcar tareas sólo tras ejecución comprobada.
+6. Verificar la suite completa y archivar el change activo cuando corresponda, confirmando el resultado del CLI y la sincronización de specs antes de marcarlo terminado. C-01 ya cumplió este cierre el 2026-10-28.
 7. Actualizar la bitácora y las decisiones en Engram para este proyecto, sin exportar memoria de otros proyectos ni confundir memoria con revisión humana. Informar archivos, verificaciones y pendientes.
 
 Estas instrucciones no acreditan por sí solas pruebas, Archive ni entrega académica final. Verificar evidencia y estado real del CLI.
