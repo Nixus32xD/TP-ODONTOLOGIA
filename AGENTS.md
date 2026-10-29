@@ -1,20 +1,23 @@
 # TP-ODONTOLOGIA — Instrucciones para Agentes
 
-Instrucciones específicas de esta entrega de Metodología I. Mantener este archivo y `CLAUDE.md` idénticos al actualizarlos. El proyecto partió de cero y ahora tiene FastAPI, módulo de agenda, demo y 53 tests. C-01 fue archivado el 2026-10-28; el cierre técnico no acredita aceptación docente ni otras evidencias académicas.
+Instrucciones específicas de esta entrega de Metodología I. Mantener este archivo y `CLAUDE.md` idénticos al actualizarlos. El proyecto partió de cero y ahora tiene FastAPI, módulo de agenda, demo y 53 tests. C-01 fue archivado el 2026-10-28; el cierre técnico no acredita aceptación docente ni otras evidencias académicas. El 2026-10-29 la cátedra fijó el stack del sistema y la separación en `backend/` y `frontend/` (ver Stack Tecnológico y R-09).
 
 ## Stack Tecnológico
 
-Tabla tomada de [la descripción general](knowledge-base/02_descripcion_general.md), sincronizada con el contrato implementado al autorizar continuar con Apply.
+Stack definido por la cátedra el 2026-10-29 para todo el sistema. Detalle en [la descripción general](knowledge-base/02_descripcion_general.md) y decisión en [DD-09](knowledge-base/09_decisiones_y_supuestos.md).
 
-| Capa | Tecnología | Versión mínima / estado |
-| --- | --- | --- |
-| Lenguaje y runtime del producto | Python | 3.12+; verificado con 3.12.14 |
-| Forma de exposición | FastAPI + Uvicorn | FastAPI 0.143.2; HTTP local, sin proveedores externos |
-| Almacenamiento | SQLite mediante sqlite3 estándar | Archivo en disco local; verificado con SQLite 3.53.1 |
-| Pruebas del producto | unittest, TestClient y multiprocessing | 53 tests; procesos spawn reales y contrato HTTP |
-| Interfaz gráfica | Fuera de C-01 | Demo por consola |
-| Especificación y flujo | OpenSpec / Active Stack | C-01 archivado; spec principal vigente |
-| Herramienta del informe | Python, ReportLab y pypdf | Dependencias documentales separadas del producto |
+| Parte | Tecnología | Carpeta | Estado |
+| --- | --- | --- | --- |
+| Backend — lenguaje y API | Python 3.12+ y FastAPI + Uvicorn | `backend/odontologia/` | Implementado en C-01 (FastAPI 0.143.2) |
+| Backend — autenticación | JWT (PyJWT) | `backend/odontologia/auth/` | Estructura; se implementa en C-03 |
+| Backend — ORM y persistencia | SQLAlchemy + PostgreSQL | `backend/odontologia/db/` | Estructura y servicio `db`; migración en C-02 |
+| Backend — tareas asincrónicas | Redis (cola de recordatorios) | `backend/odontologia/workers/` | Estructura y servicio `redis`; se implementa en C-17 |
+| Contenedores | Docker / Docker Compose | `docker-compose.yml`, `Dockerfile` | Preparado; despliegue controlado en C-14 |
+| Frontend | React + TypeScript + Vite | `frontend/` | Estructura inicial; recepción en C-11 |
+| Persistencia vigente de C-01 | SQLite (sqlite3 estándar) | `ODONTOLOGIA_DB` | Se conserva hasta que C-02 migre y vuelva a probar la exclusión |
+| Pruebas | unittest, TestClient y multiprocessing | `backend/tests/` | 53 tests de C-01 |
+| Especificación y flujo | OpenSpec / Active Stack | `openspec/` | C-01 archivado; spec principal vigente |
+| Herramienta del informe | Python, ReportLab y pypdf | `tools/` | Dependencias documentales separadas del producto |
 
 ## Base de Conocimiento
 
@@ -64,12 +67,13 @@ Estas reglas consolidan instrucciones ya confirmadas del usuario y restricciones
 
 - **R-01 — Alcance:** implementar sólo el alta de turno acordada. Rechazar conflictos del mismo profesional o del mismo box por separado (RN-TU-01/02); no introducir sobreturnos ni otros módulos por analogía con los competidores.
 - **R-02 — Datos:** nunca guardar datos reales de pacientes, información clínica real, secretos, credenciales o certificados en el repositorio, ejemplos o pruebas → usar exclusivamente datos ficticios.
-- **R-03 — Integraciones:** no ejecutar integraciones externas, SOAP, ARCA/AFIP real ni servicios de proveedores desde el ejercicio. HTTP local de FastAPI está autorizado expresamente para C-01. Las consultas públicas para investigación y las herramientas del proceso no acreditan integraciones clínicas. La API local no tiene autenticación ni autorización de publicación pública.
+- **R-03 — Integraciones:** no ejecutar integraciones externas, SOAP, ARCA/AFIP real ni servicios de proveedores desde el ejercicio. HTTP local de FastAPI está autorizado expresamente para C-01. Las consultas públicas para investigación y las herramientas del proceso no acreditan integraciones clínicas. La API local no tiene autenticación ni autorización de publicación pública. PostgreSQL y Redis corren como servicios locales de Docker Compose con puertos sólo en 127.0.0.1; no son integraciones externas.
 - **R-04 — Contrato:** nunca elegir silenciosamente stack, persistencia, concurrencia o políticas temporales → preparar opciones y registrar la decisión aplicable antes de implementar. `[inicio, fin)`, adyacencia y RN-TU-03 a RN-TU-07 son el contrato de C-01 aplicado tras autorización de continuar. Ante un hueco, volver a Propose.
 - **R-05 — Cambios y errores:** inspeccionar documentos, código y pruebas existentes; realizar cambios mínimos y reutilizar la lógica disponible. Validar entradas explícitamente y devolver errores claros; no corregir datos inválidos silenciosamente para aceptarlos.
 - **R-06 — Pruebas:** cuando exista runner, seguir TDD del roadmap: baseline existente, RED ejecutado antes de producción, GREEN mínimo, triangulación y refactor con pruebas verdes. Cubrir todos los escenarios aprobados y ejecutar la suite completa; reportar fallos previos y no archivar con pruebas fallando. Una prueba secuencial no demuestra concurrencia.
 - **R-07 — Evidencia:** distinguir hechos, publicidad, propuestas y «No evidenciado». Registrar comandos y resultados reales; no atribuir al estudiante verificaciones realizadas por IA ni afirmar revisión humana, tests, capturas, video o cumplimiento que no se acreditaron. La revisión personal de las seis fuentes quedó confirmada por el estudiante el 2026-10-15; no convertir esa conformidad en auditoría funcional ni atribuirle los hallazgos detallados del agente.
 - **R-08 — Git:** validar antes de cada commit local autorizado por la preferencia vigente; usar mensajes descriptivos y separar cambios ajenos. Push o publicación requieren autorización explícita aplicable a ese avance. No extender permisos de push de commits ya revisados a avances nuevos o publicaciones futuras.
+- **R-09 — Stack de la cátedra:** respetar el stack fijado el 2026-10-29 (backend: Python, FastAPI, JWT, SQLAlchemy, PostgreSQL, Redis, Docker/Docker Compose; frontend: React, TypeScript, Vite) → no sustituir tecnologías sin autorización docente registrada. Código de backend sólo en `backend/` y de interfaz sólo en `frontend/`; las reglas de negocio viven en el backend y la UI no las duplica. Adoptar una tecnología del stack en un change exige Propose y pruebas propias: tener la carpeta o el servicio preparado no acredita implementación.
 
 ## Flujo de Trabajo
 

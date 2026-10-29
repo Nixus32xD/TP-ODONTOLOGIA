@@ -53,3 +53,7 @@ El contrato de C-01 se implementó con Python, sqlite3, unittest y multiprocessi
 ## Corrección FastAPI — C-01
 
 El usuario corrigió expresamente el stack a FastAPI y autorizó commit/push tras validar, manteniendo sólo C-01. Adaptador POST /turnos, GET /health y OpenAPI reutilizan SQLite. Dependencias fijadas, instaladas en .venv (sin cambios globales); HTTPX para TestClient. Estado previo sin HTTP conserva valor histórico, no describe el producto actual. Baseline43; suite actual53 tests. No se modifica PDF, datos reales ni proveedores externos. Archive y evidencias personales pendientes.
+
+## Corrección de la cátedra — stack (2026-10-29)
+
+La cátedra fijó React + TypeScript + Vite para el frontend. El descarte de `vercel-react-best-practices` se basaba en que no había frontend definido: ese motivo dejó de valer. Se reevaluará en el Propose de C-11 (interfaz de recepción), revisando versión, licencia y scripts antes de instalarla. Por ahora no se instalan skills nuevas; la estructura de `frontend/` no las necesita.

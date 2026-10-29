@@ -1,6 +1,6 @@
 # CHANGES — Secuencia de Implementación
 
-> Índice canónico del proyecto **TP-ODONTOLOGIA**, actualizado el 2026-10-28.
+> Índice canónico del proyecto **TP-ODONTOLOGIA**, actualizado el 2026-10-29 (stack de la cátedra).
 > **Plan del producto completo; implementación actual limitada a C-01.** C-02 a C-20 son changes futuros propuestos, no funcionalidades entregadas ni autorizaciones para ejecutarlas.
 > **Leer este archivo antes de ejecutar cualquier `/opsx:propose`.**
 
@@ -25,17 +25,19 @@ La aclaración del usuario del 2026-10-28 corrige el índice anterior: **hacer s
 
 La KB y las instrucciones existentes documentan principalmente la porción académica C-01. Sus exclusiones siguen vigentes para esa implementación; las capacidades futuras de este roadmap son propuestas nuevas de planificación, no ampliaciones retroactivas de las US-001 a US-004. Para C-02+ faltan criterios específicos que se deben desarrollar en la KB y Propose del change correspondiente. Hasta una autorización posterior se mantienen datos ficticios y ninguna integración externa real.
 
-**Base técnica preservada:** Python/FastAPI y SQLite local. Bootstrap y modelos mínimos ya pertenecen a C-01; no se renumera como `foundation-setup`. C-02 prepara la evolución del esquema. Una migración a otro motor, la tecnología de frontend, el hosting y los proveedores quedan como decisiones futuras justificadas. El contrato actual se consulta en [design.md](openspec/changes/archive/2026-10-28-crear-turno-sin-solapamientos/design.md), [spec.md](openspec/changes/archive/2026-10-28-crear-turno-sin-solapamientos/specs/alta-turnos/spec.md) y [api.py](odontologia/api.py); los párrafos históricos «sin servidor» y «sin variables» de KB-08 no sustituyen FastAPI, Uvicorn y `ODONTOLOGIA_DB` ya implementados.
+**Stack definido por la cátedra (2026-10-29):** backend con Python, FastAPI, JWT, SQLAlchemy, PostgreSQL, Redis y Docker/Docker Compose; frontend con React, TypeScript y Vite, en carpetas `backend/` y `frontend/` ([DD-09](knowledge-base/09_decisiones_y_supuestos.md)). Cada tecnología se adopta en el change que la necesita: PostgreSQL + SQLAlchemy en C-02, JWT en C-03, React/TS/Vite en C-11, Docker Compose de despliegue en C-14 y Redis (cola de recordatorios) en C-17. Ya existen las carpetas, dependencias y servicios preparados; eso no acredita su implementación.
+
+**Base técnica de C-01:** Python/FastAPI y SQLite local, movidos sin cambios a `backend/`. Bootstrap y modelos mínimos ya pertenecen a C-01; no se renumera como `foundation-setup`. Hosting y proveedores siguen siendo decisiones futuras justificadas. El contrato actual se consulta en [design.md](openspec/changes/archive/2026-10-28-crear-turno-sin-solapamientos/design.md), [spec.md](openspec/changes/archive/2026-10-28-crear-turno-sin-solapamientos/specs/alta-turnos/spec.md) y [api.py](backend/odontologia/api.py).
 
 ### Decisiones que habilita la planificación
 
 | Decisión pendiente | Change que debe resolverla | Condición previa a su implementación |
 | --- | --- | --- |
-| Versionado de esquema y necesidad de otro motor | C-02 | Compatibilidad con agendas existentes, migración reversible y prueba con copia ficticia; no cambiar SQLite por plantilla |
+| Versionado de esquema y migración a PostgreSQL con SQLAlchemy (stack de la cátedra) | C-02 | Migración reversible desde las agendas SQLite de C-01, prueba con copia ficticia y la misma exclusión concurrente demostrada en PostgreSQL |
 | Identidades, permisos, sesiones y auditoría | C-03/C-04 | Matriz de acceso y eventos revisados; aprobación humana antes de código de seguridad |
 | Datos mínimos, prestaciones y disponibilidad | C-05/C-06/C-07 | Campos, bajas y excepciones definidos sin perder referencias históricas |
 | Estados, cancelación y reprogramación | C-09/C-10 | Transiciones y concurrencia especificadas; exclusión del paciente explícitamente decidida |
-| UI y operación desplegada | C-11/C-12/C-13/C-14 | Elegir frontend, probar recuperación y seguridad; no extrapolar SQLite a una red compartida |
+| UI y operación desplegada | C-11/C-12/C-13/C-14 | Interfaz en React + TypeScript + Vite (fijada por la cátedra), despliegue con Docker Compose, recuperación y seguridad probadas |
 | Datos clínicos, comunicaciones y dinero | C-15 a C-20 | Revisión de permisos, privacidad, reglas clínicas/monetarias y proveedor cuando corresponda; sólo simulación en este ejercicio |
 
 ---
@@ -145,7 +147,7 @@ Secuencia compatible con dependencias, sin prometer una optimización temporal n
 
 ### [C-01] `crear-turno-sin-solapamientos`
 
-- **Estado**: `[x]` implementado y archivado el 2026-10-28: 18/18 tareas completas. Ver [archivo del change](openspec/changes/archive/2026-10-28-crear-turno-sin-solapamientos/), [spec principal](openspec/specs/alta-turnos/spec.md) y [evidencia de cierre](docs/evidencia/implementacion-turnos.md). Se ejecutaron nuevamente 53 pruebas y la demo antes del Archive.
+- **Estado**: `[x]` implementado y archivado el 2026-10-28: 18/18 tareas completas. Ver [archivo del change](openspec/changes/archive/2026-10-28-crear-turno-sin-solapamientos/), [spec principal](openspec/specs/alta-turnos/spec.md) y [evidencia de cierre](docs/evidencia/implementacion-turnos.md). Se ejecutaron nuevamente 53 pruebas y la demo antes del Archive. Desde el 2026-10-29 su código vive en `backend/` (movido sin cambios por la estructura pedida por la cátedra).
 - **Scope**:
   - Conservar bootstrap explícito de SQLite con `Paciente`, `Profesional`, `Box`, `Turno` ficticios; alta validada con `[inicio, fin)`, minuto exacto y UTC; conflictos independientes y `BEGIN IMMEDIATE` sobre un archivo local.
   - Conservar `POST /turnos` con `201`, errores `422/404/409/503/500`, `GET /health` de liveness y documentación OpenAPI; sin crear DB al importar.
@@ -168,7 +170,7 @@ Secuencia compatible con dependencias, sin prometer una optimización temporal n
 - **Estado**: `[ ]` planificado; sin change creado en OpenSpec.
 - **Scope**:
   - Añadir registro de versión de esquema y migraciones incrementales sobre copia ficticia; conservar IDs y turnos de C-01, sin bootstrap destructivo ni inicialización automática al importar.
-  - Separar configuración de entorno de datos y documentar restauración/reversión de una migración fallida. Evaluar si SQLite local sigue alcanzando; cualquier cambio de motor debe justificarse y probar la misma exclusión concurrente antes de adoptarlo.
+  - Separar configuración de entorno de datos y documentar restauración/reversión de una migración fallida. Migrar a PostgreSQL con SQLAlchemy (stack de la cátedra, servicio `db` de Docker Compose); la nueva persistencia debe probar la misma exclusión concurrente de C-01 antes de reemplazar SQLite.
   - Tests: agenda existente preservada, aplicación de migración una sola vez, fallo intermedio sin pérdida y rechazo de versión incompatible; mantener suite de regresión de C-01.
 - **Dependencias**: C-01.
 - **Governance**: ALTO — configuración y evolución de datos existentes.
@@ -182,7 +184,7 @@ Secuencia compatible con dependencias, sin prometer una optimización temporal n
 
 - **Estado**: `[ ]` planificado.
 - **Scope**:
-  - Definir `Usuario`, rol y sesión para administración, recepción y profesional; aprobar matriz de permisos antes de elegir mecanismo de autenticación y gestionar contraseñas/sesiones con controles apropiados.
+  - Definir `Usuario`, rol y sesión para administración, recepción y profesional; aprobar matriz de permisos y autenticar con JWT (stack de la cátedra, `backend/odontologia/auth/`), gestionando contraseñas, expiración y revocación con controles apropiados.
   - Proponer `POST /sesiones`, `DELETE /sesiones/actual`, `GET /sesiones/actual` y administración restringida de usuarios; proteger `POST /turnos` sin alterar su regla de solapamientos ni la semántica de errores de dominio.
   - Tests: acceso válido, credenciales inválidas, sesión expirada/revocada y acceso de un rol a recursos prohibidos (`401/403`); no confiar sólo en ocultar botones.
 - **Dependencias**: C-02.
@@ -299,7 +301,7 @@ Secuencia compatible con dependencias, sin prometer una optimización temporal n
 
 - **Estado**: `[ ]` planificado.
 - **Scope**:
-  - Elegir tecnología de frontend compatible con la API y construir login, vista diaria/semanal de agenda y selección de paciente/profesional/box/prestación; integrar formularios mínimos de catálogos y horarios ya expuestos, sin duplicar reglas en la UI.
+  - Construir en `frontend/` con React + TypeScript + Vite (stack de la cátedra) el login, vista diaria/semanal de agenda y selección de paciente/profesional/box/prestación; integrar formularios mínimos de catálogos y horarios ya expuestos, sin duplicar reglas en la UI.
   - Consumir alta, consulta, confirmación, cancelación y reprogramación; mostrar estado pendiente hasta respuesta, conflictos por recurso, validaciones y actualización de disponibilidad. Incluir navegación por teclado y estados de carga/vacío/error.
   - Tests E2E con backend y datos ficticios: alta válida, conflicto que llega desde API, cancelación y reprogramación; probar permisos de servidor incluso manipulando la vista y evitar afirmar éxito por actualización optimista.
 - **Dependencias**: C-08, C-10.
@@ -342,6 +344,7 @@ Secuencia compatible con dependencias, sin prometer una optimización temporal n
 
 - **Estado**: `[ ]` planificado; cierre del MVP operativo futuro.
 - **Scope**:
+  - Usar Docker / Docker Compose (stack de la cátedra) como paquete reproducible: imágenes de `backend/` y `frontend/`, servicios PostgreSQL y Redis, variables por entorno y secretos fuera del repositorio.
   - Elegir y documentar un entorno de despliegue de una sola clínica; preparar paquete reproducible, configuración por entorno y pasos de migración con respaldo, rollback y control de acceso/red. No habilitar despliegue público por generar este roadmap.
   - Agregar verificación automatizada de instalación y smoke del recorrido de recepción en entorno de prueba con datos ficticios; incluir guía de arranque/parada y recuperación referenciada a C-12.
   - Criterios de salida: suite/E2E completos, readiness real, concurrencia validada en el almacenamiento y modo de ejecución elegidos, restauración comprobada y revisión humana de habilitación. Si se cambia el modelo de ejecución, volver a probar sus garantías.
@@ -395,6 +398,7 @@ Secuencia compatible con dependencias, sin prometer una optimización temporal n
 - **Estado**: `[ ]` planificado; canal real pendiente de decisión.
 - **Scope**:
   - Modelar preferencia de contacto y `Recordatorio`/outbox ligada al turno; definir anticipación, zona horaria, consentimiento y contenido mínimo sin datos clínicos. Preparar adaptador simulado antes de evaluar email o WhatsApp.
+  - Encolar los recordatorios en **Redis** (stack de la cátedra) y procesarlos con un worker en `backend/odontologia/workers/`, usando un canal simulado; Redis transporta el trabajo, el estado del recordatorio se persiste en PostgreSQL.
   - Programar sólo turnos elegibles; invalidar recordatorios anteriores al cancelar/reprogramar. Persistir estado/intentos y clave de deduplicación para evitar envíos repetidos; fallar el aviso no debe duplicar ni borrar el turno.
   - Tests: envío simulado, rechazo/fallo de canal, reintento acotado, petición repetida, cancelación y cambio horario; no afirmar entrega por aceptar un trabajo en cola.
 - **Dependencias**: C-08, C-09, C-10, C-13.
