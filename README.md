@@ -21,6 +21,29 @@ OpenSpec conserva `crear-turno-sin-solapamientos` archivado, con sus cuatro arte
 
 Esta entrega comienza desde cero. El alcance inicial es una funcionalidad terminada de agenda, con datos ficticios y sin integraciones clínicas reales.
 
+## Stack tecnológico y estructura
+
+Por corrección de la cátedra (2026-10-29), el sistema se trabaja con este stack:
+
+| Parte | Tecnologías | Carpeta |
+| --- | --- | --- |
+| Backend | Python, FastAPI, JWT, SQLAlchemy, PostgreSQL, Redis, Docker / Docker Compose | [`backend/`](backend/README.md) |
+| Frontend | React, TypeScript, Vite | [`frontend/`](frontend/README.md) |
+
+```text
+TP-ODONTOLOGIA/
+├── backend/            # API FastAPI: C-01 (alta de turnos) + estructura de db/, auth/ y workers/
+├── frontend/           # React + TypeScript + Vite
+├── docker-compose.yml  # db (PostgreSQL), redis, backend y frontend
+├── openspec/           # specs vigentes y changes archivados
+├── knowledge-base/     # base de conocimiento (10 archivos)
+├── docs/               # Discovery, bitácora, evidencia y consigna
+├── CHANGES.md          # roadmap de 20 changes
+└── AGENTS.md / CLAUDE.md
+```
+
+**Qué está implementado y qué es estructura:** C-01 (alta de turnos sin solapamientos) está implementado, probado y archivado; se movió sin cambios a `backend/` y sigue usando SQLite local. PostgreSQL + SQLAlchemy (C-02), JWT (C-03), la interfaz de recepción en React (C-11), la cola de recordatorios en Redis (C-17) y el despliegue con Docker (C-14) tienen su carpeta, dependencias y servicios preparados, y se implementan cuando se propongan sus changes. Ver [corrección del stack](docs/BITACORA.md#2026-10-29--corrección-de-la-cátedra-stack-y-estructura).
+
 ## Recorrido de la entrega
 
 0. Preparar el entorno y registrar evidencia real.
@@ -65,24 +88,42 @@ Todos los ejemplos y pruebas usan datos ficticios, sin secretos ni pacientes rea
 
 ## Ejecutar producto y pruebas
 
-Python 3.12+ y entorno virtual local. Desde la raíz:
+### Con Docker Compose (stack completo)
+
+Requiere Docker Desktop. Desde la raíz:
 
 ```powershell
+Copy-Item .env.example .env   # completar POSTGRES_PASSWORD y JWT_SECRETO con valores locales
+docker compose up --build
+```
+
+Levanta PostgreSQL, Redis, el backend en http://127.0.0.1:8000 (Swagger en `/docs`) y el frontend en http://127.0.0.1:5173. El backend prepara una agenda ficticia de C-01 en un volumen propio si todavía no existe.
+
+### Backend sin Docker
+
+Python 3.12+ y entorno virtual local. Desde `backend/`:
+
+```powershell
+Set-Location backend
 python -m venv .venv
-.\.venv\Scripts\python.exe -m pip install -r requirements-lock.txt
+.\.venv\Scripts\python.exe -m pip install -r requirements-lock.txt -r requirements-stack.txt
 .\.venv\Scripts\python.exe -m unittest discover -s tests -v
 .\.venv\Scripts\python.exe -m odontologia.demo
 ```
 
-requirements.txt fija dependencias directas del producto, requirements-dev.txt añade HTTPX y requirements-lock.txt conserva el entorno completo verificado. Python3.12.14/SQLite3.53.1; 53 tests, incluyendo10 HTTP y procesos spawn reales. Starlette1.8.0 emite un aviso de deprecación por HTTPX0.28.1; la compatibilidad actual pasó, no se silencia el aviso.
+`requirements.txt` fija las dependencias directas de C-01, `requirements-dev.txt` añade HTTPX, `requirements-lock.txt` conserva el entorno verificado de C-01 y `requirements-stack.txt` suma SQLAlchemy, psycopg, PyJWT y redis para los changes siguientes. Python3.12.14/SQLite3.53.1; 53 tests, incluyendo10 HTTP y procesos spawn reales. Starlette1.8.0 emite un aviso de deprecación por HTTPX0.28.1; la compatibilidad actual pasó, no se silencia el aviso.
 
-Inicializar una agenda ficticia NUEVA en disco local (no asumir N: local), y luego iniciar la API sólo en loopback:
+Inicializar una agenda ficticia NUEVA en disco local (no asumir N: local), y luego iniciar la API sólo en loopback, siempre desde `backend/`:
 
 ```powershell
 $env:ODONTOLOGIA_DB = Join-Path $env:LOCALAPPDATA 'odontologia-c01.sqlite3'
 .\.venv\Scripts\python.exe -c "import os; from odontologia import inicializar_agenda; inicializar_agenda(os.environ['ODONTOLOGIA_DB'])"
 .\.venv\Scripts\python.exe -m uvicorn odontologia.api:crear_app --factory --host 127.0.0.1 --port 8000
 ```
+
+### Frontend sin Docker
+
+Node 20+. Desde `frontend/`: `npm install` y `npm run dev` (http://localhost:5173, con el backend en el puerto 8000).
 
 Bootstrap rechaza archivos existentes sin sobrescribirlos. Para reutilizar agenda ya preparada, omitir inicialización. Detener servidor con Ctrl+C. Crear app/importar no crea DB. No ejecutar bootstrap sobre agendas ajenas ni borrar archivos para repetir.
 

@@ -176,3 +176,17 @@ La publicación preparada comprende el informe, PDF, registro de fuentes y docum
 Se verificó nuevamente C-01 con 53 tests satisfactorios, demo temporal y pip check; OpenSpec validó el change sin problemas. El comando nativo de Archive sincronizó alta-turnos (14 requisitos, 35 escenarios) y movió el change a [2026-10-28-crear-turno-sin-solapamientos](../openspec/changes/archive/2026-10-28-crear-turno-sin-solapamientos/). La [spec principal](../openspec/specs/alta-turnos/spec.md) conserva el contrato; su validación estricta fue satisfactoria y no quedan changes activos. Ver [evidencia detallada](evidencia/implementacion-turnos.md).
 
 Se actualizan enlaces y estado técnico de C-01 en la documentación vigente; los hitos y pendientes históricos anteriores conservan su contexto. El roadmap mantiene 20 changes en seis fases: cerrar C-01 no implementa ni autoriza C-02 a C-20. No se modificó producto, tests, PDF, datos o servidor de grabación; el informe Discovery con cambios previos del autor queda fuera de esta tarea. El cierre técnico no acredita aceptación docente. Commit local y publicación se informan por separado, sin inferir autorización de push.
+
+## 2026-10-29 — Corrección de la cátedra: stack y estructura
+
+**Revisión del profesor:** faltaban las carpetas `backend/` y `frontend/` y había que respetar el stack tecnológico del sistema: backend con Python, FastAPI, JWT, SQLAlchemy, PostgreSQL, Redis (funcionalidades asincrónicas) y Docker/Docker Compose; frontend con React, TypeScript y Vite.
+
+**Decisión (Ajustar):** el estudiante eligió crear la estructura y actualizar la documentación, sin migrar todavía la lógica. Como C-01 ya está archivado (2026-10-28), su change no se edita: el ajuste se registra en la fundación (KB 02/08 y [DD-09](../knowledge-base/09_decisiones_y_supuestos.md), AGENTS/CLAUDE con la regla R-09, roadmap y README). Cada tecnología queda asignada al change que la implementa: PostgreSQL + SQLAlchemy → C-02, JWT → C-03, React/TS/Vite → C-11, Docker Compose de despliegue → C-14, Redis con cola de recordatorios → C-17.
+
+**Cambios realizados:**
+- C-01 movido sin cambios a `backend/odontologia/` y `backend/tests/`, con sus `requirements*.txt`.
+- Estructura nueva del backend: `core/config.py` (variables de entorno), `db/`, `auth/` y `workers/` como paquetes reservados con su change asignado; `requirements-stack.txt`, `Dockerfile`, `docker-entrypoint.sh` y `.env.example`.
+- `frontend/` con React + TypeScript + Vite: página que consulta `GET /health` por el proxy `/api` y lista las pantallas planificadas.
+- `docker-compose.yml` con PostgreSQL 16, Redis 7, backend y frontend, puertos sólo en 127.0.0.1 y secretos en `.env` (no versionado).
+
+**Verificación en el entorno del agente:** 43 tests del dominio OK desde `backend/`; `docker compose config` válido; sintaxis de los archivos TypeScript comprobada. El entorno no tenía acceso a PyPI ni a npm, por lo que la instalación de dependencias, los 10 tests HTTP, `npm run build` y el arranque con Docker quedan para el script de comprobación en el equipo del estudiante. No se modificaron el contrato, la spec principal ni el archivo de C-01.

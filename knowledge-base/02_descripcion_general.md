@@ -6,17 +6,23 @@ C-01 implementa el alta de turnos ficticios mediante FastAPI y un módulo de dom
 
 ## Stack tecnológico
 
-| Capa | Tecnología | Versión mínima / estado |
+**Corrección de la cátedra (2026-10-29):** el sistema se trabaja con el stack siguiente, separado en `backend/` y `frontend/`. Ver [DD-09](09_decisiones_y_supuestos.md).
+
+| Parte | Tecnología | Estado |
 | --- | --- | --- |
-| Lenguaje y runtime del producto | Python | 3.12+; verificado con 3.12.14 |
-| Forma de exposición | FastAPI + Uvicorn | FastAPI 0.143.2; HTTP local, sin proveedores externos |
-| Almacenamiento | SQLite mediante sqlite3 estándar | Archivo en disco local; verificado con SQLite 3.53.1 |
-| Pruebas del producto | unittest, TestClient y multiprocessing | 53 tests; procesos spawn reales y contrato HTTP |
-| Interfaz gráfica | Fuera de C-01 | Demo por consola |
+| Backend | Python 3.12+ y FastAPI + Uvicorn | Implementado en C-01 (FastAPI 0.143.2), en `backend/` |
+| Backend | JWT para autenticación | Estructura en `backend/odontologia/auth/`; C-03 |
+| Backend | ORM SQLAlchemy | Estructura en `backend/odontologia/db/`; C-02 |
+| Backend | PostgreSQL para persistencia | Servicio `db` en Docker Compose; C-02 migra C-01 |
+| Backend | Redis para funcionalidades asincrónicas | Servicio `redis` y `backend/odontologia/workers/`; cola de recordatorios en C-17 |
+| Backend | Docker / Docker Compose | `backend/Dockerfile`, `frontend/Dockerfile` y `docker-compose.yml`; despliegue controlado en C-14 |
+| Frontend | React + TypeScript + Vite | Estructura inicial en `frontend/`; interfaz de recepción en C-11 |
+| Vigente en C-01 | SQLite mediante sqlite3 estándar | Verificado con SQLite 3.53.1; se conserva hasta C-02 |
+| Pruebas de C-01 | unittest, TestClient y multiprocessing | 53 tests en `backend/tests/` |
 | Especificación y flujo | OpenSpec / Active Stack | C-01 archivado el 2026-10-28 |
 | Herramienta del informe | Python, ReportLab y pypdf | Dependencias documentales separadas del producto |
 
-La decisión parte del [diseño](../openspec/changes/archive/2026-10-28-crear-turno-sin-solapamientos/design.md) y del alcance acotado, no del renderer. FastAPI fue corregido por instrucción explícita del usuario; dependencias fijadas en requirements.txt y requirements-dev.txt e instaladas únicamente en .venv. Ver [inventario](../docs/evidencia/entorno.md).
+La decisión parte del [diseño](../openspec/changes/archive/2026-10-28-crear-turno-sin-solapamientos/design.md) y del alcance acotado, no del renderer. FastAPI fue corregido por instrucción explícita del usuario; dependencias fijadas en `backend/requirements.txt` y `backend/requirements-dev.txt` e instaladas únicamente en .venv; `backend/requirements-stack.txt` agrega las del stack de la cátedra. Ver [inventario](../docs/evidencia/entorno.md).
 
 ## Arquitectura general
 
@@ -33,3 +39,5 @@ API de módulo: inicializar_agenda(ruta_db) y crear_turno con paciente, profesio
 ## Infraestructura y confianza
 
 needs_infra:false significa sin infraestructura externa; Uvicorn sirve la API sólo en loopback; no ausencia de almacenamiento. Garantía limitada al mismo archivo SQLite local y escritores que usen el módulo, sin red compartida ni varios archivos/equipos. Pruebas con temporales locales y procesos reales; no acredita operación clínica o producción.
+
+Con el stack de la cátedra, PostgreSQL y Redis corren como servicios locales de Docker Compose publicados sólo en 127.0.0.1. C-01 todavía no los usa: su garantía sigue limitada a SQLite hasta que C-02 migre la persistencia y vuelva a demostrar la exclusión concurrente.

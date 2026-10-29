@@ -1,2 +1,5 @@
 # Los PDF se conservan byte a byte, sin conversión de finales de línea ni diff de texto.
 *.pdf binary
+
+# Scripts que se ejecutan dentro de contenedores Linux.
+*.sh text eol=lf

@@ -43,3 +43,7 @@ La KB describe requisitos y contrato aplicado; la implementación y sus pruebas 
 ## Corrección FastAPI — C-01
 
 El usuario corrigió expresamente el stack a FastAPI y autorizó commit/push tras validar, manteniendo sólo C-01. Adaptador POST /turnos, GET /health y OpenAPI reutilizan SQLite. Dependencias fijadas, instaladas en .venv (sin cambios globales); HTTPX para TestClient. Estado previo sin HTTP conserva valor histórico, no describe el producto actual. Baseline43; suite actual53 tests. No se modifica PDF, datos reales ni proveedores externos. Archive confirmado el 2026-10-28; las evidencias personales tienen su propio registro.
+
+## Corrección de la cátedra — stack y estructura (2026-10-29)
+
+El profesor fijó el stack del sistema: backend con Python, FastAPI, JWT, SQLAlchemy, PostgreSQL, Redis y Docker/Docker Compose; frontend con React, TypeScript y Vite, en carpetas separadas. Se actualizaron [02](02_descripcion_general.md), [08](08_arquitectura_propuesta.md) y [DD-09](09_decisiones_y_supuestos.md). C-01 se movió a `backend/` sin cambiar su contrato; las tecnologías nuevas quedan preparadas y asignadas a C-02, C-03, C-11, C-14 y C-17.

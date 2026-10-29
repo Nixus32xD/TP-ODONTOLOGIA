@@ -74,6 +74,12 @@ La generación local de la base de conocimiento no acredita su revisión humana 
 
 La implementación puede ser API o módulo de dominio; la interfaz gráfica no es obligatoria. La elección del stack deriva de la base de conocimiento.
 
+### Corrección de la cátedra (2026-10-29)
+
+- [x] Separar el código en `backend/` y `frontend/` y adoptar el stack fijado: Python, FastAPI, JWT, SQLAlchemy, PostgreSQL, Redis, Docker/Docker Compose; React, TypeScript, Vite. Estructura y documentación creadas; ver [bitácora](BITACORA.md).
+- [ ] Implementar cada tecnología en su change: PostgreSQL + SQLAlchemy (C-02), JWT (C-03), interfaz React (C-11), despliegue con Docker (C-14) y cola de recordatorios en Redis (C-17).
+- [ ] Ejecutar la comprobación completa en el equipo con acceso a Internet: dependencias, 53 tests, build del frontend y `docker compose up`.
+
 ## Etapa 7 - Memoria
 
 - [ ] Mostrar decisiones, hallazgos y convenciones guardados en Engram para este proyecto.

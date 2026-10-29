@@ -4,16 +4,27 @@
 
 Arquitectura de C-01 aplicada al autorizar continuar: Python 3.12+, SQLite local y biblioteca estándar, sin framework, servidor, ORM ni capas adicionales. Ver [diseño](../openspec/changes/archive/2026-10-28-crear-turno-sin-solapamientos/design.md) y [evidencia](../docs/evidencia/implementacion-turnos.md).
 
+**Actualización 2026-10-29:** C-01 se expone con FastAPI (DD-08) y, por corrección de la cátedra, el repositorio adopta el stack Python/FastAPI/JWT/SQLAlchemy/PostgreSQL/Redis/Docker para el backend y React/TypeScript/Vite para el frontend (DD-09). La descripción anterior corresponde al contrato inicial de C-01.
+
 ## Responsabilidades y directorios
 
-| Archivo | Responsabilidad |
-| --- | --- |
-| [agenda.py](../odontologia/agenda.py) | Tipos, bootstrap, validación, transacción y alta |
-| [__init__.py](../odontologia/__init__.py) | Exportaciones de API de módulo |
-| [demo.py](../odontologia/demo.py) | Demo temporal sin red |
-| [test_agenda.py](../tests/test_agenda.py) | Validación, persistencia, conflictos, bordes, rollback y bloqueo |
-| [test_concurrencia.py](../tests/test_concurrencia.py) | Procesos spawn independientes |
-| [test_demo.py](../tests/test_demo.py) | CLI, repetición y limpieza |
+Desde la corrección de la cátedra (2026-10-29) el código se separa en `backend/` y `frontend/`. C-01 se movió sin cambios de contrato.
+
+| Ruta | Responsabilidad | Change |
+| --- | --- | --- |
+| [backend/odontologia/agenda.py](../backend/odontologia/agenda.py) | Tipos, bootstrap, validación, transacción y alta | C-01 |
+| [backend/odontologia/api.py](../backend/odontologia/api.py) | Adaptador FastAPI: POST /turnos, GET /health | C-01 |
+| [backend/odontologia/__init__.py](../backend/odontologia/__init__.py) | Exportaciones de API de módulo | C-01 |
+| [backend/odontologia/demo.py](../backend/odontologia/demo.py) | Demo temporal sin red | C-01 |
+| [backend/odontologia/core/config.py](../backend/odontologia/core/config.py) | Lectura de variables de entorno del stack | Base |
+| `backend/odontologia/db/` | SQLAlchemy + PostgreSQL (estructura) | C-02 |
+| `backend/odontologia/auth/` | JWT (estructura) | C-03 |
+| `backend/odontologia/workers/` | Cola de recordatorios en Redis (estructura) | C-17 |
+| [backend/tests/](../backend/tests/) | 53 tests: dominio, concurrencia, demo y HTTP | C-01 |
+| [frontend/](../frontend/README.md) | React + TypeScript + Vite; consume la API vía `/api` | C-11 |
+| [docker-compose.yml](../docker-compose.yml) | Servicios db, redis, backend y frontend en loopback | C-02 / C-14 |
+
+La UI no decide conflictos ni valida reglas de negocio por su cuenta: muestra lo que devuelve el backend.
 
 ## Seguridad y datos
 
@@ -27,7 +38,7 @@ Un escritor por archivo serializa control y registro. BUSY/LOCKED produce agenda
 
 ## Variables de entorno
 
-Ninguna de producto. Ruta como argumento, timeout numérico 5s por defecto. Demo maneja su temporal. Sin Docker, hosting, servidor de DB ni pip install.
+C-01: `ODONTOLOGIA_DB` (ruta de la agenda SQLite); timeout numérico 5s por defecto. Stack de la cátedra, todavía sin uso en C-01: `DATABASE_URL`, `REDIS_URL`, `JWT_SECRETO`, `JWT_ALGORITMO` y `JWT_MINUTOS_EXPIRACION`, leídas por `core/config.py`. Los valores reales van en `.env` (no versionado); `.env.example` sólo trae marcadores.
 
 ## Validación ejecutada
 
