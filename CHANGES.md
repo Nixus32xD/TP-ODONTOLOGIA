@@ -1,7 +1,7 @@
 # CHANGES — Secuencia de Implementación
 
 > Índice canónico del proyecto **TP-ODONTOLOGIA**, actualizado el 2026-11-02.
-> **Plan del producto completo; C-01-C-13 y C-15-C-19 están implementados, validados y archivados localmente. C-20 está en Apply: implementación SQLite/frontend verificada; integración PostgreSQL y cierre técnico pendientes. C-14 es opcional y queda fuera de la entrega.**
+> **Plan del producto completo; C-01-C-13 y C-15-C-20 están implementados, validados y archivados localmente. C-14 es opcional y queda fuera de la entrega.**
 > **Leer este archivo antes de ejecutar cualquier `/opsx:propose`.**
 
 ---
@@ -20,7 +20,7 @@ La aclaración del usuario del 2026-10-28 corrige el índice anterior: **hacer s
 
 - **Entrega académica archivada:** C-01 `crear-turno-sin-solapamientos`, con 18/18 tareas completas y Archive confirmado el 2026-10-28; la spec principal es [alta-turnos](openspec/specs/alta-turnos/spec.md). No se cambia su nombre, su spec, su código ni su contrato. C-02, C-03 y C-04 también están implementados, validados y archivados localmente.
 - **MVP académico demostrable:** C-03 a C-13 completan una agenda de recepción administrable, con cambios revisables, pruebas y demostración local. C-02 ya aporta el backend PostgreSQL optativo y está archivado; la seguridad, auditoría y recuperación usan datos ficticios. No se requiere desplegar el sistema ni levantar contenedores.
-- **Evolución del producto:** C-15 a C-20 agregan clínica, odontograma/plan de tratamiento, recordatorios, reserva del paciente, cobros y reportes. C-15 a C-19 quedaron implementados, validados y archivados; C-20 está activo y su archive queda pendiente de validar el runner PostgreSQL y completar el cierre.
+- **Evolución del producto:** C-15 a C-20 agregan clínica, odontograma/plan de tratamiento, recordatorios, reserva del paciente, cobros y reportes. C-15 a C-20 quedaron implementados, validados y archivados localmente.
 - **Opciones no comprometidas:** multisede/SaaS multitenant, IA, obras sociales y facturación electrónica ARCA no se vuelven obligatorias por aparecer en productos comparados. Si se eligen, se agregarán changes posteriores con investigación y aprobación específicas. C-19 no incluye emisión fiscal ni conexión con pagos reales.
 
 La KB y las instrucciones existentes documentan principalmente la porción académica C-01. Sus exclusiones siguen vigentes para esa implementación; las capacidades futuras del roadmap no amplían retroactivamente las US-001 a US-004. C-02 concreta la migración a PostgreSQL conservando la fuente SQLite; C-03/C-04 autenticación, permisos y auditoría; C-05 la ficha mínima; C-06 catálogos; C-07 disponibilidad; C-08 consultas de agenda; C-09 estados; y C-10 reprogramación atómica. C-01 standalone conserva compatibilidad. Se mantienen datos ficticios y ninguna integración externa real.
@@ -444,13 +444,13 @@ Secuencia compatible con dependencias, sin prometer una optimización temporal n
 
 ### [C-20] `consultar-reportes-operativos`
 
-- **Estado**: `[ ]` Apply parcial; 11/13 tareas verificadas. Pendientes: integración PostgreSQL C-20 con runner aislado configurado y revisión/archive.
+- **Estado**: implementado, validado y archivado localmente el 2026-11-02 en `openspec/changes/archive/2026-11-02-consultar-reportes-operativos/`.
 - **Scope**:
   - Implementar `GET /reportes/agenda` y `GET /reportes/finanzas` con rango local semiabierto máximo de 31 días en Mendoza; agenda para Administrador/Recepción y finanzas sólo Administrador.
   - Calcular capacidad diaria desde horarios, excepciones y bloqueos; separar los cinco estados de turno. Agrupar cargos/cobros/reversiones por fecha local de creación, devolver neto y saldos exactos a partir del ledger C-19.
   - Añadir `/reportes/agenda.csv` y `/reportes/finanzas.csv` desde el mismo agregado JSON; encabezados/orden estables, UTF-8 y fórmulas neutralizadas. No exportar PII ni contenido clínico.
   - Añadir panel React con filtros y descargas autenticadas. No se agregan recomendaciones de productividad, informes clínicos, tablas ni proveedores.
-  - Tests SQLite/API/CSV y frontend focales GREEN; la integración PostgreSQL no se ejecutó porque falta `ODONTOLOGIA_TEST_DATABASE_URL`. Los indicadores son datos del sistema, no mejoras de productividad demostradas.
+  - Suite backend con PostgreSQL temporal: 578 OK, 3 omitidos; integración C-20 PostgreSQL 5/5; frontend 74/74 + build; OpenSpec strict 21/21. Los indicadores son datos del sistema, no mejoras de productividad demostradas.
 - **Dependencias**: C-08, C-09, C-19.
 - **Governance**: MEDIO — consultas derivadas con permisos; cálculo monetario reutiliza el contrato crítico de C-19.
 - **Leer antes**:

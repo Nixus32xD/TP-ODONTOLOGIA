@@ -9,7 +9,7 @@
 ## 2. Reporte diario financiero
 
 - [x] 2.1 Escribir pruebas RED de cargos, cobros, reversos, apertura/saldo diario de cierre por `created_at` local, rango vacío y sumas exactas; verificar que fallen por funcionalidad ausente.
-- [ ] 2.2 Implementar consulta agregada reutilizando el ledger C-19 y enteros centavos; ejecutar focales SQLite y PostgreSQL y triangular movimiento antes/dentro/después del rango y reversión parcial.
+- [x] 2.2 Implementar consulta agregada reutilizando el ledger C-19 y enteros centavos; ejecutar focales SQLite y PostgreSQL y triangular movimiento antes/dentro/después del rango y reversión parcial.
 - [x] 2.3 Probar Admin autorizado y Recepción/Profesional/Paciente denegados, verificar ausencia de conceptos, motivos e IDs de pacientes y documentar alcance financiero en README backend.
 
 ## 3. Exportación CSV
@@ -25,7 +25,7 @@
 
 ## 5. Cierre técnico C-20
 
-- [ ] 5.1 Ejecutar suite backend, integración PostgreSQL aislada, restore/backups SQLite pertinentes, suite frontend/build y `openspec validate consultar-reportes-operativos --strict`; registrar sólo resultados reales en evidencia C-20.
+- [x] 5.1 Ejecutar suite backend, integración PostgreSQL aislada, restore/backups SQLite pertinentes, suite frontend/build y `openspec validate consultar-reportes-operativos --strict`; registrar sólo resultados reales en evidencia C-20.
 - [x] 5.2 Actualizar CHANGES.md, README/KB pertinente y BITACORA con alcance, métricas, privacidad, rutas, limitaciones y resultados; verificar enlaces, `git diff --check` y que Discovery preexistente permanezca intacto.
 
 ## Workflow follow-up

@@ -397,10 +397,12 @@ SQLite sube de v12 a v13 y PostgreSQL incorpora Alembic `20261102_0014_financial
 
 Validación registrada en [evidencia C-19](evidence/C-19-verificacion.md). Suites completas: backend **562 tests OK, 3 skips del host**, frontend **69 tests OK**, build TypeScript/Vite OK. Las integraciones C-19 PostgreSQL usan schema efímero en loopback `127.0.0.1:55432`, base `*_test`, y `pg_dump`/`pg_restore` 18; no se usa el puerto 5432 ni Docker.
 
-## C-20 — Reportes operativos (en desarrollo)
+## C-20 — Reportes operativos
 
 `GET /reportes/agenda?desde=YYYY-MM-DD&hasta=YYYY-MM-DD` entrega agregados por fecha local en `America/Argentina/Mendoza`. El rango es semiabierto `[desde, hasta)`, de 1 a 31 días; Administrador y Recepción pueden consultarlo. Separa cantidad y minutos planificados por estado (`reservado`, `confirmado`, `atendido`, `ausente`, `cancelado`). La capacidad por profesional/box considera el horario semanal, la excepción que reemplaza ese horario, los bloqueos y sólo turnos vigentes para los minutos ocupados. Los recursos sin capacidad informan ocupación `null`. No incluye datos de pacientes ni contenido clínico.
 
 La misma consulta está disponible como `GET /reportes/agenda.csv`, con encabezados fijos, UTF-8 y nombre `agenda-operativa-{desde}-{hasta}.csv`.
 
 `GET /reportes/finanzas?desde=YYYY-MM-DD&hasta=YYYY-MM-DD` usa el mismo rango y zona; es exclusivo de Administrador. Agrupa cargos, cobros y reversiones por fecha local de creación, calcula neto diario como cobros menos reversiones y presenta saldo exacto de apertura/cierre a partir del ledger completo. `GET /reportes/finanzas.csv` exporta esa misma consulta en UTF-8. Ninguna ruta devuelve conceptos, motivos, cuentas ni IDs de pacientes.
+
+C-20 quedó implementado, validado y archivado localmente en `openspec/changes/archive/2026-11-02-consultar-reportes-operativos/`. La evidencia registra 578 pruebas backend OK con PostgreSQL temporal, la integración financiera PostgreSQL 5/5, backup/restore SQLite, frontend y build.

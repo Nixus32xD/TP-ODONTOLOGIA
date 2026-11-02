@@ -22,12 +22,12 @@ La capacidad se deriva de horarios, excepciones y bloqueos; se separan estados y
 
 | Área | Comando | Resultado |
 |---|---|---|
-| Backend completo (final después de la corrección del snapshot financiero) | `.venv/Scripts/python.exe -m unittest discover -s tests -v` desde `backend/` | **518 tests OK, 13 omitidos**, 115.405 s. |
+| Backend completo SQLite + PostgreSQL (final después de la corrección) | Desde `backend/`, con la base temporal PostgreSQL 18.6 `127.0.0.1:55432/odontologia_c16_test` y schema de prueba efímero | **578 tests OK, 3 omitidos**, 165.885 s. |
 | Backend completo (antes de esta corrección del snapshot financiero) | `.venv/Scripts/python.exe -m unittest discover -s tests -v` desde `backend/` | **517 tests OK, 13 omitidos**, 120.371 s. El snapshot OpenAPI inicial falló al no enumerar las cuatro rutas C-20; se actualizaron sus expectativas y el test focal luego pasó. |
 | Reportes/API/CSV después de la corrección | `.venv/Scripts/python.exe -m unittest tests.test_reportes_operativos tests.test_api_reportes tests.test_reportes_csv -v` desde `backend/` | **14/14 OK**, 4.194 s. Incluye la regresión de consulta única y casos de apertura/cierre, reverso parcial y fecha local. |
 | Prueba RED snapshot | `.venv/Scripts/python.exe -m unittest tests.test_reportes_operativos.ReportesAgendaTests.test_movimientos_financieros_se_leen_en_un_solo_snapshot_sql -v` antes del cambio | Falló como se esperaba: **3 consultas detectadas, 1 esperada**. |
 | OpenAPI focal | `.venv/Scripts/python.exe -m unittest tests.test_api.ApiTests.test_openapi_y_docs -v` | **1/1 OK**. |
-| PostgreSQL financiero C-20 | `.venv/Scripts/python.exe -m unittest tests.test_finanzas_postgresql_integracion -v` | **No ejecutado: 0 tests, 1 omitido** porque falta `ODONTOLOGIA_TEST_DATABASE_URL`. No se usó el puerto local disponible porque no se pudo verificar que fuera una base aislada. La integración PostgreSQL permanece pendiente. |
+| PostgreSQL financiero C-20 | `.venv/Scripts/python.exe -m unittest tests.test_finanzas_postgresql_integracion -v`, con `ODONTOLOGIA_TEST_DATABASE_URL` hacia `127.0.0.1:55432/odontologia_c16_test` | **5/5 OK** en PostgreSQL 18.6 temporal; migración, ledger, concurrencia, bundle/restore y reporte local pasaron en schema efímero. El proceso usa exclusivamente la base `*_test`, y no el puerto 5432. |
 | Backup/restore SQLite | `.venv/Scripts/python.exe -m unittest tests.test_backup_sqlite tests.test_backup_restore_sqlite -v` | **16 tests OK, 1 omitido**; el host Windows no permite crear el symlink requerido por un caso. |
 | Frontend | `npm test -- --run` desde `frontend/` | **13 archivos, 74 tests OK**. |
 | Build | `npm run build` desde `frontend/` | TypeScript y Vite OK. |
@@ -36,4 +36,4 @@ La capacidad se deriva de horarios, excepciones y bloqueos; se separan estados y
 
 ## Estado y limitaciones
 
-El panel y los agregados funcionan con SQLite y las pruebas unitarias; el ledger financiero ahora se consulta con una sola sentencia para mantener el mismo snapshot de statement en PostgreSQL `READ COMMITTED`. La compilación/ejecución de integración PostgreSQL C-20 sigue pendiente porque falta `ODONTOLOGIA_TEST_DATABASE_URL`. Por ello las tareas OpenSpec 2.2 y 5.1 siguen pendientes, y C-20 no debe archivarse todavía. La tarea documental 5.2 está completa. No se hizo push ni archive. El cambio previo en `docs/discovery/informe-discovery.md` se preservó y queda fuera de este trabajo.
+El panel y los agregados funcionan con SQLite y PostgreSQL; el ledger financiero se consulta con una sola sentencia para mantener el mismo snapshot bajo PostgreSQL `READ COMMITTED`. Las tareas 2.2 y 5.1 se ejecutaron contra el cluster temporal y de schema efímero descrito arriba. El delta se sincronizó con `openspec/specs/operational-reporting/spec.md`; C-20 quedó archivado en `openspec/changes/archive/2026-11-02-consultar-reportes-operativos/`. El cambio previo en `docs/discovery/informe-discovery.md` se preservó y queda fuera de este trabajo.
