@@ -1,7 +1,7 @@
 # CHANGES — Secuencia de Implementación
 
 > Índice canónico del proyecto **TP-ODONTOLOGIA**, actualizado el 2026-11-02.
-> **Plan del producto completo; C-01–C-03 están implementados, validados y archivados. C-04 está implementado y validado localmente, pendiente de Archive. C-05–C-20 son cambios futuros planificados dentro de la autorización global del roadmap, sujetos a aprobaciones específicas de decisiones materiales según R-10.**
+> **Plan del producto completo; C-01–C-04 están implementados, validados y archivados. C-05–C-20 son cambios futuros planificados dentro de la autorización global del roadmap, sujetos a aprobaciones específicas de decisiones materiales según R-10.**
 > **Leer este archivo antes de ejecutar cualquier `/opsx:propose`.**
 
 ---
@@ -18,12 +18,12 @@
 
 La aclaración del usuario del 2026-10-28 corrige el índice anterior: **hacer sólo C-01 ahora no significa planificar sólo C-01**. El producto futuro es un sistema para un consultorio odontológico pequeño, con recepción, profesionales y boxes: agenda operativa, catálogos, acceso seguro, interfaz de recepción, recuperación de datos y, después, módulos clínicos, comunicación con pacientes y administración.
 
-- **Entrega académica archivada:** C-01 `crear-turno-sin-solapamientos`, con 18/18 tareas completas y Archive confirmado el 2026-10-28; la spec principal es [alta-turnos](openspec/specs/alta-turnos/spec.md). No se cambia su nombre, su spec, su código ni su contrato. La continuación técnica desarrolla C-04 dentro del alcance global autorizado; el Archive del change requiere revisión del responsable.
+- **Entrega académica archivada:** C-01 `crear-turno-sin-solapamientos`, con 18/18 tareas completas y Archive confirmado el 2026-10-28; la spec principal es [alta-turnos](openspec/specs/alta-turnos/spec.md). No se cambia su nombre, su spec, su código ni su contrato. C-02, C-03 y C-04 también están implementados, validados y archivados localmente.
 - **MVP operativo futuro:** C-03 a C-14 completan una agenda de recepción administrable y un despliegue controlado. C-02 ya aporta el backend PostgreSQL optativo y está archivado; la seguridad, la auditoría y la restauración deben verificarse antes de habilitar datos reales.
 - **Evolución del producto:** C-15 a C-20 agregan clínica, odontograma/plan de tratamiento, recordatorios, reserva del paciente, cobros y reportes. Se proponen para mostrar el alcance completo; su implementación requiere priorización y contratos propios.
 - **Opciones no comprometidas:** multisede/SaaS multitenant, IA, obras sociales y facturación electrónica ARCA no se vuelven obligatorias por aparecer en productos comparados. Si se eligen, se agregarán changes posteriores con investigación y aprobación específicas. C-19 no incluye emisión fiscal ni conexión con pagos reales.
 
-La KB y las instrucciones existentes documentan principalmente la porción académica C-01. Sus exclusiones siguen vigentes para esa implementación; las capacidades futuras del roadmap no amplían retroactivamente las US-001 a US-004. C-02 concreta la migración a PostgreSQL conservando la fuente SQLite, con un destino de pruebas aislado. C-03/C-04 ya concretaron autenticación, permisos y auditoría en sus changes archivados/activos. Para C-05+ faltan criterios específicos que se desarrollan en la KB y Propose de cada change. Se mantienen datos ficticios y ninguna integración externa real.
+La KB y las instrucciones existentes documentan principalmente la porción académica C-01. Sus exclusiones siguen vigentes para esa implementación; las capacidades futuras del roadmap no amplían retroactivamente las US-001 a US-004. C-02 concreta la migración a PostgreSQL conservando la fuente SQLite, con un destino de pruebas aislado. C-03/C-04 concretaron autenticación, permisos y auditoría en changes archivados. Para C-05+ faltan criterios específicos que se desarrollan en la KB y Propose de cada change. Se mantienen datos ficticios y ninguna integración externa real.
 
 **Stack definido por la cátedra (2026-10-29):** backend con Python, FastAPI, JWT, SQLAlchemy, PostgreSQL, Redis y Docker/Docker Compose; frontend con React, TypeScript y Vite ([DD-09](knowledge-base/09_decisiones_y_supuestos.md)). C-02 implementa PostgreSQL + SQLAlchemy; C-03 implementa JWT y permisos de personal. React/TS/Vite sigue en C-11, Docker Compose de despliegue en C-14 y Redis (cola de recordatorios) en C-17. La existencia de carpetas y servicios no acredita la implementación de esos changes.
 
@@ -34,7 +34,7 @@ La KB y las instrucciones existentes documentan principalmente la porción acad�
 | Decisión / capacidad | Change que la resuelve | Estado o condición |
 | --- | --- | --- |
 | Versionado de esquema y migración a PostgreSQL con SQLAlchemy (stack de la cátedra) | C-02 | Implementado, validado con PostgreSQL aislado y archivado; copia unidireccional, fuente SQLite preservada. |
-| Identidades, permisos, sesiones y auditoría | C-03/C-04 | C-03 archivado; política estricta de C-04 aprobada e implementada; Archive de C-04 pendiente de revisión. |
+| Identidades, permisos, sesiones y auditoría | C-03/C-04 | C-03 y C-04 implementados, validados y archivados. |
 | Datos mínimos, prestaciones y disponibilidad | C-05/C-06/C-07 | Campos, bajas y excepciones definidos sin perder referencias históricas |
 | Estados, cancelación y reprogramación | C-09/C-10 | Transiciones y concurrencia especificadas; exclusión del paciente explícitamente decidida |
 | UI y operación desplegada | C-11/C-12/C-13/C-14 | Interfaz en React + TypeScript + Vite (fijada por la cátedra), despliegue con Docker Compose, recuperación y seguridad probadas |
@@ -71,15 +71,14 @@ C-11 + C-12
         └── C-20 consultar-reportes-operativos (también C-08, C-09)
 ```
 
-Los números son identificadores estables agrupados por capacidad, no un orden de ejecución por sí solos: C-09 precede a C-08 porque una consulta operativa debe conocer qué estados ocupan recursos. C-01 está archivado desde el 2026-10-28; C-02 y C-03 también están archivados. C-04 está implementado y validado localmente; su change permanece activo hasta Archive.
+Los números son identificadores estables agrupados por capacidad, no un orden de ejecución por sí solos: C-09 precede a C-08 porque una consulta operativa debe conocer qué estados ocupan recursos. C-01 está archivado desde el 2026-10-28; C-02, C-03 y C-04 también están archivados.
 
 ### Paralelismo por fase
 
-Los GATES expresan dependencias del plan futuro. C-01–C-03 están archivados; C-04 está implementado pero sigue activo hasta Archive. El símbolo `✓` significa «una vez verificado y cerrado». No imponen fases rígidas a OPSX.
+Los GATES expresan dependencias del plan futuro. C-01–C-04 están archivados. El símbolo `✓` significa «una vez verificado y cerrado». No imponen fases rígidas a OPSX.
 
 ```text
-GATE 0: C-01 ✓ → C-02 ✓ → C-03 ✓ → C-04 (implementado; Archive pendiente)
-  → C-03 → C-04                    [Agente A — secuencia de fundamento]
+GATE 0: C-01 ✓ → C-02 ✓ → C-03 ✓ → C-04 ✓
 
 GATE 1: C-04 ✓                       ← FORK
   → C-05 pacientes                   [Agente A]
@@ -129,17 +128,16 @@ Secuencia compatible con dependencias, sin prometer una optimización temporal n
 | --- | --- | --- | --- |
 | 0 | C-01 cerrado el 2026-10-28 | — | — |
 | 1 | C-02 archivado; C-03 archivado | — | — |
-| 2 | C-04 implementado; Archive pendiente | — | — |
-| 3 | C-04 | — | — |
-| 4 | C-05 | C-06 | C-12 (apoyo operativo) |
-| 5 | C-09 | C-07 | — |
-| 6 | C-08 | — | — |
-| 7 | C-10 | — | — |
-| 8 | — | — | C-11 |
-| 9 | C-13 | — | — |
-| 10 | C-14 | C-17 | C-18 |
-| 11 | C-15 | C-19 | — |
-| 12 | C-16 | C-20 | — |
+| 2 | C-04 archivado | — | — |
+| 3 | C-05 | C-06 | C-12 (apoyo operativo) |
+| 4 | C-09 | C-07 | — |
+| 5 | C-08 | — | — |
+| 6 | C-10 | — | — |
+| 7 | — | — | C-11 |
+| 8 | C-13 | — | — |
+| 9 | C-14 | C-17 | C-18 |
+| 10 | C-15 | C-19 | — |
+| 11 | C-16 | C-20 | — |
 
 ---
 
@@ -163,7 +161,7 @@ Secuencia compatible con dependencias, sin prometer una optimización temporal n
 
 ## FASE 2 — Fundamento evolutivo, acceso y trazabilidad
 
-> C-01–C-03 están archivados. C-04 cuenta con artefactos OpenSpec activos e implementación verificada localmente en SQLite/PostgreSQL; su Archive está pendiente. C-05 a C-20 siguen planificados con desarrollo global autorizado; contratos de cada change se revisan con Propose y las decisiones materiales de governance CRÍTICO/ALTO requieren aprobación específica antes del código.
+> C-01–C-04 están archivados. C-05 a C-20 siguen planificados con desarrollo global autorizado; contratos de cada change se revisan con Propose y las decisiones materiales de governance CRÍTICO/ALTO requieren aprobación específica antes del código.
 
 ### [C-02] `evolucionar-esquema-y-configuracion`
 
@@ -194,7 +192,7 @@ Secuencia compatible con dependencias, sin prometer una optimización temporal n
 
 ### [C-04] `registrar-auditoria-de-operaciones`
 
-- **Estado**: implementación completada y validada localmente; change OpenSpec activo y Archive pendiente de revisión.
+- **Estado**: implementado, validado localmente y archivado el 2026-11-02. Ver [change archivado](openspec/changes/archive/2026-11-02-registrar-auditoria-de-operaciones/) y [evidencia C-04](docs/evidencia/implementacion-turnos.md#c-04--registro-de-auditoría-de-operaciones-2026-11-02).
 - **Scope**:
   - Añadir `eventos_auditoria` append-only en SQLite y PostgreSQL, con actor, acción, recurso, resultado e instante UTC y sin datos personales, clínicos, secretos ni payloads.
   - `GET /auditoria` queda restringido a Administrador, con paginación estable y acotada. Registrar turnos confirmados, bootstrap/alta/cambio de cuentas, login/logout y rechazo genérico de login.
@@ -210,7 +208,7 @@ Secuencia compatible con dependencias, sin prometer una optimización temporal n
 
 ### [C-05] `administrar-pacientes`
 
-- **Estado**: implementación completada y validada localmente; change OpenSpec activo y Archive pendiente de revisión.
+- **Estado**: [ ] planificado; no implementado ni propuesto en OpenSpec.
 - **Scope**:
   - Evolucionar `Paciente` desde el identificador ficticio a una ficha de identificación/contacto mínimo, con campos y reglas de duplicados acordados; conservar las referencias de turnos anteriores.
   - Proponer `POST/GET /pacientes`, `GET/PATCH /pacientes/{id}` y baja lógica restringida; acceso por rol y auditoría. No incluir historia clínica en esta ficha.
@@ -224,7 +222,7 @@ Secuencia compatible con dependencias, sin prometer una optimización temporal n
 
 ### [C-06] `administrar-recursos-y-prestaciones`
 
-- **Estado**: implementación completada y validada localmente; change OpenSpec activo y Archive pendiente de revisión.
+- **Estado**: [ ] planificado; no implementado ni propuesto en OpenSpec.
 - **Scope**:
   - Añadir administración de `Profesional`, `Box` y `Prestacion` con estado activo, duración propuesta y compatibilidades expresamente acordadas; no borrar referencias históricas ni imponer esas políticas a C-01 retroactivamente.
   - Proponer `POST/GET/PATCH /profesionales`, `/boxes` y `/prestaciones` con rutas por ID para edición; impedir nuevas asignaciones a recursos inactivos mediante reglas explícitas del nuevo contrato.
@@ -238,7 +236,7 @@ Secuencia compatible con dependencias, sin prometer una optimización temporal n
 
 ### [C-07] `configurar-horarios-y-bloqueos`
 
-- **Estado**: implementación completada y validada localmente; change OpenSpec activo y Archive pendiente de revisión.
+- **Estado**: [ ] planificado; no implementado ni propuesto en OpenSpec.
 - **Scope**:
   - Añadir `HorarioAtencion`, `ExcepcionHorario` y `BloqueoAgenda` por profesional/box; acordar zona horaria del consultorio, descansos, cruce de día y qué ocurre si un bloqueo afecta turnos existentes.
   - Proponer `GET/PUT /horarios`, `POST /bloqueos` y `DELETE /bloqueos/{id}`; validar nuevas altas dentro de disponibilidad sin aceptar excepciones silenciosas ni cancelar turnos por crear un bloqueo.
@@ -252,7 +250,7 @@ Secuencia compatible con dependencias, sin prometer una optimización temporal n
 
 ### [C-08] `consultar-agenda-y-disponibilidad`
 
-- **Estado**: implementación completada y validada localmente; change OpenSpec activo y Archive pendiente de revisión.
+- **Estado**: [ ] planificado; no implementado ni propuesto en OpenSpec.
 - **Scope**:
   - Proponer `GET /turnos` por rango, profesional, box y estado, con límites de rango/paginación; `GET /disponibilidad` devuelve opciones compatibles con horarios, bloqueos y estados que ocupan recursos.
   - Reutilizar semántica temporal y reglas de exclusión en las consultas; filtrar por permisos de recepción/profesional y exponer sólo los datos necesarios. Una opción libre es orientativa: el alta debe revalidarla dentro de su transacción.
@@ -267,7 +265,7 @@ Secuencia compatible con dependencias, sin prometer una optimización temporal n
 
 ### [C-09] `gestionar-estados-y-cancelaciones`
 
-- **Estado**: implementación completada y validada localmente; change OpenSpec activo y Archive pendiente de revisión.
+- **Estado**: [ ] planificado; no implementado ni propuesto en OpenSpec.
 - **Scope**:
   - Añadir estados de turno y transiciones revisadas: reservado, confirmado, atendido, ausente y cancelado como propuesta inicial; definir cuáles ocupan recursos y cómo se conserva el historial.
   - Proponer `POST /turnos/{id}/confirmacion` y `POST /turnos/{id}/cancelacion`; modificar consultas de exclusión para liberar sólo ocupaciones canceladas. Migrar filas existentes a un estado ocupante, sin alterar su horario o identidad.
@@ -281,7 +279,7 @@ Secuencia compatible con dependencias, sin prometer una optimización temporal n
 
 ### [C-10] `reprogramar-turnos-atomicamente`
 
-- **Estado**: implementación completada y validada localmente; change OpenSpec activo y Archive pendiente de revisión.
+- **Estado**: [ ] planificado; no implementado ni propuesto en OpenSpec.
 - **Scope**:
   - Proponer `POST /turnos/{id}/reprogramacion` para cambiar intervalo y recursos con control de versión/competencia acordado; revalidar referencias, estado, disponibilidad y exclusión dentro de la misma operación.
   - Conservar el turno original si falla la nueva asignación y auditar el cambio confirmado. Decidir expresamente exclusión simultánea del paciente: C-01 la permite con recursos distintos; cualquier nueva restricción necesita escenarios y migración de contrato propios.
@@ -297,7 +295,7 @@ Secuencia compatible con dependencias, sin prometer una optimización temporal n
 
 ### [C-11] `operar-agenda-desde-recepcion`
 
-- **Estado**: implementación completada y validada localmente; change OpenSpec activo y Archive pendiente de revisión.
+- **Estado**: [ ] planificado; no implementado ni propuesto en OpenSpec.
 - **Scope**:
   - Construir en `frontend/` con React + TypeScript + Vite (stack de la cátedra) el login, vista diaria/semanal de agenda y selección de paciente/profesional/box/prestación; integrar formularios mínimos de catálogos y horarios ya expuestos, sin duplicar reglas en la UI.
   - Consumir alta, consulta, confirmación, cancelación y reprogramación; mostrar estado pendiente hasta respuesta, conflictos por recurso, validaciones y actualización de disponibilidad. Incluir navegación por teclado y estados de carga/vacío/error.
@@ -312,7 +310,7 @@ Secuencia compatible con dependencias, sin prometer una optimización temporal n
 
 ### [C-12] `respaldar-y-restaurar-agenda`
 
-- **Estado**: implementación completada y validada localmente; change OpenSpec activo y Archive pendiente de revisión.
+- **Estado**: [ ] planificado; no implementado ni propuesto en OpenSpec.
 - **Scope**:
   - Preparar comandos restringidos de backup coherente del almacenamiento y restauración sobre un destino nuevo, con manifiesto de versión/integridad; definir retención, protección y recuperación sin sobrescribir la agenda activa.
   - Documentar recuperación de una copia, validación de esquema y prueba de alta tras restaurar; adaptar el mecanismo al motor realmente elegido en C-02, incluyendo adjuntos si se incorporan después.
@@ -326,7 +324,7 @@ Secuencia compatible con dependencias, sin prometer una optimización temporal n
 
 ### [C-13] `endurecer-seguridad-y-observabilidad`
 
-- **Estado**: implementación completada y validada localmente; change OpenSpec activo y Archive pendiente de revisión.
+- **Estado**: [ ] planificado; no implementado ni propuesto en OpenSpec.
 - **Scope**:
   - Revisar la superficie API/UI: autorización por recurso, sesiones, secretos, límites de solicitudes y rangos, protección de la interfaz según el mecanismo de sesión y exposición de documentación por entorno; cerrar fallos con contratos y pruebas revisados.
   - Añadir logs operativos sin información sensible, identificador de correlación, errores públicos estables y readiness separada de `GET /health`; definir alertas mínimas por fallo de DB/backup sin afirmar cumplimiento normativo.

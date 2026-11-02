@@ -1,6 +1,6 @@
 # TP-ODONTOLOGIA — Instrucciones para Agentes
 
-Instrucciones específicas de esta entrega de Metodología I. Mantener este archivo y `CLAUDE.md` idénticos al actualizarlos. C-01–C-03 están implementados y archivados. C-04 está implementado y validado en SQLite y PostgreSQL temporal aislado; su Archive queda pendiente de revisión del responsable. El cierre técnico no acredita aceptación docente ni otras evidencias académicas. El 2026-10-29 la cátedra fijó el stack del sistema y la separación en `backend/` y `frontend/` (ver Stack Tecnológico y R-09).
+Instrucciones específicas de esta entrega de Metodología I. Mantener este archivo y `CLAUDE.md` idénticos al actualizarlos. C-01–C-04 están implementados, validados y archivados. El cierre técnico no acredita aceptación docente ni otras evidencias académicas. El 2026-10-29 la cátedra fijó el stack del sistema y la separación en `backend/` y `frontend/` (ver Stack Tecnológico y R-09).
 
 ## Stack Tecnológico
 
@@ -9,14 +9,14 @@ Stack definido por la cátedra el 2026-10-29 para todo el sistema. Detalle en [l
 | Parte | Tecnología | Carpeta | Estado |
 | --- | --- | --- | --- |
 | Backend — lenguaje y API | Python 3.12+ y FastAPI + Uvicorn | `backend/odontologia/` | C-01 y adaptadores de C-03/C-04 implementados |
-| Backend — autenticación | JWT (PyJWT) | `backend/odontologia/auth/` | Implementada en C-03; C-04 añade auditoría; Archive de C-04 pendiente |
+| Backend — autenticación | JWT (PyJWT) | `backend/odontologia/auth/` | Implementada en C-03; C-04 añade auditoría y está archivado |
 | Backend — ORM y persistencia | SQLAlchemy + PostgreSQL | `backend/odontologia/db/` | C-02/C-03/C-04 implementados y probados en PostgreSQL temporal |
 | Backend — tareas asincrónicas | Redis (cola de recordatorios) | `backend/odontologia/workers/` | Estructura y servicio `redis`; se implementa en C-17 |
 | Contenedores | Docker / Docker Compose | `docker-compose.yml`, `Dockerfile` | Preparado; despliegue controlado en C-14 |
 | Frontend | React + TypeScript + Vite | `frontend/` | Estructura inicial; recepción en C-11 |
 | Persistencia | SQLite (predeterminada) y PostgreSQL optativo | `ODONTOLOGIA_DB`, `DATABASE_URL` | C-01–C-03; migraciones explícitas |
 | Pruebas | unittest, TestClient y multiprocessing | `backend/tests/` | Suites SQLite y PostgreSQL aislado; evidencias exactas en CHANGES.md y docs/evidencia/ |
-| Especificación y flujo | OpenSpec / Active Stack | `openspec/` | C-01–C-03 archivados; C-04 activo y pendiente de Archive |
+| Especificación y flujo | OpenSpec / Active Stack | `openspec/` | C-01–C-04 archivados |
 | Herramienta del informe | Python, ReportLab y pypdf | `tools/` | Dependencias documentales separadas del producto |
 
 ## Base de Conocimiento
@@ -55,9 +55,9 @@ Los compact rules los resuelve el delegador desde `.atl/skill-registry.md`, gene
 
 ## Roadmap de Changes
 
-El plan está en [CHANGES.md](CHANGES.md): 20 changes en seis fases para el producto futuro. **C-01–C-03** están implementados, verificados y archivados; **C-04** está implementado y validado localmente, pendiente de Archive. **C-05–C-20** muestran el alcance futuro planificado bajo la autorización global de desarrollo; cada change requiere sus contratos y las aprobaciones específicas de decisiones materiales según R-10. El [diseño de C-01](openspec/changes/archive/2026-10-28-crear-turno-sin-solapamientos/design.md) documenta el contrato de alta; C-03 aplica la matriz aprobada de personal y C-04 la política aprobada de auditoría.
+El plan está en [CHANGES.md](CHANGES.md): 20 changes en seis fases para el producto futuro. **C-01–C-04** están implementados, verificados y archivados; **C-05–C-20** muestran el alcance futuro planificado bajo la autorización global de desarrollo; cada change requiere sus contratos y las aprobaciones específicas de decisiones materiales según R-10. El [diseño de C-01](openspec/changes/archive/2026-10-28-crear-turno-sin-solapamientos/design.md) documenta el contrato de alta; C-03 aplica la matriz aprobada de personal y C-04 la política aprobada de auditoría.
 
-C-01–C-03 están archivados. C-04 tiene implementación y validación local completas, con Archive pendiente de revisión. El camino crítico y dependencias futuros están en CHANGES.md. El alcance de C-01 no amplía su contrato; el desarrollo global del roadmap está autorizado, sujeto a R-10 para decisiones materiales aún no aprobadas.
+C-01–C-04 están archivados. El camino crítico y dependencias futuros están en CHANGES.md. El alcance de C-01 no amplía su contrato; el desarrollo global del roadmap está autorizado, sujeto a R-10 para decisiones materiales aún no aprobadas.
 
 Antes de Propose de un change futuro, obtener autorización y leer las dependencias y los documentos «Leer antes» del roadmap. Q01–Q08 se resolvieron para C-01; ante cambios materiales volver a Propose antes de modificar el contrato; Q09 está resuelta por confirmación personal de fuentes; Q10 sigue pendiente de entrega y no se dan por cumplidas al generar documentación.
 
@@ -79,11 +79,11 @@ Estas reglas consolidan instrucciones ya confirmadas del usuario y restricciones
 ## Flujo de Trabajo
 
 1. Leer estas instrucciones, KB pertinente, preguntas abiertas y roadmap; contrastar el estado real del checkout.
-2. Consultar `openspec list --json`; C-01–C-03 están archivados y C-04 permanece activo hasta su Archive. El CLI posee el estado actual de los changes.
+2. Consultar `openspec list --json`; C-01–C-04 están archivados y no hay changes activos al cierre de C-04. El CLI posee el estado actual de los changes.
 3. Explorar y proponer avances del roadmap global ya autorizado usando el nombre del roadmap y las instrucciones del CLI; conservar los contratos archivados y continuar el change activo antes de crear otro.
 4. Revisar el contrato y resolver las decisiones indispensables. No inventar aceptación humana ni crear manualmente la estructura de OpenSpec.
 5. Aplicar únicamente tareas autorizadas del change activo, con las reglas del registro y pruebas del contrato. Marcar tareas sólo tras ejecución comprobada.
-6. Verificar la suite completa y archivar cada change cuando corresponda, confirmando el resultado del CLI y sincronización de specs. C-01–C-03 están archivados; C-04 requiere revisión y Archive.
+6. Verificar la suite completa y archivar cada change cuando corresponda, confirmando el resultado del CLI y sincronización de specs. C-01–C-04 están archivados.
 7. Actualizar la bitácora y las decisiones en Engram para este proyecto, sin exportar memoria de otros proyectos ni confundir memoria con revisión humana. Informar archivos, verificaciones y pendientes.
 
 Estas instrucciones no acreditan por sí solas pruebas, Archive ni entrega académica final. Verificar evidencia y estado real del CLI.
