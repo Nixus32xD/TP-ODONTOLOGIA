@@ -75,7 +75,7 @@ class _URL:
 class _Engine:
     url = _URL()
 
-    def __init__(self, revision='20261102_0009_turn_rescheduling', server_version_num=160002):
+    def __init__(self, revision='20261102_0010_clinical_history', server_version_num=160002):
         self.revision = revision
         self.server_version_num = server_version_num
         self.repeatable_read = False

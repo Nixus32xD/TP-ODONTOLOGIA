@@ -26,7 +26,7 @@ class SuperficieBackupCliTests(unittest.TestCase):
                 encoding='utf-8',
             )
             manifiesto = crear_manifiesto(
-                payload, backend='sqlite', schema_version='8',
+                payload, backend='sqlite', schema_version='9',
                 table_counts={tabla: 0 for tabla in TABLAS_ESQUEMA_ACTUAL['sqlite']})
             ruta_manifest = Path(temporal) / 'manifest.json'
             guardar_manifiesto(manifiesto, ruta_manifest)
@@ -120,7 +120,7 @@ class SuperficieBackupCliTests(unittest.TestCase):
     def test_verificar_cli_delega_sin_consultar_configuracion_activa(self):
         salida = StringIO()
         with patch('odontologia.backup.cli.verificar_bundle',
-                   return_value={'verified': True, 'backend': 'sqlite', 'schema_version': '8'}) as verificar, \
+                   return_value={'verified': True, 'backend': 'sqlite', 'schema_version': '9'}) as verificar, \
                 patch('odontologia.backup.cli.cargar_configuracion',
                       side_effect=AssertionError('verificar no debe abrir la agenda activa')), \
                 patch('sys.stdout', salida):

@@ -30,7 +30,7 @@ from odontologia.backup.recuentos import contar_tablas_postgresql
 
 _PAYLOAD = 'agenda.dump'
 _MANIFIESTO = 'manifest.json'
-_REVISION_ACTUAL = '20261102_0009_turn_rescheduling'
+_REVISION_ACTUAL = '20261102_0010_clinical_history'
 
 
 def crear_bundle_postgresql(engine, destino: str | Path) -> dict[str, object]:

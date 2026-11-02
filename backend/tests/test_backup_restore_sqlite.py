@@ -1,4 +1,5 @@
 from contextlib import closing
+from datetime import datetime
 import os
 from pathlib import Path
 import sqlite3
@@ -7,11 +8,12 @@ import unittest
 from uuid import uuid4
 from unittest.mock import patch
 
-from odontologia import inicializar_agenda
+from odontologia import crear_turno, inicializar_agenda
 from odontologia.auth.migraciones import migrar_sqlite
 from odontologia.backup.bundle import crear_bundle_sqlite
 from odontologia.backup.errors import ErrorBackup
 from odontologia.backup.restauracion_sqlite import restaurar_bundle_sqlite
+from odontologia.backup.manifest import leer_manifiesto
 
 
 class RestauracionSQLiteTests(unittest.TestCase):
@@ -21,6 +23,10 @@ class RestauracionSQLiteTests(unittest.TestCase):
         self.origen = self.root / 'origen.sqlite3'
         self.bundle = self.root / 'bundle'
         inicializar_agenda(self.origen)
+        self.turno = crear_turno(
+            self.origen, paciente_id='paciente-A', profesional_id='profesional-A',
+            box_id='box-A', inicio=datetime.fromisoformat('2026-11-02T09:00:00-03:00'),
+            fin=datetime.fromisoformat('2026-11-02T09:30:00-03:00'))
         migrar_sqlite(self.origen)
         self.paciente_id = str(uuid4())
         with closing(sqlite3.connect(self.origen)) as conexion:
@@ -28,6 +34,16 @@ class RestauracionSQLiteTests(unittest.TestCase):
                 "INSERT INTO pacientes(id, nombre, telefono, activo) VALUES (?, ?, NULL, 1)",
                 (self.paciente_id, 'Paciente ficticio'),
             )
+            conexion.execute("UPDATE turnos SET estado='atendido' WHERE id=?", (self.turno.id,))
+            conexion.execute('''INSERT INTO evoluciones_clinicas
+                (id, paciente_id, profesional_id, turno_id, nota, created_at, corrige_a_id)
+                VALUES (?, ?, ?, ?, ?, ?, NULL)''',
+                ('evolucion-demo', 'paciente-A', 'profesional-A', self.turno.id,
+                 'Nota clínica ficticia de respaldo.', '2026-11-02T12:00:00+00:00'))
+            conexion.execute('''INSERT INTO eventos_auditoria
+                (created_at, actor_id, action, resource_type, resource_id, result)
+                VALUES (?, NULL, 'evolucion.creada', 'evolucion', ?, 'confirmado')''',
+                ('2026-11-02T12:00:00+00:00', 'evolucion-demo'))
             conexion.commit()
         crear_bundle_sqlite(self.origen, self.bundle)
 
@@ -104,7 +120,10 @@ class RestauracionSQLiteTests(unittest.TestCase):
         resultado = restaurar_bundle_sqlite(
             self.bundle, destino, origen_activo=self.origen)
         self.assertTrue(resultado['restored'])
-        self.assertEqual(resultado['schema_version'], '8')
+        self.assertEqual(resultado['schema_version'], '9')
+        manifiesto = leer_manifiesto(self.bundle / 'manifest.json')
+        self.assertEqual(manifiesto['table_counts']['evoluciones_clinicas'], 1)
+        self.assertNotIn('Nota clínica ficticia de respaldo.', str(manifiesto))
 
         with closing(sqlite3.connect(destino)) as conexion:
             self.assertEqual(
@@ -112,6 +131,11 @@ class RestauracionSQLiteTests(unittest.TestCase):
                                  (self.paciente_id,)).fetchone(),
                 ('Paciente ficticio',),
             )
+            self.assertEqual(conexion.execute(
+                'SELECT paciente_id, profesional_id, turno_id, nota, corrige_a_id '
+                'FROM evoluciones_clinicas WHERE id=?', ('evolucion-demo',)).fetchone(),
+                ('paciente-A', 'profesional-A', self.turno.id,
+                 'Nota clínica ficticia de respaldo.', None))
             conexion.execute(
                 "INSERT INTO pacientes(id, nombre, telefono, activo) VALUES (?, ?, NULL, 1)",
                 ('paciente-alta-despues-de-restaurar', 'Alta ficticia posterior'),

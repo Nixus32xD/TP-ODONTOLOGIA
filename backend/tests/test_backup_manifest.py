@@ -5,6 +5,7 @@ from tempfile import TemporaryDirectory
 import unittest
 
 from odontologia.backup.manifest import (
+    ESQUEMAS_SOPORTADOS,
     ErrorManifiesto,
     TABLAS_ESQUEMA_ACTUAL,
     crear_manifiesto,
@@ -25,10 +26,16 @@ class ManifiestoBackupTests(unittest.TestCase):
 
     def _crear(self):
         return crear_manifiesto(
-            self.payload, backend='sqlite', schema_version='8',
+            self.payload, backend='sqlite', schema_version='9',
             table_counts={tabla: 0 for tabla in TABLAS_ESQUEMA_ACTUAL['sqlite']},
             created_at=datetime(2026, 11, 2, 12, 30, tzinfo=timezone.utc),
         )
+
+    def test_schema_c15_incluye_tabla_clinica_y_versiones_vigentes(self):
+        self.assertEqual(ESQUEMAS_SOPORTADOS['sqlite'], '9')
+        self.assertEqual(ESQUEMAS_SOPORTADOS['postgresql'], '20261102_0010_clinical_history')
+        self.assertIn('evoluciones_clinicas', TABLAS_ESQUEMA_ACTUAL['sqlite'])
+        self.assertIn('evoluciones_clinicas', TABLAS_ESQUEMA_ACTUAL['postgresql'])
 
     def test_manifiesto_registra_utc_versiones_y_hash_del_payload(self):
         manifiesto = self._crear()
@@ -36,7 +43,7 @@ class ManifiestoBackupTests(unittest.TestCase):
         self.assertEqual(manifiesto['created_at_utc'], '2026-11-02T12:30:00+00:00')
         self.assertEqual(manifiesto['backend'], 'sqlite')
         self.assertEqual(manifiesto['application_version'], '0.1.0')
-        self.assertEqual(manifiesto['schema_version'], '8')
+        self.assertEqual(manifiesto['schema_version'], '9')
         self.assertEqual(manifiesto['table_counts'], {
             tabla: 0 for tabla in TABLAS_ESQUEMA_ACTUAL['sqlite']})
         self.assertEqual(manifiesto['payload_name'], 'agenda.sqlite3')
@@ -92,7 +99,7 @@ class ManifiestoBackupTests(unittest.TestCase):
 
     def test_normaliza_fecha_con_offset_y_no_sobrescribe_manifiesto(self):
         manifiesto = crear_manifiesto(
-            self.payload, backend='sqlite', schema_version='8',
+            self.payload, backend='sqlite', schema_version='9',
             table_counts={tabla: 0 for tabla in TABLAS_ESQUEMA_ACTUAL['sqlite']},
             created_at=datetime.fromisoformat('2026-11-02T09:30:00-03:00'),
         )

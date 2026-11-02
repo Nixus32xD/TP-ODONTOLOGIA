@@ -151,6 +151,8 @@ class ApiTests(unittest.TestCase):
         self.assertEqual(set(rutas), {
             '/turnos', '/disponibilidad', '/health', '/ready', '/sesiones', '/sesiones/actual', '/usuarios',
             '/usuarios/{usuario_id}', '/auditoria', '/pacientes', '/pacientes/{paciente_id}',
+            '/pacientes/{paciente_id}/historia', '/pacientes/{paciente_id}/evoluciones',
+            '/evoluciones/{evolucion_id}/correcciones',
             '/profesionales', '/profesionales/{profesional_id}', '/boxes', '/boxes/{box_id}',
             '/prestaciones', '/prestaciones/{prestacion_id}',
             '/horarios/{tipo_recurso}/{recurso_id}',

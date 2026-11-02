@@ -6,9 +6,10 @@ from sqlalchemy import select
 from sqlalchemy.dialects import postgresql
 
 from odontologia.db.models import (
-    AgendaMutex, Base, BloqueoAgenda, EventoAuditoria, ExcepcionHorario,
+    AgendaMutex, Base, BloqueoAgenda, EventoAuditoria, EvolucionClinica, ExcepcionHorario,
     HorarioSemanal, Paciente, Turno, TramoExcepcion,
 )
+from odontologia.db.postgresql import REVISION_ESQUEMA_ACTUAL
 
 
 class EsquemaPostgreSQLTests(unittest.TestCase):
@@ -17,7 +18,8 @@ class EsquemaPostgreSQLTests(unittest.TestCase):
             set(Base.metadata.tables),
             {'pacientes', 'profesionales', 'boxes', 'prestaciones', 'turnos', 'agenda_mutex',
              'usuarios', 'sesiones', 'eventos_auditoria', 'horarios_semanales',
-             'excepciones_horario', 'tramos_excepcion', 'bloqueos_agenda'},
+             'excepciones_horario', 'tramos_excepcion', 'bloqueos_agenda',
+             'evoluciones_clinicas'},
         )
         self.assertEqual(
             set(Turno.__table__.columns.keys()),
@@ -29,6 +31,8 @@ class EsquemaPostgreSQLTests(unittest.TestCase):
         })
         self.assertIsNotNone(Turno.__table__.c.id.identity)
         self.assertEqual(AgendaMutex.__table__.primary_key.columns.keys(), ['id'])
+        self.assertIn('nota', EvolucionClinica.__table__.columns)
+        self.assertIn('turno_id', EvolucionClinica.__table__.columns)
         self.assertIn('profesional_id', HorarioSemanal.__table__.columns)
         self.assertIn('fecha_local', ExcepcionHorario.__table__.columns)
         self.assertIn('excepcion_id', TramoExcepcion.__table__.columns)
@@ -63,6 +67,18 @@ class EsquemaPostgreSQLTests(unittest.TestCase):
         spec.loader.exec_module(modulo)
         self.assertEqual(modulo.revision, '20261102_0004_patient_management')
         self.assertEqual(modulo.down_revision, '20261101_0003_audit')
+
+    def test_migracion_c15_encadena_sobre_c10(self):
+        ruta = Path(__file__).parents[1] / 'alembic' / 'versions' / '20261102_0010_clinical_history.py'
+        spec = importlib.util.spec_from_file_location('revision_clinical_history', ruta)
+        modulo = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(modulo)
+
+        self.assertEqual(modulo.revision, '20261102_0010_clinical_history')
+        self.assertEqual(modulo.down_revision, '20261102_0009_turn_rescheduling')
+        self.assertTrue(callable(modulo.upgrade))
+        self.assertTrue(callable(modulo.downgrade))
+        self.assertEqual(REVISION_ESQUEMA_ACTUAL, modulo.revision)
 
 
 if __name__ == '__main__':

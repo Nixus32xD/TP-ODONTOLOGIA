@@ -34,7 +34,7 @@ class AuditoriaEsquemaSQLiteTests(unittest.TestCase):
             self.assertEqual(columnas, {
                 'id', 'created_at', 'actor_id', 'action', 'resource_type', 'resource_id', 'result'})
             self.assertEqual(
-                    conexion.execute('SELECT version FROM auth_schema_version').fetchone(), (8,))
+                    conexion.execute('SELECT version FROM auth_schema_version').fetchone(), (9,))
 
     def test_auditoria_no_guarda_payload_ni_identificador_intentado(self):
         from odontologia.audit import registrar_evento_sqlite
@@ -94,6 +94,10 @@ class AuditoriaEsquemaSQLiteTests(unittest.TestCase):
             ('sesion.iniciada', 'sesion', 'confirmado'),
             ('sesion.cerrada', 'sesion', 'confirmado'),
             ('sesion.rechazada', 'sesion', 'rechazado'),
+            ('historia.consultada', 'historia', 'confirmado'),
+            ('historia.denegada', 'historia', 'rechazado'),
+            ('evolucion.creada', 'evolucion', 'confirmado'),
+            ('evolucion.corregida', 'evolucion', 'confirmado'),
         )
         with closing(sqlite3.connect(self.ruta, isolation_level=None)) as conexion:
             conexion.execute('PRAGMA foreign_keys=ON')
@@ -115,6 +119,9 @@ class AuditoriaEsquemaSQLiteTests(unittest.TestCase):
             ('cuenta.creada', 'cuenta', 'rechazado'),
             ('sesion.iniciada', 'turno', 'confirmado'),
             ('prestacion.creada', 'profesional', 'confirmado'),
+            ('historia.consultada', 'evolucion', 'confirmado'),
+            ('historia.denegada', 'historia', 'confirmado'),
+            ('evolucion.creada', 'historia', 'confirmado'),
         )
         for action, resource_type, result in combinaciones_invalidas:
             with self.subTest(action=action, resource_type=resource_type, result=result):
@@ -188,7 +195,7 @@ class AuditoriaEsquemaSQLiteTests(unittest.TestCase):
             self.assertEqual(conexion.execute(
                 'SELECT COUNT(*) FROM usuarios').fetchone()[0], 1)
             self.assertEqual(conexion.execute(
-                'SELECT version FROM auth_schema_version').fetchone()[0], 8)
+                'SELECT version FROM auth_schema_version').fetchone()[0], 9)
             self.assertEqual(conexion.execute(
                 "SELECT COUNT(*) FROM sqlite_master WHERE type='table' "
                 "AND name='eventos_auditoria'").fetchone()[0], 1)

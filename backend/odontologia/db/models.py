@@ -2,7 +2,7 @@
 
 from datetime import date, datetime
 
-from sqlalchemy import BigInteger, CheckConstraint, Date, DateTime, ForeignKey, Identity, Index, Integer, SmallInteger, String, UniqueConstraint
+from sqlalchemy import BigInteger, CheckConstraint, Date, DateTime, ForeignKey, Identity, Index, Integer, SmallInteger, String, Text, UniqueConstraint
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
 
@@ -85,6 +85,30 @@ class Turno(Base):
         String(16), default='reservado', server_default='reservado', nullable=False)
     version: Mapped[int] = mapped_column(
         Integer, default=1, server_default='1', nullable=False)
+
+
+class EvolucionClinica(Base):
+    __tablename__ = 'evoluciones_clinicas'
+    __table_args__ = (
+        CheckConstraint(
+            'length(trim(nota)) BETWEEN 1 AND 5000', name='ck_evoluciones_clinicas_nota'),
+        Index('ix_evoluciones_paciente_profesional_creacion',
+              'paciente_id', 'profesional_id', 'created_at', 'id'),
+        Index('ix_evoluciones_turno', 'turno_id'),
+    )
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    paciente_id: Mapped[str] = mapped_column(
+        String(64), ForeignKey('pacientes.id', ondelete='RESTRICT'), nullable=False)
+    profesional_id: Mapped[str] = mapped_column(
+        String(64), ForeignKey('profesionales.id', ondelete='RESTRICT'), nullable=False)
+    turno_id: Mapped[int] = mapped_column(
+        BigInteger().with_variant(Integer, 'sqlite'),
+        ForeignKey('turnos.id', ondelete='RESTRICT'), nullable=False)
+    nota: Mapped[str] = mapped_column(Text, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    corrige_a_id: Mapped[str | None] = mapped_column(
+        String(36), ForeignKey('evoluciones_clinicas.id', ondelete='RESTRICT'), nullable=True)
 
 
 class AgendaMutex(Base):
@@ -222,10 +246,12 @@ class EventoAuditoria(Base):
             "'box.creado', 'box.actualizado', 'box.desactivado', 'box.reactivado', "
             "'prestacion.creada', 'prestacion.actualizada', 'prestacion.desactivada', "
             "'prestacion.reactivada', 'cuenta.bootstrap', 'cuenta.creada', "
-            "'cuenta.actualizada', 'sesion.iniciada', 'sesion.cerrada', 'sesion.rechazada')",
+            "'cuenta.actualizada', 'sesion.iniciada', 'sesion.cerrada', 'sesion.rechazada', "
+            "'historia.consultada', 'historia.denegada', 'evolucion.creada', 'evolucion.corregida')",
             name='ck_eventos_auditoria_action'),
         CheckConstraint(
-            "resource_type IN ('turno', 'paciente', 'profesional', 'box', 'prestacion', 'cuenta', 'sesion')",
+            "resource_type IN ('turno', 'paciente', 'profesional', 'box', 'prestacion', "
+            "'cuenta', 'sesion', 'historia', 'evolucion')",
             name='ck_eventos_auditoria_resource_type'),
         CheckConstraint(
             "result IN ('confirmado', 'rechazado')",
@@ -255,7 +281,11 @@ class EventoAuditoria(Base):
             "(action = 'cuenta.actualizada' AND resource_type = 'cuenta' AND result = 'confirmado') OR "
             "(action = 'sesion.iniciada' AND resource_type = 'sesion' AND result = 'confirmado') OR "
             "(action = 'sesion.cerrada' AND resource_type = 'sesion' AND result = 'confirmado') OR "
-            "(action = 'sesion.rechazada' AND resource_type = 'sesion' AND result = 'rechazado')",
+            "(action = 'sesion.rechazada' AND resource_type = 'sesion' AND result = 'rechazado') OR "
+            "(action = 'historia.consultada' AND resource_type = 'historia' AND result = 'confirmado') OR "
+            "(action = 'historia.denegada' AND resource_type = 'historia' AND result = 'rechazado') OR "
+            "(action = 'evolucion.creada' AND resource_type = 'evolucion' AND result = 'confirmado') OR "
+            "(action = 'evolucion.corregida' AND resource_type = 'evolucion' AND result = 'confirmado')",
             name='ck_eventos_auditoria_combinacion'),
         CheckConstraint(
             "resource_type != 'sesion' OR resource_id IS NULL",

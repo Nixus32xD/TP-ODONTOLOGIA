@@ -40,6 +40,10 @@ _MATRIZ_EVENTOS = {
     'sesion.iniciada': ('sesion', 'confirmado'),
     'sesion.cerrada': ('sesion', 'confirmado'),
     'sesion.rechazada': ('sesion', 'rechazado'),
+    'historia.consultada': ('historia', 'confirmado'),
+    'historia.denegada': ('historia', 'rechazado'),
+    'evolucion.creada': ('evolucion', 'confirmado'),
+    'evolucion.corregida': ('evolucion', 'confirmado'),
 }
 
 

@@ -240,3 +240,20 @@ El proceso espera PostgreSQL en la revisión `20261102_0009_turn_rescheduling`, 
 La creación prepara y valida payload y manifiesto en un directorio privado del mismo volumen y publica el directorio completo con una operación atómica que no reemplaza destinos. En Windows usa `os.rename`; en Linux exige `renameat2(RENAME_NOREPLACE)` y falla cerrado si no está disponible. Una colisión que aparezca durante la publicación, incluso un directorio POSIX vacío, se conserva sin cambios; una excepción previa deja el destino final ausente y limpia sólo el staging propio. El staging, payload y manifiesto mantienen permisos POSIX `0700`/`0600`; Windows conserva ACL heredadas. La copia contiene datos sensibles y debe guardarse fuera del repositorio.
 
 La integración de backup se ejecutó con un cluster temporal PostgreSQL 18.6 en `127.0.0.1:55432`, cliente 18.6 y la base ficticia `odontologia_test`, migrada hasta `20261102_0009_turn_rescheduling`. El comando creó un dump custom de 37.173 bytes; `pg_restore --list` detectó 80 entradas y el manifiesto registró hash y 14 conteos. En una prueba, otra transacción confirmó un paciente después de exportar el snapshot y antes de invocar `pg_dump`; al restaurar el dump en una base aislada, sus 14 conteos coincidieron exactamente con `table_counts` y esa fila posterior al snapshot no estaba incluida. También se confirmó la retención de filas y auditoría ficticias. Este ensayo no usó la instancia del usuario en 5432. Docker/PG16 no se validaron y quedan fuera del alcance acordado.
+
+## C-15 — Historia clínica mínima (demo ficticia)
+
+C-15 separa las evoluciones de la ficha básica del paciente. En SQLite el esquema pasa a versión 9; en PostgreSQL la revisión Alembic es `20261102_0010_clinical_history`. La migración es aditiva y el inicio de FastAPI no la ejecuta. El backup C-12 incluye la tabla y su recuento, pero nunca el contenido de las notas en el manifiesto.
+
+La API expone `GET /pacientes/{paciente_id}/historia`, `POST /pacientes/{paciente_id}/evoluciones` y `POST /evoluciones/{evolucion_id}/correcciones`. Sólo un Profesional activo con cuenta vigente vinculada puede consultar o agregar evoluciones de un paciente si tiene un turno propio en estado `atendido`. Recepción y Administrador no reciben contenido clínico. Las notas son texto narrativo de 1 a 5000 caracteres; no hay diagnóstico estructurado, recetas, adjuntos ni odontograma. Una corrección crea otra evolución que referencia la original; no se editan ni borran evoluciones. Las lecturas y escrituras producen auditoría de metadatos sin nombres ni contenido clínico y fallan cerradas si no se puede registrar.
+
+Usar únicamente pacientes, cuentas y turnos ficticios de la suite o del demo local. Esta función no admite datos reales y no constituye preparación para uso clínico o productivo. No hay purga automática. El respaldo conserva la nueva tabla y las relaciones al restaurar SQLite en un archivo destino nuevo; el flujo PostgreSQL tiene contratos y pruebas, pero su aplicación/restauración real requiere un cluster PostgreSQL de prueba disponible.
+
+Para ejecutar localmente en Windows, desde `backend/`, con el entorno ya instalado y `.env.example` ajustado sólo para datos de demostración:
+
+```powershell
+.\.venv\Scripts\python.exe -m unittest discover -s tests -p 'test_clinical_history*.py'
+.\.venv\Scripts\python.exe -m uvicorn odontologia.api:crear_app --factory --host 127.0.0.1 --port 8000 --no-access-log --no-proxy-headers
+```
+
+La suite clínica usa bases temporales y datos sintéticos. En el entorno de esta verificación no estaban disponibles `initdb`, `pg_ctl` ni `psql`: PostgreSQL se comprobó con pruebas estructurales y generación de SQL Alembic offline, no mediante migración contra un servidor. No se requieren Docker, Redis, servicios externos ni una instancia PostgreSQL para mostrar la demo SQLite.

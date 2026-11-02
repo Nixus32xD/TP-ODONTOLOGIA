@@ -790,7 +790,7 @@ class IntegracionPostgreSQLTests(unittest.TestCase):
                         'SELECT COUNT(*) FROM horarios_semanales')).scalar_one()
             finally:
                 upgrade_engine.dispose()
-            self.assertEqual(revision, '20261102_0009_turn_rescheduling')
+            self.assertEqual(revision, '20261102_0010_clinical_history')
             self.assertEqual(tuple(turno), ('paciente-A', 'profesional-A', 'box-A'))
             self.assertEqual(evento, 1)
             self.assertEqual(horarios, 0)
@@ -853,7 +853,7 @@ class IntegracionPostgreSQLTests(unittest.TestCase):
                         conexion.execute(text("UPDATE turnos SET estado='desconocido'"))
             finally:
                 upgrade_engine.dispose()
-            self.assertEqual(revision, '20261102_0009_turn_rescheduling')
+            self.assertEqual(revision, '20261102_0010_clinical_history')
             self.assertEqual(tuple(turno), (
                 'paciente-A', 'profesional-A', 'box-A', 29700000, 29700030, 'reservado'))
             self.assertEqual(eventos, 1)
@@ -908,7 +908,7 @@ class IntegracionPostgreSQLTests(unittest.TestCase):
                 evento_nuevo = conexion.execute(text(
                     "SELECT COUNT(*) FROM eventos_auditoria WHERE action='turno.reprogramado'"
                 )).scalar_one()
-            self.assertEqual(revision, '20261102_0009_turn_rescheduling')
+            self.assertEqual(revision, '20261102_0010_clinical_history')
             self.assertEqual(tuple(fila), (1, 'reservado', 1))
             self.assertEqual(evento_previo, 1)
             self.assertEqual(evento_nuevo, 1)
@@ -1507,7 +1507,7 @@ class IntegracionPostgreSQLTests(unittest.TestCase):
                 columnas = {fila[0] for fila in conexion.execute(text(
                     "SELECT column_name FROM information_schema.columns "
                     "WHERE table_schema=current_schema() AND table_name='usuarios'"))}
-                self.assertEqual(revision, '20261102_0009_turn_rescheduling')
+                self.assertEqual(revision, '20261102_0010_clinical_history')
                 self.assertIn('profesional_id', columnas)
                 self.assertEqual(conexion.execute(text(
                     "SELECT id, rol, profesional_id FROM usuarios WHERE id='usuario-admin'"
@@ -1577,7 +1577,7 @@ class IntegracionPostgreSQLTests(unittest.TestCase):
             with self.engine.begin() as conexion:
                 revision = conexion.execute(text(
                     'SELECT version_num FROM alembic_version')).scalar_one()
-                self.assertEqual(revision, '20261102_0009_turn_rescheduling')
+                self.assertEqual(revision, '20261102_0010_clinical_history')
                 conexion.execute(text(
                     'ALTER TABLE turnos DROP CONSTRAINT ck_turnos_version_positiva'))
                 conexion.execute(text('ALTER TABLE turnos DROP COLUMN version'))

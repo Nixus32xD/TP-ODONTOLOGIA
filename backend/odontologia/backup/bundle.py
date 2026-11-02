@@ -51,7 +51,7 @@ def crear_bundle_sqlite(origen: str | Path, destino: str | Path, *, pages: int =
         _validar_sqlite(payload)
         table_counts = contar_tablas_sqlite(payload)
         manifiesto = crear_manifiesto(
-            payload, backend='sqlite', schema_version='8', table_counts=table_counts)
+            payload, backend='sqlite', schema_version='9', table_counts=table_counts)
         guardar_manifiesto(manifiesto, staging / _MANIFIESTO)
         # Volver a leer desde el disco antes de hacer visible el bundle.
         leer_manifiesto(staging / _MANIFIESTO, payload)
@@ -95,7 +95,9 @@ def _validar_sqlite(ruta: Path) -> None:
                 raise ErrorBackup('esquema_incompatible')
             revision = conexion.execute(
                 'SELECT version FROM auth_schema_version').fetchone()
-            if revision != (8,):
+            if revision != (9,):
+                raise ErrorBackup('esquema_incompatible')
+            if 'evoluciones_clinicas' not in tablas:
                 raise ErrorBackup('esquema_incompatible')
             columnas_turnos = {fila[1] for fila in conexion.execute(
                 'PRAGMA table_info(turnos)')}

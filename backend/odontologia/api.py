@@ -41,6 +41,12 @@ from odontologia.disponibilidad import (
     obtener_horario,
 )
 from odontologia.pacientes import ErrorPacientes, actualizar_paciente, crear_paciente, listar_pacientes, obtener_paciente
+from odontologia.historia_clinica import (
+    ErrorHistoriaClinica,
+    consultar_historia,
+    corregir_evolucion,
+    crear_evolucion,
+)
 from odontologia.turnos import transicionar_estado_turno
 
 
@@ -189,6 +195,33 @@ class RespuestaPaciente(BaseModel):
 
 class RespuestaListaPacientes(BaseModel):
     items: list[RespuestaPaciente]
+    limit: int
+    offset: int
+
+
+class SolicitudEvolucion(BaseModel):
+    model_config = ConfigDict(extra='forbid')
+    turno_id: StrictInt = Field(gt=0)
+    nota: StrictStr = Field(min_length=1, max_length=5000)
+
+
+class SolicitudCorreccion(BaseModel):
+    model_config = ConfigDict(extra='forbid')
+    nota: StrictStr = Field(min_length=1, max_length=5000)
+
+
+class RespuestaEvolucion(BaseModel):
+    id: StrictStr
+    paciente_id: StrictStr
+    profesional_id: StrictStr
+    turno_id: StrictInt
+    nota: StrictStr
+    created_at: datetime
+    corrige_a_id: StrictStr | None
+
+
+class RespuestaListaEvoluciones(BaseModel):
+    items: list[RespuestaEvolucion]
     limit: int
     offset: int
 
@@ -386,6 +419,11 @@ def crear_app(ruta_db: str | Path | None = None, *, timeout_segundos: float = 5.
 
     @app.exception_handler(ErrorPacientes)
     async def error_paciente(request: Request, exc: ErrorPacientes):
+        return JSONResponse(status_code=exc.estado, content={
+            'codigo': exc.codigo, 'campo': None, 'mensaje': str(exc)})
+
+    @app.exception_handler(ErrorHistoriaClinica)
+    async def error_historia_clinica(request: Request, exc: ErrorHistoriaClinica):
         return JSONResponse(status_code=exc.estado, content={
             'codigo': exc.codigo, 'campo': None, 'mensaje': str(exc)})
 
@@ -661,6 +699,43 @@ def crear_app(ruta_db: str | Path | None = None, *, timeout_segundos: float = 5.
         asegurar_esquema()
         return actualizar_paciente(
             auth_engine, paciente_id, {'activo': False}, actor_id=_identidad['usuario_id'])
+
+    @app.get('/pacientes/{paciente_id}/historia', response_model=RespuestaListaEvoluciones,
+             responses={401: respuestas_auth[401], 403: respuestas_auth[403],
+                        404: {'model': ErrorHTTP}, 422: {'model': ErrorHTTP},
+                        503: respuestas_auth[503]})
+    def consulta_historia_clinica(
+            paciente_id: str, limit: int = Query(default=50, ge=1, le=100),
+            offset: int = Query(default=0, ge=0), identidad=Depends(identidad_actual)):
+        asegurar_esquema()
+        return consultar_historia(
+            auth_engine, paciente_id, identidad=identidad, limit=limit, offset=offset)
+
+    @app.post('/pacientes/{paciente_id}/evoluciones', status_code=201,
+              response_model=RespuestaEvolucion,
+              responses={401: respuestas_auth[401], 403: respuestas_auth[403],
+                         404: {'model': ErrorHTTP}, 422: {'model': ErrorHTTP},
+                         503: respuestas_auth[503]})
+    def alta_evolucion_clinica(
+            paciente_id: str, solicitud: SolicitudEvolucion,
+            identidad=Depends(identidad_actual)):
+        asegurar_esquema()
+        return crear_evolucion(
+            auth_engine, paciente_id=paciente_id, turno_id=solicitud.turno_id,
+            nota=solicitud.nota, identidad=identidad)
+
+    @app.post('/evoluciones/{evolucion_id}/correcciones', status_code=201,
+              response_model=RespuestaEvolucion,
+              responses={401: respuestas_auth[401], 403: respuestas_auth[403],
+                         404: {'model': ErrorHTTP}, 422: {'model': ErrorHTTP},
+                         503: respuestas_auth[503]})
+    def correccion_evolucion_clinica(
+            evolucion_id: str, solicitud: SolicitudCorreccion,
+            identidad=Depends(identidad_actual)):
+        asegurar_esquema()
+        return corregir_evolucion(
+            auth_engine, evolucion_id=evolucion_id, nota=solicitud.nota,
+            identidad=identidad)
 
     @app.get('/profesionales', response_model=RespuestaListaRecursos, responses={
         401: respuestas_auth[401], 403: respuestas_auth[403], 422: {'model': ErrorHTTP},

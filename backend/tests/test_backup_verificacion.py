@@ -31,7 +31,7 @@ class VerificacionBackupTests(unittest.TestCase):
             origen.backup(destino)
         recuentos = self._contar(payload)
         guardar_manifiesto(
-            crear_manifiesto(payload, backend='sqlite', schema_version='8', table_counts=recuentos),
+            crear_manifiesto(payload, backend='sqlite', schema_version='9', table_counts=recuentos),
             self.bundle / 'manifest.json',
         )
 
@@ -51,7 +51,7 @@ class VerificacionBackupTests(unittest.TestCase):
         with self.assertRaises(ErrorBackup):
             verificar_bundle(self.bundle)
         guardar_manifiesto(
-            crear_manifiesto(self.bundle / 'agenda.sqlite3', backend='sqlite', schema_version='8',
+            crear_manifiesto(self.bundle / 'agenda.sqlite3', backend='sqlite', schema_version='9',
                              table_counts=self._contar(self.bundle / 'agenda.sqlite3')),
             self.bundle / 'manifest.json',
         )
@@ -67,7 +67,7 @@ class VerificacionBackupTests(unittest.TestCase):
             verificar_bundle(self.bundle)
 
         payload.write_bytes(b'corrupto')
-        manifest = crear_manifiesto(payload, backend='sqlite', schema_version='8',
+        manifest = crear_manifiesto(payload, backend='sqlite', schema_version='9',
                                     table_counts=recuentos)
         manifest['format_version'] = 999
         (self.bundle / 'manifest.json').write_text(json.dumps(manifest), encoding='utf-8')
@@ -85,7 +85,7 @@ class VerificacionBackupTests(unittest.TestCase):
         payload.write_bytes(b'archivo no SQLite')
         (self.bundle / 'manifest.json').unlink()
         guardar_manifiesto(
-            crear_manifiesto(payload, backend='sqlite', schema_version='8',
+            crear_manifiesto(payload, backend='sqlite', schema_version='9',
                              table_counts={tabla: 0 for tabla in TABLAS_ESQUEMA_ACTUAL['sqlite']}),
             self.bundle / 'manifest.json',
         )
@@ -99,7 +99,7 @@ class VerificacionBackupTests(unittest.TestCase):
         recuentos['pacientes'] += 1
         (self.bundle / 'manifest.json').unlink()
         guardar_manifiesto(
-            crear_manifiesto(payload, backend='sqlite', schema_version='8',
+            crear_manifiesto(payload, backend='sqlite', schema_version='9',
                              table_counts=recuentos),
             self.bundle / 'manifest.json',
         )
@@ -114,7 +114,7 @@ class VerificacionBackupTests(unittest.TestCase):
         (self.bundle / 'manifest.json').unlink()
         guardar_manifiesto(
             crear_manifiesto(payload, backend='postgresql',
-                             schema_version='20261102_0009_turn_rescheduling',
+                             schema_version='20261102_0010_clinical_history',
                              table_counts={tabla: 0 for tabla in TABLAS_ESQUEMA_ACTUAL['postgresql']}),
             self.bundle / 'manifest.json',
         )
@@ -133,7 +133,7 @@ class VerificacionBackupTests(unittest.TestCase):
         (self.bundle / 'manifest.json').unlink()
         guardar_manifiesto(
             crear_manifiesto(payload, backend='postgresql',
-                             schema_version='20261102_0009_turn_rescheduling',
+                             schema_version='20261102_0010_clinical_history',
                              table_counts={tabla: 0 for tabla in TABLAS_ESQUEMA_ACTUAL['postgresql']}),
             self.bundle / 'manifest.json',
         )
