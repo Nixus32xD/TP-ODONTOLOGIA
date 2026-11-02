@@ -219,3 +219,11 @@ Una revisión detectó que la base aceptaba combinaciones cruzadas aunque cada a
 Se añadió `patient-management`: nombre y teléfono opcional ficticios; sin documento, fecha de nacimiento ni historia clínica. Administrador y Recepción gestionan contacto; sólo Administrador desactiva/reactiva. La baja conserva turnos y bloquea nuevas altas. Las mutaciones auditan sólo actor/acción/ID opaco en la misma transacción. PostgreSQL usa Alembic `20261102_0004_patient_management`; SQLite sube explícitamente a esquema v3; la importación C-02 convierte filas C-01 sin alterar la fuente.
 
 TDD documentó RED para esquema, importación, catálogo de auditoría, rutas y regla de paciente inactivo; cada caso pasó tras su corrección. Validación final: SQLite **143 tests OK, 1 PG omitido**; con PostgreSQL aislado loopback **159 tests OK**; `pip check` limpio; OpenSpec strict **6/6**; `git diff --check` limpio. PostgreSQL temporal se detuvo y el puerto 55432 quedó libre. El change se archivará y comiteará localmente tras sincronizar specs; no se hará push sin autorización.
+
+## 2026-11-02 — C-06 catálogos de recursos y prestaciones
+
+Se implementaron catálogos paginados de profesionales, boxes y prestaciones ficticias, con API y permisos: Administrador y Recepción administran datos descriptivos; sólo Administrador cambia estados. SQLite sube a v4 y PostgreSQL usa Alembic 0005; los IDs seed e historial se conservan. La auditoría guarda metadatos permitidos dentro de la misma transacción y revierte la mutación si no puede registrar el evento. Turnos nuevos rechazan paciente, profesional o box inactivo, tras resolver primero todas las referencias.
+
+Se mantuvo el contrato de C-01: no se añadió `prestacion_id`, cálculo de duración ni reglas de compatibilidad. La duración de prestación se valida como entero positivo en minutos. Evidencia TDD por tarea y comandos: [implementacion-catalogos.md](evidencia/implementacion-catalogos.md). Validación: SQLite **155 tests, 154 OK y 1 integración PostgreSQL omitida**; suite completa con PostgreSQL aislado **173/173 OK**; `pip check` limpio; OpenSpec strict **7/7**; `git diff --check` limpio. El clúster temporal PostgreSQL quedó detenido.
+
+C-06 se sincronizó y archivó localmente el 2026-11-02. No se hizo push. La modificación preexistente de `docs/discovery/informe-discovery.md` quedó fuera del cambio.

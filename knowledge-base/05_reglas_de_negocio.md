@@ -36,6 +36,19 @@ Solapamiento: existente.inicio < solicitado.fin y existente.fin > solicitado.ini
 | Concurrencia | BEGIN IMMEDIATE antes de consultar; mismo archivo local vía módulo |
 | Timeout | 5s por defecto; número finito positivo; no deadline global |
 
+## Dominio: catálogos — C-06
+
+| Tema | Contrato aplicado |
+| --- | --- |
+| Profesional y box | ID opaco, nombre obligatorio de hasta 120 caracteres y estado activo; seed IDs se conservan con nombres ficticios |
+| Prestación | ID opaco, nombre obligatorio, duración entera positiva en minutos y estado activo; el límite práctico es el máximo de `INTEGER` PostgreSQL |
+| Acceso | Administrador y Recepción crean, consultan y editan datos descriptivos; sólo Administrador activa/desactiva |
+| Consulta | Orden ascendente por ID; límite predeterminado 50, máximo 100 y offset no negativo; incluye inactivos |
+| Baja | Lógica e idempotente; no elimina filas ni referencias históricas |
+| Alta de turno | Referencias desconocidas se resuelven antes de los estados; profesional o box inactivo devuelve `recurso_inactivo` antes de conflictos |
+| Prestación en C-01 | No se agrega `prestacion_id`, no se calcula la duración del turno ni se crean compatibilidades |
+| Auditoría | Sólo metadatos permitidos y transacción conjunta; si falla el evento, se revierte el cambio |
+
 ## Excepciones globales y restricciones confirmadas
 
 - RN-EX-01: sólo datos ficticios, sin información clínica real.

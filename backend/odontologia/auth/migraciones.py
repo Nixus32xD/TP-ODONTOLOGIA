@@ -3,7 +3,7 @@ from pathlib import Path
 import sqlite3
 
 
-VERSION_ESQUEMA_AUTENTICACION = 3
+VERSION_ESQUEMA_AUTENTICACION = 4
 
 
 def _migrar_auditoria(conexion: sqlite3.Connection) -> None:
@@ -15,10 +15,16 @@ def _migrar_auditoria(conexion: sqlite3.Connection) -> None:
             action TEXT NOT NULL CHECK (action IN (
                 'turno.creado', 'paciente.creado', 'paciente.actualizado',
                 'paciente.desactivado', 'paciente.reactivado',
+                'profesional.creado', 'profesional.actualizado',
+                'profesional.desactivado', 'profesional.reactivado',
+                'box.creado', 'box.actualizado', 'box.desactivado', 'box.reactivado',
+                'prestacion.creada', 'prestacion.actualizada',
+                'prestacion.desactivada', 'prestacion.reactivada',
                 'cuenta.bootstrap', 'cuenta.creada',
                 'cuenta.actualizada', 'sesion.iniciada', 'sesion.cerrada',
                 'sesion.rechazada')),
-            resource_type TEXT NOT NULL CHECK (resource_type IN ('turno', 'paciente', 'cuenta', 'sesion')),
+            resource_type TEXT NOT NULL CHECK (resource_type IN (
+                'turno', 'paciente', 'profesional', 'box', 'prestacion', 'cuenta', 'sesion')),
             resource_id TEXT,
             result TEXT NOT NULL CHECK (result IN ('confirmado', 'rechazado')),
             CHECK (
@@ -27,6 +33,18 @@ def _migrar_auditoria(conexion: sqlite3.Connection) -> None:
                 (action = 'paciente.actualizado' AND resource_type = 'paciente' AND result = 'confirmado') OR
                 (action = 'paciente.desactivado' AND resource_type = 'paciente' AND result = 'confirmado') OR
                 (action = 'paciente.reactivado' AND resource_type = 'paciente' AND result = 'confirmado') OR
+                (action = 'profesional.creado' AND resource_type = 'profesional' AND result = 'confirmado') OR
+                (action = 'profesional.actualizado' AND resource_type = 'profesional' AND result = 'confirmado') OR
+                (action = 'profesional.desactivado' AND resource_type = 'profesional' AND result = 'confirmado') OR
+                (action = 'profesional.reactivado' AND resource_type = 'profesional' AND result = 'confirmado') OR
+                (action = 'box.creado' AND resource_type = 'box' AND result = 'confirmado') OR
+                (action = 'box.actualizado' AND resource_type = 'box' AND result = 'confirmado') OR
+                (action = 'box.desactivado' AND resource_type = 'box' AND result = 'confirmado') OR
+                (action = 'box.reactivado' AND resource_type = 'box' AND result = 'confirmado') OR
+                (action = 'prestacion.creada' AND resource_type = 'prestacion' AND result = 'confirmado') OR
+                (action = 'prestacion.actualizada' AND resource_type = 'prestacion' AND result = 'confirmado') OR
+                (action = 'prestacion.desactivada' AND resource_type = 'prestacion' AND result = 'confirmado') OR
+                (action = 'prestacion.reactivada' AND resource_type = 'prestacion' AND result = 'confirmado') OR
                 (action = 'cuenta.bootstrap' AND resource_type = 'cuenta' AND result = 'confirmado') OR
                 (action = 'cuenta.creada' AND resource_type = 'cuenta' AND result = 'confirmado') OR
                 (action = 'cuenta.actualizada' AND resource_type = 'cuenta' AND result = 'confirmado') OR
@@ -93,6 +111,63 @@ def _actualizar_auditoria_pacientes(conexion: sqlite3.Connection) -> None:
     conexion.execute('DROP TABLE eventos_auditoria_v2')
 
 
+def _migrar_catalogos(conexion: sqlite3.Connection) -> None:
+    for tabla, prefijo in (
+            ('profesionales', 'Profesional de demostración '),
+            ('boxes', 'Box de demostración ')):
+        columnas = {fila[1] for fila in conexion.execute(f'PRAGMA table_info({tabla})')}
+        if columnas == {'id'}:
+            valor_default = prefijo.strip().replace("'", "''")
+            conexion.execute(
+                f"ALTER TABLE {tabla} ADD COLUMN nombre TEXT NOT NULL "
+                f"DEFAULT '{valor_default}' CHECK (length(nombre) BETWEEN 1 AND 120)")
+            conexion.execute(
+                f'ALTER TABLE {tabla} ADD COLUMN activo INTEGER NOT NULL DEFAULT 1 '
+                'CHECK (activo IN (0, 1))')
+            conexion.execute(
+                f'UPDATE {tabla} SET nombre = ? || id', (prefijo,))
+        elif columnas != {'id', 'nombre', 'activo'}:
+            raise MigracionAutenticacionError(f'El esquema de {tabla} no es compatible.')
+
+        for operacion in ('insert', 'update'):
+            accion = 'INSERT' if operacion == 'insert' else 'UPDATE OF nombre, activo'
+            conexion.execute(f'''CREATE TRIGGER IF NOT EXISTS {tabla}_validar_{operacion}
+                BEFORE {accion} ON {tabla} BEGIN
+                SELECT CASE WHEN length(NEW.nombre) NOT BETWEEN 1 AND 120
+                    THEN RAISE(ABORT, 'nombre de catálogo inválido') END;
+                SELECT CASE WHEN NEW.activo NOT IN (0, 1)
+                    THEN RAISE(ABORT, 'estado de catálogo inválido') END;
+                END''')
+
+    conexion.execute('''
+        CREATE TABLE IF NOT EXISTS prestaciones (
+            id TEXT PRIMARY KEY,
+            nombre TEXT NOT NULL CHECK (length(nombre) BETWEEN 1 AND 120),
+            duracion_minutos INTEGER NOT NULL CHECK (
+                typeof(duracion_minutos) = 'integer' AND duracion_minutos > 0),
+            activo INTEGER NOT NULL CHECK (activo IN (0, 1))
+        )
+    ''')
+
+
+def _actualizar_auditoria_catalogos(conexion: sqlite3.Connection) -> None:
+    triggers = {'eventos_auditoria_no_update', 'eventos_auditoria_no_delete'}
+    existentes = {fila[0] for fila in conexion.execute(
+        "SELECT name FROM sqlite_master WHERE type='trigger'")}
+    for trigger in triggers & existentes:
+        conexion.execute(f'DROP TRIGGER {trigger}')
+    conexion.execute('DROP INDEX IF EXISTS ix_eventos_auditoria_fecha_id')
+    conexion.execute('ALTER TABLE eventos_auditoria RENAME TO eventos_auditoria_v3')
+    _migrar_auditoria(conexion)
+    conexion.execute('''
+        INSERT INTO eventos_auditoria
+            (id, created_at, actor_id, action, resource_type, resource_id, result)
+        SELECT id, created_at, actor_id, action, resource_type, resource_id, result
+        FROM eventos_auditoria_v3
+    ''')
+    conexion.execute('DROP TABLE eventos_auditoria_v3')
+
+
 class MigracionAutenticacionError(RuntimeError):
     """Error público y genérico al preparar el almacenamiento de autenticación."""
 
@@ -135,7 +210,7 @@ def migrar_sqlite(ruta_db: str | Path) -> None:
                 conexion.execute('UPDATE auth_schema_version SET version=2')
                 tablas.add('eventos_auditoria')
                 version = (2,)
-            if version not in ((2,), (VERSION_ESQUEMA_AUTENTICACION,)):
+            if version not in ((2,), (3,), (VERSION_ESQUEMA_AUTENTICACION,)):
                 raise MigracionAutenticacionError('La versión de autenticación no es compatible.')
             if not {'usuarios', 'sesiones', 'eventos_auditoria'} <= tablas:
                 raise MigracionAutenticacionError('El esquema de autenticación está incompleto.')
@@ -143,6 +218,13 @@ def migrar_sqlite(ruta_db: str | Path) -> None:
             if version == (2,):
                 _actualizar_auditoria_pacientes(conexion)
                 conexion.execute('UPDATE auth_schema_version SET version=3')
+                version = (3,)
+            if version == (3,):
+                _migrar_catalogos(conexion)
+                _actualizar_auditoria_catalogos(conexion)
+                conexion.execute('UPDATE auth_schema_version SET version=4')
+            else:
+                _migrar_catalogos(conexion)
             conexion.execute('COMMIT')
             return
 
@@ -174,7 +256,8 @@ def migrar_sqlite(ruta_db: str | Path) -> None:
         conexion.execute('CREATE INDEX ix_sesiones_usuario_id ON sesiones(usuario_id)')
         _migrar_auditoria(conexion)
         _migrar_fichas_pacientes(conexion)
-        conexion.execute('UPDATE auth_schema_version SET version=3')
+        _migrar_catalogos(conexion)
+        conexion.execute('UPDATE auth_schema_version SET version=4')
         conexion.execute('COMMIT')
     except MigracionAutenticacionError:
         if conexion.in_transaction:

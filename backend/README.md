@@ -13,10 +13,11 @@ API del sistema odontológico. Stack definido por la cátedra (corrección del 2
 | Autenticación JWT y autorización del personal | Implementado y archivado en SQLite/PostgreSQL | C-03 |
 | Auditoría append-only y `GET /auditoria` | Implementado, validado y archivado; sólo Administrador | C-04 |
 | Fichas mínimas y baja lógica de pacientes | Implementado en SQLite/PostgreSQL; Administrador y Recepción gestionan datos; sólo Admin cambia estado | C-05 |
+| Catálogos de profesionales, boxes y prestaciones | Implementado en SQLite/PostgreSQL; lectura paginada; baja lógica sólo Administrador | C-06 |
 | Cola de recordatorios en Redis (`odontologia/workers/`) | Estructura preparada, sin implementar | C-17 |
 | Imagen Docker y servicios en Docker Compose | Preparados | C-02 / C-14 |
 
-C-01 y SQLite siguen disponibles. C-02 permite elegir PostgreSQL de forma explícita, versiona el esquema con Alembic y ofrece una importación manual desde SQLite; está archivado. C-03 agrega acceso con JWT, sesiones revocables y permisos de Administrador/Recepción; está archivado. C-04 registra metadatos de turnos, cuentas y sesiones en la misma transacción; los fallos de auditoría revierten la mutación. Profesional no tiene cuenta habilitada hasta C-08. El inicio de la API no ejecuta migraciones ni importa datos. La fuente SQLite no se altera; la importación rechaza fuentes con solapamientos o destinos ya poblados.
+C-01 y SQLite siguen disponibles. C-02 permite elegir PostgreSQL de forma explícita, versiona el esquema con Alembic y ofrece una importación manual desde SQLite; está archivado. C-03 agrega acceso con JWT y sesiones revocables; C-04 audita metadatos y C-05 administra fichas mínimas de pacientes. C-06 añade administración de profesionales, boxes y prestaciones. Recepción edita nombres y duración; sólo Administrador cambia estados. Los recursos inactivos no se admiten en turnos nuevos; las prestaciones siguen separadas del contrato C-01. Profesional no tiene cuenta habilitada hasta C-08. El inicio de la API no ejecuta migraciones ni importa datos. La fuente SQLite no se altera; la importación rechaza fuentes con solapamientos o destinos ya poblados.
 
 ## Estructura
 
@@ -24,16 +25,17 @@ C-01 y SQLite siguen disponibles. C-02 permite elegir PostgreSQL de forma explí
 backend/
 ├── odontologia/
 │   ├── agenda.py        # Dominio de C-01: validación, transacción y alta
-│   ├── api.py           # Adaptador FastAPI de C-01/C-03/C-05
+│   ├── api.py           # Adaptador FastAPI de C-01/C-03/C-05/C-06
 │   ├── demo.py          # Demo por consola con agenda temporal
 │   ├── core/config.py   # Variables de entorno del stack
-│   ├── db/              # SQLAlchemy + PostgreSQL (C-02/C-05)
+│   ├── db/              # SQLAlchemy + PostgreSQL (C-02/C-05/C-06)
 │   ├── auth/            # JWT (C-03)
-│   ├── audit.py         # Metadatos append-only y consulta segura (C-04/C-05)
+│   ├── audit.py         # Metadatos append-only y consulta segura (C-04/C-06)
+│   ├── catalogos.py     # Catálogos ficticios y auditoría atómica (C-06)
 │   ├── pacientes.py     # Fichas mínimas y baja lógica (C-05)
 │   └── workers/         # Redis: recordatorios en cola (C-17)
-├── alembic/             # Revisiones versionadas de C-02 a C-05
-├── tests/               # Regresión C-01 a C-05
+├── alembic/             # Revisiones versionadas de C-02 a C-06
+├── tests/               # Regresión C-01 a C-06
 ├── requirements.txt         # Dependencias directas de C-01
 ├── requirements-dev.txt     # + HTTPX para tests
 ├── requirements-lock.txt    # Entorno verificado de C-01
@@ -75,11 +77,13 @@ El bootstrap pide identificador y contraseña de forma interactiva y oculta; no 
 ..\.venv\Scripts\python.exe -m odontologia.auth.bootstrap_admin
 ```
 
-Alembic aplica las revisiones consecutivas de C-01 a C-05, incluida la ficha mínima y la tabla append-only de auditoría. En Docker Compose, migrar el servicio backend con `docker compose exec backend python -m alembic upgrade head` y ejecutar el bootstrap interactivo con `docker compose exec backend python -m odontologia.auth.bootstrap_admin` después de configurar `.env`. No usar la API ni `GET /health` como comando de migración.
+Alembic aplica las revisiones consecutivas de C-01 a C-06, incluida la ficha mínima, los catálogos y la tabla append-only de auditoría. En Docker Compose, migrar el servicio backend con `docker compose exec backend python -m alembic upgrade head` y ejecutar el bootstrap interactivo con `docker compose exec backend python -m odontologia.auth.bootstrap_admin` después de configurar `.env`. No usar la API ni `GET /health` como comando de migración.
 
 `POST /sesiones` recibe `identificador` y `password`; su respuesta contiene `access_token`, `token_type` y `expires_in`. En Swagger, usar **Authorize** con `Bearer <token>`. `/sesiones/actual` permite consultar y cerrar la sesión propia. El Administrador puede consultar/crear usuarios y cambiar rol/estado; Recepción puede crear turnos y operar fichas mínimas de pacientes; sólo Administrador cambia el estado activo de pacientes. Desactivar una cuenta, cambiarle el rol o cerrar sesión revoca sus tokens persistidos. Los fallos de credenciales devuelven un mensaje genérico. Las fichas contienen sólo nombre y teléfono opcional ficticios; no usar datos reales ni añadir historia clínica. Los eventos guardan sólo actor/acción/recurso/resultado/fecha; no incluyen cuerpos, nombres, teléfonos, contraseñas, hashes, JWT, datos clínicos ni el identificador de un login rechazado. `GET /auditoria?limit=50&offset=0` es sólo Administrador, admite límite 1–100 y no ofrece edición, borrado ni purga automática. Si el evento falla, la mutación se revierte y la API no informa éxito. Sin secreto o esquema migrado, las operaciones protegidas fallan cerradas con 503 mientras `/health` continúa pública.
 
 `POST /pacientes` acepta `nombre` y `telefono` opcional; `GET /pacientes?limit=50&offset=0`, `GET/PATCH /pacientes/{paciente_id}` y `DELETE /pacientes/{paciente_id}` requieren sesión de Administrador o Recepción, salvo que DELETE y el cambio de `activo` en PATCH quedan sólo para Administrador. La baja es lógica; los turnos históricos permanecen y un paciente inactivo no admite nuevas altas. Los nombres repetidos se permiten; la ficha no se deduplica automáticamente.
+
+`/profesionales`, `/boxes` y `/prestaciones` exponen `POST`, `GET` paginado, `GET/{id}` y `PATCH/{id}`. Administrador y Recepción crean, leen y editan datos descriptivos; sólo Administrador cambia `activo`. Los catálogos incluyen inactivos en la lectura; la baja conserva filas e historial. Cada nombre ocupa de 1 a 120 caracteres después de normalizar espacios. Las prestaciones exigen duración entera positiva en minutos, limitada al máximo de `INTEGER` PostgreSQL. C-01 no agrega `prestacion_id` al turno ni calcula su duración; no hay reglas de compatibilidad.
 
 ## Preparar PostgreSQL y migrar una agenda existente
 

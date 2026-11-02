@@ -33,7 +33,7 @@ class AuditoriaEsquemaSQLiteTests(unittest.TestCase):
             self.assertEqual(columnas, {
                 'id', 'created_at', 'actor_id', 'action', 'resource_type', 'resource_id', 'result'})
             self.assertEqual(
-                conexion.execute('SELECT version FROM auth_schema_version').fetchone(), (3,))
+                conexion.execute('SELECT version FROM auth_schema_version').fetchone(), (4,))
 
     def test_auditoria_no_guarda_payload_ni_identificador_intentado(self):
         from odontologia.audit import registrar_evento_sqlite
@@ -69,6 +69,18 @@ class AuditoriaEsquemaSQLiteTests(unittest.TestCase):
             ('paciente.actualizado', 'paciente', 'confirmado'),
             ('paciente.desactivado', 'paciente', 'confirmado'),
             ('paciente.reactivado', 'paciente', 'confirmado'),
+            ('profesional.creado', 'profesional', 'confirmado'),
+            ('profesional.actualizado', 'profesional', 'confirmado'),
+            ('profesional.desactivado', 'profesional', 'confirmado'),
+            ('profesional.reactivado', 'profesional', 'confirmado'),
+            ('box.creado', 'box', 'confirmado'),
+            ('box.actualizado', 'box', 'confirmado'),
+            ('box.desactivado', 'box', 'confirmado'),
+            ('box.reactivado', 'box', 'confirmado'),
+            ('prestacion.creada', 'prestacion', 'confirmado'),
+            ('prestacion.actualizada', 'prestacion', 'confirmado'),
+            ('prestacion.desactivada', 'prestacion', 'confirmado'),
+            ('prestacion.reactivada', 'prestacion', 'confirmado'),
             ('cuenta.bootstrap', 'cuenta', 'confirmado'),
             ('cuenta.creada', 'cuenta', 'confirmado'),
             ('cuenta.actualizada', 'cuenta', 'confirmado'),
@@ -95,6 +107,7 @@ class AuditoriaEsquemaSQLiteTests(unittest.TestCase):
             ('turno.creado', 'cuenta', 'rechazado'),
             ('cuenta.creada', 'cuenta', 'rechazado'),
             ('sesion.iniciada', 'turno', 'confirmado'),
+            ('prestacion.creada', 'profesional', 'confirmado'),
         )
         for action, resource_type, result in combinaciones_invalidas:
             with self.subTest(action=action, resource_type=resource_type, result=result):
@@ -168,7 +181,7 @@ class AuditoriaEsquemaSQLiteTests(unittest.TestCase):
             self.assertEqual(conexion.execute(
                 'SELECT COUNT(*) FROM usuarios').fetchone()[0], 1)
             self.assertEqual(conexion.execute(
-                'SELECT version FROM auth_schema_version').fetchone()[0], 3)
+                'SELECT version FROM auth_schema_version').fetchone()[0], 4)
             self.assertEqual(conexion.execute(
                 "SELECT COUNT(*) FROM sqlite_master WHERE type='table' "
                 "AND name='eventos_auditoria'").fetchone()[0], 1)

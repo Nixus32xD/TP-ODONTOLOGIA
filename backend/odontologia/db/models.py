@@ -25,14 +25,40 @@ class Paciente(Base):
 
 class Profesional(Base):
     __tablename__ = 'profesionales'
+    __table_args__ = (
+        CheckConstraint('length(nombre) BETWEEN 1 AND 120', name='ck_profesionales_nombre'),
+        CheckConstraint('activo IN (true, false)', name='ck_profesionales_activo'),
+    )
 
     id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    nombre: Mapped[str] = mapped_column(String(120), nullable=False)
+    activo: Mapped[bool] = mapped_column(default=True, nullable=False)
 
 
 class Box(Base):
     __tablename__ = 'boxes'
+    __table_args__ = (
+        CheckConstraint('length(nombre) BETWEEN 1 AND 120', name='ck_boxes_nombre'),
+        CheckConstraint('activo IN (true, false)', name='ck_boxes_activo'),
+    )
 
     id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    nombre: Mapped[str] = mapped_column(String(120), nullable=False)
+    activo: Mapped[bool] = mapped_column(default=True, nullable=False)
+
+
+class Prestacion(Base):
+    __tablename__ = 'prestaciones'
+    __table_args__ = (
+        CheckConstraint('length(nombre) BETWEEN 1 AND 120', name='ck_prestaciones_nombre'),
+        CheckConstraint('duracion_minutos > 0', name='ck_prestaciones_duracion'),
+        CheckConstraint('activo IN (true, false)', name='ck_prestaciones_activo'),
+    )
+
+    id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    nombre: Mapped[str] = mapped_column(String(120), nullable=False)
+    duracion_minutos: Mapped[int] = mapped_column(Integer, nullable=False)
+    activo: Mapped[bool] = mapped_column(default=True, nullable=False)
 
 
 class Turno(Base):
@@ -93,11 +119,15 @@ class EventoAuditoria(Base):
     __table_args__ = (
         CheckConstraint(
             "action IN ('turno.creado', 'paciente.creado', 'paciente.actualizado', "
-            "'paciente.desactivado', 'paciente.reactivado', 'cuenta.bootstrap', 'cuenta.creada', "
+            "'paciente.desactivado', 'paciente.reactivado', 'profesional.creado', "
+            "'profesional.actualizado', 'profesional.desactivado', 'profesional.reactivado', "
+            "'box.creado', 'box.actualizado', 'box.desactivado', 'box.reactivado', "
+            "'prestacion.creada', 'prestacion.actualizada', 'prestacion.desactivada', "
+            "'prestacion.reactivada', 'cuenta.bootstrap', 'cuenta.creada', "
             "'cuenta.actualizada', 'sesion.iniciada', 'sesion.cerrada', 'sesion.rechazada')",
             name='ck_eventos_auditoria_action'),
         CheckConstraint(
-            "resource_type IN ('turno', 'paciente', 'cuenta', 'sesion')",
+            "resource_type IN ('turno', 'paciente', 'profesional', 'box', 'prestacion', 'cuenta', 'sesion')",
             name='ck_eventos_auditoria_resource_type'),
         CheckConstraint(
             "result IN ('confirmado', 'rechazado')",
@@ -108,6 +138,18 @@ class EventoAuditoria(Base):
             "(action = 'paciente.actualizado' AND resource_type = 'paciente' AND result = 'confirmado') OR "
             "(action = 'paciente.desactivado' AND resource_type = 'paciente' AND result = 'confirmado') OR "
             "(action = 'paciente.reactivado' AND resource_type = 'paciente' AND result = 'confirmado') OR "
+            "(action = 'profesional.creado' AND resource_type = 'profesional' AND result = 'confirmado') OR "
+            "(action = 'profesional.actualizado' AND resource_type = 'profesional' AND result = 'confirmado') OR "
+            "(action = 'profesional.desactivado' AND resource_type = 'profesional' AND result = 'confirmado') OR "
+            "(action = 'profesional.reactivado' AND resource_type = 'profesional' AND result = 'confirmado') OR "
+            "(action = 'box.creado' AND resource_type = 'box' AND result = 'confirmado') OR "
+            "(action = 'box.actualizado' AND resource_type = 'box' AND result = 'confirmado') OR "
+            "(action = 'box.desactivado' AND resource_type = 'box' AND result = 'confirmado') OR "
+            "(action = 'box.reactivado' AND resource_type = 'box' AND result = 'confirmado') OR "
+            "(action = 'prestacion.creada' AND resource_type = 'prestacion' AND result = 'confirmado') OR "
+            "(action = 'prestacion.actualizada' AND resource_type = 'prestacion' AND result = 'confirmado') OR "
+            "(action = 'prestacion.desactivada' AND resource_type = 'prestacion' AND result = 'confirmado') OR "
+            "(action = 'prestacion.reactivada' AND resource_type = 'prestacion' AND result = 'confirmado') OR "
             "(action = 'cuenta.bootstrap' AND resource_type = 'cuenta' AND result = 'confirmado') OR "
             "(action = 'cuenta.creada' AND resource_type = 'cuenta' AND result = 'confirmado') OR "
             "(action = 'cuenta.actualizada' AND resource_type = 'cuenta' AND result = 'confirmado') OR "

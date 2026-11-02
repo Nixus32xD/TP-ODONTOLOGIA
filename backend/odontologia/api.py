@@ -8,7 +8,7 @@ from fastapi import Depends, FastAPI, Query, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
-from pydantic import BaseModel, ConfigDict, Field, StrictBool, StrictStr, field_validator
+from pydantic import BaseModel, ConfigDict, Field, StrictBool, StrictInt, StrictStr, field_validator
 
 from odontologia import ErrorAgenda, Turno, crear_turno
 from odontologia.core.config import cargar_configuracion
@@ -19,6 +19,9 @@ from odontologia.auth.usuarios import (
     ErrorUsuarios, actualizar_usuario, crear_usuario, listar_usuarios,
 )
 from odontologia.audit import listar_eventos
+from odontologia.catalogos import (
+    ErrorCatalogos, actualizar_recurso, crear_recurso, listar_recursos, obtener_recurso,
+)
 from odontologia.pacientes import ErrorPacientes, actualizar_paciente, crear_paciente, listar_pacientes, obtener_paciente
 
 
@@ -96,6 +99,53 @@ class RespuestaListaPacientes(BaseModel):
     offset: int
 
 
+class SolicitudRecurso(BaseModel):
+    model_config = ConfigDict(extra='forbid')
+    nombre: StrictStr = Field(min_length=1, max_length=120)
+
+
+class SolicitudPrestacion(BaseModel):
+    model_config = ConfigDict(extra='forbid')
+    nombre: StrictStr = Field(min_length=1, max_length=120)
+    duracion_minutos: StrictInt = Field(ge=1, le=2_147_483_647)
+
+
+class ActualizacionRecurso(BaseModel):
+    model_config = ConfigDict(extra='forbid')
+    nombre: StrictStr | None = Field(default=None, min_length=1, max_length=120)
+    activo: StrictBool | None = None
+
+
+class ActualizacionPrestacion(BaseModel):
+    model_config = ConfigDict(extra='forbid')
+    nombre: StrictStr | None = Field(default=None, min_length=1, max_length=120)
+    duracion_minutos: StrictInt | None = Field(
+        default=None, ge=1, le=2_147_483_647)
+    activo: StrictBool | None = None
+
+
+class RespuestaRecurso(BaseModel):
+    id: StrictStr
+    nombre: StrictStr
+    activo: StrictBool
+
+
+class RespuestaPrestacion(RespuestaRecurso):
+    duracion_minutos: StrictInt
+
+
+class RespuestaListaRecursos(BaseModel):
+    items: list[RespuestaRecurso]
+    limit: int
+    offset: int
+
+
+class RespuestaListaPrestaciones(BaseModel):
+    items: list[RespuestaPrestacion]
+    limit: int
+    offset: int
+
+
 ESTADOS_ERROR = {'entrada_invalida': 422, 'recurso_desconocido': 404,
                  'recurso_inactivo': 409,
                  'conflicto_profesional': 409, 'conflicto_box': 409,
@@ -161,6 +211,11 @@ def crear_app(ruta_db: str | Path | None = None, *, timeout_segundos: float = 5.
 
     @app.exception_handler(ErrorPacientes)
     async def error_paciente(request: Request, exc: ErrorPacientes):
+        return JSONResponse(status_code=exc.estado, content={
+            'codigo': exc.codigo, 'campo': None, 'mensaje': str(exc)})
+
+    @app.exception_handler(ErrorCatalogos)
+    async def error_catalogo(request: Request, exc: ErrorCatalogos):
         return JSONResponse(status_code=exc.estado, content={
             'codigo': exc.codigo, 'campo': None, 'mensaje': str(exc)})
 
@@ -327,6 +382,140 @@ def crear_app(ruta_db: str | Path | None = None, *, timeout_segundos: float = 5.
         asegurar_esquema()
         return actualizar_paciente(
             auth_engine, paciente_id, {'activo': False}, actor_id=_identidad['usuario_id'])
+
+    @app.get('/profesionales', response_model=RespuestaListaRecursos, responses={
+        401: respuestas_auth[401], 403: respuestas_auth[403], 422: {'model': ErrorHTTP},
+        503: respuestas_auth[503],
+    })
+    def consulta_profesionales(limit: int = Query(default=50, ge=1, le=100),
+                               offset: int = Query(default=0, ge=0),
+                               _identidad=Depends(personal_operativo)):
+        asegurar_esquema()
+        return {'items': listar_recursos(auth_engine, 'profesionales', limit=limit, offset=offset),
+                'limit': limit, 'offset': offset}
+
+    @app.post('/profesionales', status_code=201, response_model=RespuestaRecurso, responses={
+        401: respuestas_auth[401], 403: respuestas_auth[403], 422: {'model': ErrorHTTP},
+        503: respuestas_auth[503],
+    })
+    def alta_profesional(solicitud: SolicitudRecurso,
+                         _identidad=Depends(personal_operativo)):
+        asegurar_esquema()
+        return crear_recurso(
+            auth_engine, 'profesionales', solicitud.model_dump(),
+            actor_id=_identidad['usuario_id'])
+
+    @app.get('/profesionales/{profesional_id}', response_model=RespuestaRecurso, responses={
+        401: respuestas_auth[401], 403: respuestas_auth[403], 404: {'model': ErrorHTTP},
+        422: {'model': ErrorHTTP}, 503: respuestas_auth[503],
+    })
+    def profesional(profesional_id: str, _identidad=Depends(personal_operativo)):
+        asegurar_esquema()
+        return obtener_recurso(auth_engine, 'profesionales', profesional_id)
+
+    @app.patch('/profesionales/{profesional_id}', response_model=RespuestaRecurso, responses={
+        401: respuestas_auth[401], 403: respuestas_auth[403], 404: {'model': ErrorHTTP},
+        422: {'model': ErrorHTTP}, 503: respuestas_auth[503],
+    })
+    def modificar_profesional(profesional_id: str, solicitud: ActualizacionRecurso,
+                              _identidad=Depends(personal_operativo)):
+        asegurar_esquema()
+        cambios = solicitud.model_dump(exclude_unset=True)
+        if not cambios:
+            raise ErrorCatalogos('entrada_invalida', 'Debe indicar al menos un cambio.', 422)
+        if 'activo' in cambios and _identidad['rol'] != 'administrador':
+            raise ErrorSesiones('permiso_denegado', 'Sólo Administrador puede cambiar el estado.', 403)
+        return actualizar_recurso(
+            auth_engine, 'profesionales', profesional_id, cambios,
+            actor_id=_identidad['usuario_id'])
+
+    @app.get('/boxes', response_model=RespuestaListaRecursos, responses={
+        401: respuestas_auth[401], 403: respuestas_auth[403], 422: {'model': ErrorHTTP},
+        503: respuestas_auth[503],
+    })
+    def consulta_boxes(limit: int = Query(default=50, ge=1, le=100),
+                       offset: int = Query(default=0, ge=0),
+                       _identidad=Depends(personal_operativo)):
+        asegurar_esquema()
+        return {'items': listar_recursos(auth_engine, 'boxes', limit=limit, offset=offset),
+                'limit': limit, 'offset': offset}
+
+    @app.post('/boxes', status_code=201, response_model=RespuestaRecurso, responses={
+        401: respuestas_auth[401], 403: respuestas_auth[403], 422: {'model': ErrorHTTP},
+        503: respuestas_auth[503],
+    })
+    def alta_box(solicitud: SolicitudRecurso, _identidad=Depends(personal_operativo)):
+        asegurar_esquema()
+        return crear_recurso(
+            auth_engine, 'boxes', solicitud.model_dump(), actor_id=_identidad['usuario_id'])
+
+    @app.get('/boxes/{box_id}', response_model=RespuestaRecurso, responses={
+        401: respuestas_auth[401], 403: respuestas_auth[403], 404: {'model': ErrorHTTP},
+        422: {'model': ErrorHTTP}, 503: respuestas_auth[503],
+    })
+    def box(box_id: str, _identidad=Depends(personal_operativo)):
+        asegurar_esquema()
+        return obtener_recurso(auth_engine, 'boxes', box_id)
+
+    @app.patch('/boxes/{box_id}', response_model=RespuestaRecurso, responses={
+        401: respuestas_auth[401], 403: respuestas_auth[403], 404: {'model': ErrorHTTP},
+        422: {'model': ErrorHTTP}, 503: respuestas_auth[503],
+    })
+    def modificar_box(box_id: str, solicitud: ActualizacionRecurso,
+                      _identidad=Depends(personal_operativo)):
+        asegurar_esquema()
+        cambios = solicitud.model_dump(exclude_unset=True)
+        if not cambios:
+            raise ErrorCatalogos('entrada_invalida', 'Debe indicar al menos un cambio.', 422)
+        if 'activo' in cambios and _identidad['rol'] != 'administrador':
+            raise ErrorSesiones('permiso_denegado', 'Sólo Administrador puede cambiar el estado.', 403)
+        return actualizar_recurso(
+            auth_engine, 'boxes', box_id, cambios, actor_id=_identidad['usuario_id'])
+
+    @app.get('/prestaciones', response_model=RespuestaListaPrestaciones, responses={
+        401: respuestas_auth[401], 403: respuestas_auth[403], 422: {'model': ErrorHTTP},
+        503: respuestas_auth[503],
+    })
+    def consulta_prestaciones(limit: int = Query(default=50, ge=1, le=100),
+                              offset: int = Query(default=0, ge=0),
+                              _identidad=Depends(personal_operativo)):
+        asegurar_esquema()
+        return {'items': listar_recursos(auth_engine, 'prestaciones', limit=limit, offset=offset),
+                'limit': limit, 'offset': offset}
+
+    @app.post('/prestaciones', status_code=201, response_model=RespuestaPrestacion, responses={
+        401: respuestas_auth[401], 403: respuestas_auth[403], 422: {'model': ErrorHTTP},
+        503: respuestas_auth[503],
+    })
+    def alta_prestacion(solicitud: SolicitudPrestacion,
+                        _identidad=Depends(personal_operativo)):
+        asegurar_esquema()
+        return crear_recurso(
+            auth_engine, 'prestaciones', solicitud.model_dump(), actor_id=_identidad['usuario_id'])
+
+    @app.get('/prestaciones/{prestacion_id}', response_model=RespuestaPrestacion, responses={
+        401: respuestas_auth[401], 403: respuestas_auth[403], 404: {'model': ErrorHTTP},
+        422: {'model': ErrorHTTP}, 503: respuestas_auth[503],
+    })
+    def prestacion(prestacion_id: str, _identidad=Depends(personal_operativo)):
+        asegurar_esquema()
+        return obtener_recurso(auth_engine, 'prestaciones', prestacion_id)
+
+    @app.patch('/prestaciones/{prestacion_id}', response_model=RespuestaPrestacion, responses={
+        401: respuestas_auth[401], 403: respuestas_auth[403], 404: {'model': ErrorHTTP},
+        422: {'model': ErrorHTTP}, 503: respuestas_auth[503],
+    })
+    def modificar_prestacion(prestacion_id: str, solicitud: ActualizacionPrestacion,
+                             _identidad=Depends(personal_operativo)):
+        asegurar_esquema()
+        cambios = solicitud.model_dump(exclude_unset=True)
+        if not cambios:
+            raise ErrorCatalogos('entrada_invalida', 'Debe indicar al menos un cambio.', 422)
+        if 'activo' in cambios and _identidad['rol'] != 'administrador':
+            raise ErrorSesiones('permiso_denegado', 'Sólo Administrador puede cambiar el estado.', 403)
+        return actualizar_recurso(
+            auth_engine, 'prestaciones', prestacion_id, cambios,
+            actor_id=_identidad['usuario_id'])
 
     @app.get('/auditoria', responses={
         401: respuestas_auth[401], 403: respuestas_auth[403],

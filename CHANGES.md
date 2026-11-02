@@ -1,7 +1,7 @@
 # CHANGES — Secuencia de Implementación
 
 > Índice canónico del proyecto **TP-ODONTOLOGIA**, actualizado el 2026-11-02.
-> **Plan del producto completo; C-01–C-05 están implementados, validados y archivados. C-06–C-20 son cambios futuros planificados dentro de la autorización global del roadmap, sujetos a aprobaciones específicas de decisiones materiales según R-10.**
+> **Plan del producto completo; C-01–C-06 están implementados, validados y archivados. C-07–C-20 son cambios futuros planificados dentro de la autorización global del roadmap, sujetos a aprobaciones específicas de decisiones materiales según R-10.**
 > **Leer este archivo antes de ejecutar cualquier `/opsx:propose`.**
 
 ---
@@ -35,7 +35,7 @@ La KB y las instrucciones existentes documentan principalmente la porción acad�
 | --- | --- | --- |
 | Versionado de esquema y migración a PostgreSQL con SQLAlchemy (stack de la cátedra) | C-02 | Implementado, validado con PostgreSQL aislado y archivado; copia unidireccional, fuente SQLite preservada. |
 | Identidades, permisos, sesiones y auditoría | C-03/C-04 | C-03 y C-04 implementados, validados y archivados. |
-| Datos mínimos, prestaciones y disponibilidad | C-05/C-06/C-07 | C-05 implementó nombre/contacto mínimo y baja lógica; prestaciones y disponibilidad siguen planificadas |
+| Datos mínimos, prestaciones y disponibilidad | C-05/C-06/C-07 | C-05 y C-06 implementan datos mínimos y catálogos; horarios y disponibilidad siguen planificados en C-07 |
 | Estados, cancelación y reprogramación | C-09/C-10 | Transiciones y concurrencia especificadas; exclusión del paciente explícitamente decidida |
 | UI y operación desplegada | C-11/C-12/C-13/C-14 | Interfaz en React + TypeScript + Vite (fijada por la cátedra), despliegue con Docker Compose, recuperación y seguridad probadas |
 | Datos clínicos, comunicaciones y dinero | C-15 a C-20 | Revisión de permisos, privacidad, reglas clínicas/monetarias y proveedor cuando corresponda; sólo simulación en este ejercicio |
@@ -75,7 +75,7 @@ Los números son identificadores estables agrupados por capacidad, no un orden d
 
 ### Paralelismo por fase
 
-Los GATES expresan dependencias del plan futuro. C-01–C-05 están archivados. El símbolo `✓` significa «una vez verificado y cerrado». No imponen fases rígidas a OPSX.
+Los GATES expresan dependencias del plan futuro. C-01–C-06 están archivados. El símbolo `✓` significa «una vez verificado y cerrado». No imponen fases rígidas a OPSX.
 
 ```text
 GATE 0: C-01 ✓ → C-02 ✓ → C-03 ✓ → C-04 ✓
@@ -161,7 +161,7 @@ Secuencia compatible con dependencias, sin prometer una optimización temporal n
 
 ## FASE 2 — Fundamento evolutivo, acceso y trazabilidad
 
-> C-01–C-05 están archivados. C-06 a C-20 siguen planificados con desarrollo global autorizado; contratos de cada change se revisan con Propose y las decisiones materiales de governance CRÍTICO/ALTO requieren aprobación específica antes del código.
+> C-01–C-06 están archivados. C-07 a C-20 siguen planificados con desarrollo global autorizado. Los contratos de cada change se revisan con Propose y las decisiones materiales de governance CRÍTICO/ALTO requieren aprobación específica antes del código.
 
 ### [C-02] `evolucionar-esquema-y-configuracion`
 
@@ -222,11 +222,12 @@ Secuencia compatible con dependencias, sin prometer una optimización temporal n
 
 ### [C-06] `administrar-recursos-y-prestaciones`
 
-- **Estado**: [ ] planificado; no implementado ni propuesto en OpenSpec.
+- **Estado**: implementado, validado localmente y archivado el 2026-11-02. Ver [change archivado](openspec/changes/archive/2026-11-02-administrar-recursos-y-prestaciones/) y [evidencia C-06](docs/evidencia/implementacion-catalogos.md).
 - **Scope**:
-  - Añadir administración de `Profesional`, `Box` y `Prestacion` con estado activo, duración propuesta y compatibilidades expresamente acordadas; no borrar referencias históricas ni imponer esas políticas a C-01 retroactivamente.
-  - Proponer `POST/GET/PATCH /profesionales`, `/boxes` y `/prestaciones` con rutas por ID para edición; impedir nuevas asignaciones a recursos inactivos mediante reglas explícitas del nuevo contrato.
-  - Tests: CRUD mínimo, duración inválida, referencia desconocida, baja con turnos existentes y control de permisos/auditoría; sin exigir un rol de usuario por cada profesional.
+  - Administrar catálogos ficticios de `Profesional`, `Box` y `Prestacion`: Administrador y Recepción crean, consultan y editan datos descriptivos; sólo Administrador cambia el estado activo. No se borran referencias históricas.
+  - Exponer listado paginado, consulta por ID, alta y edición. La duración de prestación es un entero positivo en minutos. No se agregan relaciones de compatibilidad ni `prestacion_id` al contrato C-01; C-01 tampoco calcula el turno desde la duración.
+  - Bloquear nuevas altas de turnos para paciente, profesional o box inactivo, preservando turnos existentes. Registrar metadatos de auditoría permitidos en la misma transacción; si falla el evento, revertir la mutación.
+  - Persistencia: SQLite v4 y Alembic 0005, conservando IDs seed, turnos e importación previa.
 - **Dependencias**: C-02, C-03, C-04.
 - **Governance**: MEDIO.
 - **Leer antes**:

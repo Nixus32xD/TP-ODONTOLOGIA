@@ -26,11 +26,14 @@ from odontologia.auth.usuarios import (
     ErrorUsuarios, crear_primer_administrador, crear_usuario, actualizar_usuario,
 )
 from odontologia.auth.sesiones import ErrorSesiones, autenticar, cerrar_sesion, validar_sesion
-from odontologia.audit import listar_eventos
+from odontologia.audit import ErrorAuditoria, listar_eventos
+from odontologia.catalogos import (
+    ErrorCatalogos, actualizar_recurso, crear_recurso,
+)
 from odontologia.pacientes import ErrorPacientes, actualizar_paciente, crear_paciente
 from odontologia.db.migracion import ErrorMigracion, migrar_agenda_sqlite
 from odontologia.db.models import (
-    AgendaMutex, Base, Box, EventoAuditoria, Paciente, Profesional, Sesion, Turno, Usuario,
+    AgendaMutex, Base, Box, EventoAuditoria, Paciente, Prestacion, Profesional, Sesion, Turno, Usuario,
 )
 from odontologia.db.postgresql import crear_turno_postgresql
 
@@ -129,6 +132,7 @@ class IntegracionPostgreSQLTests(unittest.TestCase):
             session.execute(delete(Paciente))
             session.execute(delete(Profesional))
             session.execute(delete(Box))
+            session.execute(delete(Prestacion))
 
     def _sqlite_con_datos(self, ruta):
         inicializar_agenda(ruta)
@@ -149,8 +153,10 @@ class IntegracionPostgreSQLTests(unittest.TestCase):
             session.add_all([
                 Paciente(id='paciente-A', nombre='Paciente de demostración A', telefono=None, activo=True),
                 Paciente(id='paciente-B', nombre='Paciente de demostración B', telefono=None, activo=True),
-                Profesional(id='profesional-A'), Profesional(id='profesional-B'),
-                Box(id='box-A'), Box(id='box-B'),
+                Profesional(id='profesional-A', nombre='Profesional de demostración profesional-A', activo=True),
+                Profesional(id='profesional-B', nombre='Profesional de demostración profesional-B', activo=True),
+                Box(id='box-A', nombre='Box de demostración box-A', activo=True),
+                Box(id='box-B', nombre='Box de demostración box-B', activo=True),
             ])
 
     def test_migracion_preserva_agenda_ids_y_secuencia_y_rechaza_repeticion(self):
@@ -163,6 +169,9 @@ class IntegracionPostgreSQLTests(unittest.TestCase):
             with Session(self.engine) as session:
                 turnos = session.scalars(select(Turno).order_by(Turno.id)).all()
                 paciente = session.get(Paciente, 'paciente-A')
+                profesional = session.get(Profesional, 'profesional-A')
+                box = session.get(Box, 'box-A')
+                prestaciones = session.scalar(select(func.count()).select_from(Prestacion))
 
             self.assertEqual((resumen.pacientes, resumen.profesionales, resumen.boxes, resumen.turnos),
                              (2, 2, 2, 2))
@@ -170,6 +179,11 @@ class IntegracionPostgreSQLTests(unittest.TestCase):
             self.assertEqual(paciente.nombre, 'Paciente de demostración paciente-A')
             self.assertIsNone(paciente.telefono)
             self.assertTrue(paciente.activo)
+            self.assertEqual(profesional.nombre, 'Profesional de demostración profesional-A')
+            self.assertTrue(profesional.activo)
+            self.assertEqual(box.nombre, 'Box de demostración box-A')
+            self.assertTrue(box.activo)
+            self.assertEqual(prestaciones, 0)
             self.assertEqual(ruta.read_bytes(), fuente_original)
             siguiente = crear_turno_postgresql(
                 self.engine, paciente_id='paciente-A', profesional_id='profesional-A', box_id='box-A',
@@ -202,7 +216,7 @@ class IntegracionPostgreSQLTests(unittest.TestCase):
 
             self.assertEqual(contexto.exception.codigo, 'destino_error')
             with Session(self.engine) as session:
-                for modelo in (Paciente, Profesional, Box, Turno):
+                for modelo in (Paciente, Profesional, Box, Prestacion, Turno):
                     self.assertEqual(session.scalar(select(func.count()).select_from(modelo)), 0)
 
     def test_dos_procesos_no_confirman_solapamientos_por_profesional(self):
@@ -413,6 +427,18 @@ class IntegracionPostgreSQLTests(unittest.TestCase):
             ('paciente.actualizado', 'paciente', 'confirmado'),
             ('paciente.desactivado', 'paciente', 'confirmado'),
             ('paciente.reactivado', 'paciente', 'confirmado'),
+            ('profesional.creado', 'profesional', 'confirmado'),
+            ('profesional.actualizado', 'profesional', 'confirmado'),
+            ('profesional.desactivado', 'profesional', 'confirmado'),
+            ('profesional.reactivado', 'profesional', 'confirmado'),
+            ('box.creado', 'box', 'confirmado'),
+            ('box.actualizado', 'box', 'confirmado'),
+            ('box.desactivado', 'box', 'confirmado'),
+            ('box.reactivado', 'box', 'confirmado'),
+            ('prestacion.creada', 'prestacion', 'confirmado'),
+            ('prestacion.actualizada', 'prestacion', 'confirmado'),
+            ('prestacion.desactivada', 'prestacion', 'confirmado'),
+            ('prestacion.reactivada', 'prestacion', 'confirmado'),
             ('paciente.creado', 'paciente', 'confirmado'),
             ('paciente.actualizado', 'paciente', 'confirmado'),
             ('paciente.desactivado', 'paciente', 'confirmado'),
@@ -440,6 +466,7 @@ class IntegracionPostgreSQLTests(unittest.TestCase):
             ('turno.creado', 'cuenta', 'rechazado'),
             ('cuenta.creada', 'cuenta', 'rechazado'),
             ('sesion.iniciada', 'turno', 'confirmado'),
+            ('prestacion.creada', 'profesional', 'confirmado'),
         )
         for action, resource_type, result in combinaciones_invalidas:
             with self.subTest(action=action, resource_type=resource_type, result=result):
@@ -452,6 +479,69 @@ class IntegracionPostgreSQLTests(unittest.TestCase):
                                 'action': action, 'resource_type': resource_type,
                                 'result': result,
                             })
+
+    def test_catalogos_postgresql_auditan_metadata_y_revierten_si_falla(self):
+        self._seed_catalogos()
+        administrador = crear_primer_administrador(
+            self.engine, 'admin.catalogos', 'frase-larga-segura-2026')
+        prestacion = crear_recurso(self.engine, 'prestaciones', {
+            'nombre': 'Prestación privada', 'duracion_minutos': 25,
+        }, actor_id=administrador['id'])
+        actualizar_recurso(
+            self.engine, 'prestaciones', prestacion['id'], {'nombre': 'Nombre nuevo privado'},
+            actor_id=administrador['id'])
+        actualizar_recurso(
+            self.engine, 'prestaciones', prestacion['id'], {'activo': False},
+            actor_id=administrador['id'])
+        with Session(self.engine) as session:
+            eventos = session.execute(text(
+                'SELECT actor_id, action, resource_type, resource_id, result '
+                'FROM eventos_auditoria WHERE resource_id=:id ORDER BY id'),
+                {'id': prestacion['id']}).all()
+        self.assertEqual([evento.action for evento in eventos], [
+            'prestacion.creada', 'prestacion.actualizada', 'prestacion.desactivada'])
+        self.assertTrue(all(
+            evento.actor_id == administrador['id']
+            and evento.resource_type == 'prestacion'
+            and evento.resource_id == prestacion['id']
+            and evento.result == 'confirmado'
+            for evento in eventos))
+        self.assertNotIn('Prestación privada', str(eventos))
+        self.assertNotIn('Nombre nuevo privado', str(eventos))
+
+        with patch('odontologia.catalogos.registrar_evento_session', side_effect=ErrorAuditoria):
+            with self.assertRaises(ErrorCatalogos):
+                crear_recurso(
+                    self.engine, 'boxes', {'nombre': 'No guardar'},
+                    actor_id=administrador['id'])
+        with Session(self.engine) as session:
+            self.assertEqual(session.scalar(select(func.count()).select_from(Box)), 2)
+
+    def test_turno_postgresql_rechaza_recursos_inactivos_y_prioriza_referencias(self):
+        self._seed_catalogos()
+        with Session(self.engine) as session, session.begin():
+            session.get(Profesional, 'profesional-A').activo = False
+            session.get(Box, 'box-B').activo = False
+
+        with self.assertRaises(ErrorAgenda) as contexto:
+            crear_turno_postgresql(
+                self.engine, paciente_id='paciente-A', profesional_id='profesional-A',
+                box_id='box-A', inicio=datetime(2026, 10, 15, 12, tzinfo=timezone.utc),
+                fin=datetime(2026, 10, 15, 12, 30, tzinfo=timezone.utc))
+        self.assertEqual((contexto.exception.codigo, contexto.exception.campo),
+                         ('recurso_inactivo', 'profesional'))
+
+        with Session(self.engine) as session, session.begin():
+            session.get(Paciente, 'paciente-A').activo = False
+        with self.assertRaises(ErrorAgenda) as contexto:
+            crear_turno_postgresql(
+                self.engine, paciente_id='paciente-A', profesional_id='profesional-inexistente',
+                box_id='box-B', inicio=datetime(2026, 10, 15, 12, tzinfo=timezone.utc),
+                fin=datetime(2026, 10, 15, 12, 30, tzinfo=timezone.utc))
+        self.assertEqual((contexto.exception.codigo, contexto.exception.campo),
+                         ('recurso_desconocido', 'profesional'))
+        with Session(self.engine) as session:
+            self.assertEqual(session.scalar(select(func.count()).select_from(Turno)), 0)
 
     def test_fallo_de_auditoria_postgres_reversa_turno_cuenta_y_login(self):
         self._seed_catalogos()
@@ -532,7 +622,7 @@ class IntegracionPostgreSQLTests(unittest.TestCase):
         finally:
             with self.engine.begin() as conexion:
                 conexion.execute(text(
-                    "UPDATE alembic_version SET version_num = '20261102_0004_patient_management'"))
+                    "UPDATE alembic_version SET version_num = '20261102_0005_resource_catalogs'"))
 
     def test_revision_esquema_desconocida_falla_cerrado(self):
         self._seed_catalogos()
@@ -548,7 +638,7 @@ class IntegracionPostgreSQLTests(unittest.TestCase):
         finally:
             with self.engine.begin() as conexion:
                 conexion.execute(text(
-                    "UPDATE alembic_version SET version_num = '20261102_0004_patient_management'"))
+                    "UPDATE alembic_version SET version_num = '20261102_0005_resource_catalogs'"))
 
         self.assertEqual(contexto.exception.codigo, 'almacenamiento_error')
         with Session(self.engine) as session:

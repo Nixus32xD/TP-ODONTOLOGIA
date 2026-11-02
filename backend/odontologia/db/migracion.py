@@ -10,7 +10,7 @@ from sqlalchemy import Engine, func, insert, select, text
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 
-from odontologia.db.models import AgendaMutex, Box, Paciente, Profesional, Turno
+from odontologia.db.models import AgendaMutex, Box, Paciente, Prestacion, Profesional, Turno
 from odontologia.db.postgresql import REVISION_ESQUEMA_ACTUAL, codigo_error_postgresql
 
 
@@ -204,7 +204,7 @@ def migrar_agenda_sqlite(engine: Engine, ruta: str | Path) -> ResumenMigracion:
                 raise ErrorMigracion('destino_no_preparado')
 
             if any(session.scalar(select(func.count()).select_from(modelo))
-                   for modelo in (Paciente, Profesional, Box, Turno)):
+                   for modelo in (Paciente, Profesional, Box, Prestacion, Turno)):
                 raise ErrorMigracion('destino_no_vacio')
 
             if agenda.pacientes:
@@ -218,9 +218,13 @@ def migrar_agenda_sqlite(engine: Engine, ruta: str | Path) -> ResumenMigracion:
                     for item in agenda.pacientes
                 ])
             if agenda.profesionales:
-                session.execute(insert(Profesional), [{'id': item} for item in agenda.profesionales])
+                session.execute(insert(Profesional), [{
+                    'id': item, 'nombre': f'Profesional de demostración {item}', 'activo': True,
+                } for item in agenda.profesionales])
             if agenda.boxes:
-                session.execute(insert(Box), [{'id': item} for item in agenda.boxes])
+                session.execute(insert(Box), [{
+                    'id': item, 'nombre': f'Box de demostración {item}', 'activo': True,
+                } for item in agenda.boxes])
             if agenda.turnos:
                 session.execute(insert(Turno), [
                     {

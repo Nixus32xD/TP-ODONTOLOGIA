@@ -12,8 +12,8 @@ class EsquemaPostgreSQLTests(unittest.TestCase):
     def test_esquema_representa_catalogos_turnos_y_mutex(self):
         self.assertEqual(
             set(Base.metadata.tables),
-            {'pacientes', 'profesionales', 'boxes', 'turnos', 'agenda_mutex', 'usuarios', 'sesiones',
-             'eventos_auditoria'},
+            {'pacientes', 'profesionales', 'boxes', 'prestaciones', 'turnos', 'agenda_mutex',
+             'usuarios', 'sesiones', 'eventos_auditoria'},
         )
         self.assertEqual(
             set(Turno.__table__.columns.keys()),

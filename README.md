@@ -6,7 +6,7 @@ Repositorio: [Nixus32xD/TP-ODONTOLOGIA](https://github.com/Nixus32xD/TP-ODONTOLO
 
 ## Estado actual
 
-OpenSpec inicializado y Discovery documental confirmado: quince sistemas relevados, matriz ponderada y once puntos aceptados el 2026-10-15 para un consultorio pequeño. C-01 crea turnos sin solapamientos y fue archivado el 2026-10-28. C-02 agrega PostgreSQL + SQLAlchemy, migraciones Alembic y una importación explícita desde SQLite; se validó en una instancia de prueba local aislada y sigue activo, pendiente de Archive. C-03 agrega autenticación JWT y permisos de personal; se implementó y validó en SQLite y PostgreSQL temporal aislado, también pendiente de Archive. La investigación documental está asistida por IA; confirmé mi revisión personal de las seis fuentes del registro el 2026-10-15. El cierre técnico no acredita por sí solo aceptación docente.
+OpenSpec inicializado y Discovery documental confirmado: quince sistemas relevados, matriz ponderada y once puntos aceptados el 2026-10-15 para un consultorio pequeño. C-01 crea turnos sin solapamientos y fue archivado el 2026-10-28. C-02 agrega PostgreSQL + SQLAlchemy, migraciones Alembic e importación explícita desde SQLite; C-03 agrega autenticación JWT y permisos de personal. C-01–C-06 están implementados y archivados, con validaciones locales documentadas. La investigación documental está asistida por IA; confirmé mi revisión personal de las seis fuentes del registro el 2026-10-15. El cierre técnico no acredita por sí solo aceptación docente.
 
 Se ejecutó `openspec init --tools codex --language es --no-animation`: configuración `spec-driven` y seis skills OPSX. Se incorporó `discovery-research` sólo en este proyecto. El estado de Active Stack conserva `version: 4` y registra `step: agents`: Discovery está registrado y la [base de conocimiento](knowledge-base/README.md) contiene diez documentos canónicos más su índice, generados desde las fuentes existentes. C-01 se implementó con FastAPI, Python 3.12+, SQLite y unittest; C-02 añadió PostgreSQL optativo y C-03 autenticación JWT. El campo step registra la última fase de fundación; el CLI de OpenSpec registra el progreso de cada change.
 
@@ -17,7 +17,7 @@ Set-Location -LiteralPath 'N:\Nueva carpeta\TP-ODONTOLOGIA'
 openspec list --json
 ```
 
-OpenSpec conserva C-01 a C-05 archivados, con cambios técnicos validados localmente. La [spec principal](openspec/specs/alta-turnos/spec.md) contiene el contrato archivado de C-01. El [roadmap](CHANGES.md) describe el alcance futuro completo; C-06 a C-20 siguen planificados, y se ejecutan change por change con contratos y validación propios. La [evidencia técnica](docs/evidencia/implementacion-turnos.md) distingue pruebas, revisión humana y aceptación docente. La [selección de skills](docs/fundacion/seleccion-skills.md), el [registro](.atl/skill-registry.md) y las reglas de [AGENTS.md](AGENTS.md) y [CLAUDE.md](CLAUDE.md) conservan las decisiones del proyecto.
+OpenSpec conserva C-01 a C-06 archivados, con cambios técnicos validados localmente. C-06 incorpora administración de catálogos; sus specs están sincronizadas en las capacidades principales. La [spec principal](openspec/specs/alta-turnos/spec.md) contiene el contrato de alta de turnos actualizado. El [roadmap](CHANGES.md) describe el alcance futuro completo; C-07 a C-20 siguen planificados y se ejecutan change por change con contratos y validación propios. La [evidencia técnica](docs/evidencia/implementacion-turnos.md) y la [evidencia C-06](docs/evidencia/implementacion-catalogos.md) distinguen pruebas, revisión humana y aceptación docente. La [selección de skills](docs/fundacion/seleccion-skills.md), el [registro](.atl/skill-registry.md) y las reglas de [AGENTS.md](AGENTS.md) y [CLAUDE.md](CLAUDE.md) conservan las decisiones del proyecto.
 
 El proyecto comenzó desde cero con C-01 como primer cambio funcional de agenda. C-02 y C-03 amplían esa base; los changes posteriores siguen sujetos a su propio contrato, autorización y verificación. El desarrollo usa datos ficticios y no integra servicios clínicos reales.
 
@@ -32,7 +32,7 @@ Por corrección de la cátedra (2026-10-29), el sistema se trabaja con este stac
 
 ```text
 TP-ODONTOLOGIA/
-├── backend/            # API FastAPI: C-01, PostgreSQL C-02 y autenticación C-03
+├── backend/            # API FastAPI: agenda C-01, PostgreSQL C-02 y catálogos C-06
 ├── frontend/           # React + TypeScript + Vite
 ├── docker-compose.yml  # db (PostgreSQL), redis, backend y frontend
 ├── openspec/           # specs vigentes y changes archivados
@@ -42,7 +42,7 @@ TP-ODONTOLOGIA/
 └── AGENTS.md / CLAUDE.md
 ```
 
-**Qué está implementado y qué queda planificado:** C-01 sigue disponible sobre SQLite, que conserva el valor predeterminado. C-02 agrega PostgreSQL optativo, migración Alembic e importación no destructiva. C-03 implementa autenticación JWT, sesiones revocables y autorización del personal en el backend. C-04 a C-20 son cambios futuros del roadmap, aún no implementados; entre ellos están auditoría (C-04), UI de recepción (C-11), recordatorios con Redis (C-17) y despliegue controlado (C-14). Ver la [bitácora C-02](docs/BITACORA.md#2026-11-01--c-02-postgresql-y-migración-explícita) y la [evidencia técnica](docs/evidencia/implementacion-turnos.md).
+**Qué está implementado y qué queda planificado:** C-01 sigue disponible sobre SQLite, que conserva el valor predeterminado. C-02 agrega PostgreSQL optativo, migración Alembic e importación no destructiva; C-03 implementa autenticación JWT y permisos; C-04 agrega auditoría; C-05 administra fichas mínimas de pacientes; C-06 administra profesionales, boxes y prestaciones ficticias. C-07 a C-20 siguen planificados; incluyen horarios, UI de recepción, recordatorios con Redis y despliegue controlado. Ver la [bitácora](docs/BITACORA.md), la [evidencia de turnos](docs/evidencia/implementacion-turnos.md) y la [evidencia de catálogos](docs/evidencia/implementacion-catalogos.md).
 
 ## Recorrido de la entrega
 
@@ -137,7 +137,7 @@ Node 20+. Desde `frontend/`: `npm install` y `npm run dev` (http://localhost:517
 
 Bootstrap rechaza archivos existentes sin sobrescribirlos. Para reutilizar agenda ya preparada, omitir inicialización. Detener servidor con Ctrl+C. Crear app/importar no crea DB. No ejecutar bootstrap sobre agendas ajenas ni borrar archivos para repetir.
 
-GET http://127.0.0.1:8000/health devuelve liveness, no estado de DB. OpenAPI en /openapi.json; Swagger en /docs y ReDoc en /redoc. Las páginas interactivas usan recursos CDN de FastAPI y pueden requerir Internet para cargarlos; OpenAPI es completamente local. Iniciar sesión con POST `/sesiones` usando las credenciales locales; en Swagger, pulsar **Authorize** e ingresar `Bearer <access_token>`. El Administrador puede administrar usuarios y operar las funciones disponibles; Recepción sólo puede crear turnos. Profesional aún no tiene cuenta habilitada. `/sesiones/actual` muestra la identidad vigente y permite revocar la sesión propia.
+GET http://127.0.0.1:8000/health devuelve liveness, no estado de DB. OpenAPI en /openapi.json; Swagger en /docs y ReDoc en /redoc. Las páginas interactivas usan recursos CDN de FastAPI y pueden requerir Internet para cargarlos; OpenAPI es completamente local. Iniciar sesión con POST `/sesiones` usando las credenciales locales; en Swagger, pulsar **Authorize** e ingresar `Bearer <access_token>`. Administrador y Recepción pueden crear turnos, operar fichas de pacientes y administrar datos descriptivos de profesionales, boxes y prestaciones. Sólo Administrador modifica estados activos y administra usuarios/auditoría. Profesional aún no tiene cuenta habilitada. `/sesiones/actual` muestra la identidad vigente y permite revocar la sesión propia.
 
 POST /turnos recibe:
 
@@ -147,6 +147,6 @@ POST /turnos recibe:
 
 Devuelve 201 con id y fechas UTC después del commit. Errores JSON codigo/campo/mensaje: 401 sin identidad válida, 403 sin permiso, 422 entrada inválida, 404 recurso desconocido, 409 conflicto, 503 contención y 500 almacenamiento. Campos adicionales, IDs no string, epoch numérico, fechas sin offset o precisión distinta de minutos se rechazan. El dominio valida IDs conocidos e inicio anterior a fin, sin corrección silenciosa.
 
-Catálogos ficticios paciente-A/B, profesional-A/B y box-A/B. Intervalos [inicio,fin), adyacencia permitida; prioridad del profesional si ambos conflictos existen. Timeout de 5s configurable en crear_app, no expuesto en JSON. La sesión se valida contra almacenamiento para permitir revocación inmediata. Sólo Administrador y Recepción pueden crear turnos; no hay UI clínica, cancelación, horarios, exclusión de paciente ni idempotencia. No apto para pacientes reales ni despliegue público.
+Catálogos ficticios paciente-A/B, profesional-A/B y box-A/B; C-06 permite agregar otros desde `/profesionales`, `/boxes` y `/prestaciones`, con listas paginadas de hasta 100 elementos. Las prestaciones requieren un nombre y duración entera positiva de hasta 2.147.483.647 minutos; siguen independientes de los turnos. Intervalos [inicio,fin), adyacencia permitida; prioridad del profesional si ambos conflictos existen. Turnos nuevos rechazan pacientes, profesionales y boxes inactivos y conservan su historial previo. Timeout de 5s configurable en crear_app, no expuesto en JSON. La sesión se valida contra almacenamiento para permitir revocación inmediata. No hay UI clínica, cancelación, horarios, exclusión de paciente ni idempotencia. No apto para pacientes reales ni despliegue público.
 
 La demo conserva dos registros en su temporal y lo elimina al terminar. [Evidencia y trazabilidad](docs/evidencia/implementacion-turnos.md). Archive quedó confirmado el 2026-10-28; la revisión personal de fuentes ya estaba confirmada. Las evidencias y la aceptación de la entrega académica tienen su propio registro y no se deducen de este cierre técnico.
