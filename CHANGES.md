@@ -304,11 +304,11 @@ Secuencia compatible con dependencias, sin prometer una optimización temporal n
 
 ### [C-11] `operar-agenda-desde-recepcion`
 
-- **Estado**: [ ] planificado; no implementado ni propuesto en OpenSpec.
+- **Estado**: implementado, validado y archivado localmente el 2026-11-02. Ver [change archivado](openspec/changes/archive/2026-11-02-operar-agenda-desde-recepcion/) y [evidencia C-11](docs/evidencia/implementacion-recepcion.md). Sin push.
 - **Scope**:
-  - Construir en `frontend/` con React + TypeScript + Vite (stack de la cátedra) el login, vista diaria/semanal de agenda y selección de paciente/profesional/box/prestación; integrar formularios mínimos de catálogos y horarios ya expuestos, sin duplicar reglas en la UI.
-  - Consumir alta, consulta, confirmación, cancelación y reprogramación; mostrar estado pendiente hasta respuesta, conflictos por recurso, validaciones y actualización de disponibilidad. Incluir navegación por teclado y estados de carga/vacío/error.
-  - Tests E2E con backend y datos ficticios: alta válida, conflicto que llega desde API, cancelación y reprogramación; probar permisos de servidor incluso manipulando la vista y evitar afirmar éxito por actualización optimista.
+  - Interfaz React + TypeScript + Vite con inicio/cierre de sesión en memoria; Admin y Recepción gestionan agenda, turnos, fichas de pacientes, catálogos y disponibilidad; Profesional sólo consulta su propia agenda.
+  - Alta, consulta diaria/semanal, confirmación, cancelación, atención, ausencia y reprogramación usan contratos existentes y sólo informan éxito tras respuesta del backend. Los errores de validación/409 se muestran sin ocultar la configuración vigente.
+  - No modifica el backend ni añade `prestacion_id` al turno C-01. Vitest, Playwright con SQLite y datos ficticios aislados, accesibilidad de teclado y errores de sesión; evidencia y comandos en `docs/evidencia/implementacion-recepcion.md` y `frontend/README.md`.
 - **Dependencias**: C-08, C-10.
 - **Governance**: MEDIO — flujo operativo; autenticación reutilizada, no rediseñada.
 - **Leer antes**:

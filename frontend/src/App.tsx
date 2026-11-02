@@ -1,23 +1,50 @@
-import { useEffect, useState } from 'react'
-import { consultarSalud } from './api/cliente.ts'
-import Pendientes from './pages/Pendientes.tsx'
+import Login from './pages/Login'
+import { SessionProvider, useSession } from './auth/session'
+import Agenda from './agenda/Agenda'
+import Catalogos from './pages/Catalogos'
+import Disponibilidad from './pages/Disponibilidad'
 
-export default function App() {
-  const [estado, setEstado] = useState('consultando…')
+function InicioSesionActiva() {
+  const { identidad, cerrar, token } = useSession()
+  if (!identidad || !token) return null
 
-  useEffect(() => {
-    consultarSalud()
-      .then((r) => setEstado(r.status === 'ok' ? 'API disponible' : `estado: ${r.status}`))
-      .catch((error: Error) => setEstado(`sin conexión (${error.message})`))
-  }, [])
+  const esProfesional = identidad.rol === 'profesional'
 
   return (
-    <main style={{ fontFamily: 'system-ui, sans-serif', maxWidth: 720, margin: '2rem auto', padding: '0 1rem' }}>
-      <h1>Agenda odontológica</h1>
-      <p>
-        Backend (<code>GET /health</code>): <strong>{estado}</strong>
-      </p>
-      <Pendientes />
+    <main className="aplicacion">
+      <header>
+        <div>
+          <h1>Agenda odontológica</h1>
+          <p>Sesión de {identidad.rol}</p>
+        </div>
+        <button type="button" onClick={() => void cerrar()}>Cerrar sesión</button>
+      </header>
+      <section aria-live="polite">
+        <h2>{esProfesional ? 'Consulta de agenda propia' : 'Operación de agenda'}</h2>
+        <p>
+          {esProfesional
+            ? 'La cuenta Profesional puede consultar únicamente su agenda.'
+            : 'La agenda y sus cambios se confirman desde la API.'}
+        </p>
+      </section>
+      <Agenda identidad={identidad} token={token} />
+      {identidad.rol !== 'profesional' && <>
+        <Catalogos rol={identidad.rol} token={token} />
+        <Disponibilidad token={token} />
+      </>}
     </main>
+  )
+}
+
+function ContenidoAutenticado() {
+  const { identidad } = useSession()
+  return identidad ? <InicioSesionActiva /> : <Login />
+}
+
+export default function App() {
+  return (
+    <SessionProvider>
+      <ContenidoAutenticado />
+    </SessionProvider>
   )
 }

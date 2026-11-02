@@ -19,6 +19,9 @@ build/
 dist/
 coverage/
 *.log
+*.tsbuildinfo
+frontend/test-results/
+frontend/playwright-report/
 
 # Agendas locales y archivos auxiliares SQLite
 *.sqlite3
