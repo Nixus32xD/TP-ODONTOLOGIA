@@ -211,7 +211,8 @@ class AuditoriaApiTests(unittest.TestCase):
             for recurso in recursos:
                 guardar_horario(self.engine, tipo, recurso, abierto)
         self.secreto = 'secreto-local-auditoria-pruebas-2026'
-        with patch.dict(os.environ, {'JWT_SECRETO': self.secreto}, clear=True):
+        with patch.dict(os.environ, {
+                'JWT_SECRETO': self.secreto, 'ODONTOLOGIA_ENTORNO': 'desarrollo'}, clear=True):
             self.client = TestClient(crear_app(self.ruta))
         self.addCleanup(self.client.close)
         self.admin_headers = self._login('admin.one', 'frase-larga-segura-2026')

@@ -23,10 +23,12 @@ _TTL_PREDETERMINADO = 30 * 60
 
 
 class ErrorSesiones(RuntimeError):
-    def __init__(self, codigo: str, mensaje: str, estado: int = 401):
+    def __init__(self, codigo: str, mensaje: str, estado: int = 401,
+                 retry_after: int | None = None):
         super().__init__(mensaje)
         self.codigo = codigo
         self.estado = estado
+        self.retry_after = retry_after
 
 
 def _ahora(ahora: int | None) -> int:
@@ -67,7 +69,8 @@ def _token_payload(token: str, secreto: str, ahora: int) -> dict:
 
 def autenticar(engine, identificador: str, password: str, secreto: str,
                *, duracion_segundos: int = _TTL_PREDETERMINADO,
-               ahora: int | None = None) -> str:
+               ahora: int | None = None, limitador=None,
+               origen: str | None = None) -> str:
     instante = _ahora(ahora)
     try:
         clave = validar_secreto_jwt(secreto)
@@ -87,6 +90,20 @@ def autenticar(engine, identificador: str, password: str, secreto: str,
             'credenciales_invalidas', 'Identificador o contraseña inválidos.', 401) from None
     if not isinstance(duracion_segundos, int) or not 60 <= duracion_segundos <= 24 * 60 * 60:
         raise ErrorSesiones('autenticacion_no_configurada', 'La autenticación no está configurada.', 503)
+    reserva = None
+    if limitador is not None and origen is not None:
+        reserva, restante = limitador.reservar_intento(origen, nombre)
+        if restante is not None:
+            raise ErrorSesiones(
+                'demasiados_intentos', 'Demasiados intentos. Reintente más tarde.', 429,
+                retry_after=restante)
+
+    def liberar_reserva() -> None:
+        nonlocal reserva
+        if reserva is not None:
+            limitador.finalizar_intento(
+                origen, nombre, reserva, credenciales_validas=None)
+            reserva = None
 
     rechazado = False
     try:
@@ -127,15 +144,29 @@ def autenticar(engine, identificador: str, password: str, secreto: str,
                            'profesional_id': usuario.profesional_id,
                            'iat': instante, 'exp': expira}
         if rechazado:
+            if reserva is not None:
+                limitador.finalizar_intento(
+                    origen, nombre, reserva, credenciales_validas=False)
+                reserva = None
             raise ErrorSesiones(
                 'credenciales_invalidas', 'Identificador o contraseña inválidos.', 401)
+        if reserva is not None:
+            limitador.finalizar_intento(
+                origen, nombre, reserva, credenciales_validas=True)
+            reserva = None
         return jwt.encode(payload, clave, algorithm='HS256')
     except ErrorSesiones:
+        liberar_reserva()
         raise
     except ErrorAuditoria as exc:
+        liberar_reserva()
         raise ErrorSesiones('almacenamiento_error', 'No se pudo validar la sesión.', 503) from exc
     except SQLAlchemyError as exc:
+        liberar_reserva()
         raise ErrorSesiones('almacenamiento_error', 'No se pudo validar la sesión.', 503) from exc
+    except Exception:
+        liberar_reserva()
+        raise
 
 
 def validar_sesion(engine, token: str, secreto: str, *, ahora: int | None = None) -> dict[str, object]:

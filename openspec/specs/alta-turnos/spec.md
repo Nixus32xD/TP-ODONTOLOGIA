@@ -133,6 +133,7 @@ El sistema SHALL aceptar duración positiva libre, sin asociarla a prestaciones.
 - **GIVEN** paciente-A tiene turno con profesional-A y box-A
 - **WHEN** el mismo paciente solicita el mismo intervalo con profesional-B y box-B libres y disponibles
 - **THEN** se acepta; la exclusión del paciente queda expresamente fuera del contrato
+
 ### Requirement: Competencia sobre una agenda compartida local
 Para solicitudes simultáneas válidas mediante esta operación sobre la misma agenda en disco local, el sistema SHALL confirmar como máximo una cuando comparten profesional o box e intervalos superpuestos. Una solicitud competidora que obtiene acceso antes del timeout SHALL evaluar los turnos ya confirmados; si el timeout se agota SHALL informar `agenda_ocupada` sin éxito ficticio.
 
@@ -222,18 +223,36 @@ El adaptador SHALL mapear entrada_invalida a 422, recurso_desconocido a 404, con
 - **WHEN** se solicita `POST /turnos`
 - **THEN** responde 500 almacenamiento_error y la transacción revierte tanto el turno como el evento
 
-### Requirement: Liveness y documentación local
-El sistema SHALL exponer GET /health con 200 y status ok independientemente de la DB, identificándolo como liveness. SHALL publicar en /openapi.json, /docs y /redoc los contratos de alta, sesiones y administración de usuarios, con estados y modelos de entrada/salida. SHALL mantener servidor limitado a uso local sin proveedores externos ni acceso de pacientes.
+### Requirement: Liveness de la agenda local
+El sistema SHALL exponer `GET /health` con HTTP 200 y estado `ok` independientemente de la disponibilidad de la base de datos, identificándolo como liveness y sin crear archivos ni afirmar readiness. SHALL mantener el servidor limitado a uso local sin proveedores externos ni acceso de pacientes.
 
 #### Scenario: Health sin DB
-- **GIVEN** una app configurada con una agenda que no existe
-- **WHEN** se consulta GET /health
-- **THEN** devuelve 200 status ok sin crear el archivo ni afirmar readiness de almacenamiento
+- **GIVEN** una aplicación configurada con una agenda inexistente
+- **WHEN** se consulta `GET /health`
+- **THEN** responde HTTP 200 con estado `ok`, no crea archivos ni afirma readiness
+
+### Requirement: Documentación disponible sólo en desarrollo explícito
+El sistema SHALL publicar en `/openapi.json`, `/docs` y `/redoc` los contratos de alta, sesiones y administración de usuarios únicamente cuando `ODONTOLOGIA_ENTORNO` esté configurado explícitamente como `desarrollo`. En producción, o cuando la variable falte o contenga un valor desconocido, SHALL dejar esas rutas no disponibles (HTTP 404).
+
+#### Scenario: Documentación en desarrollo explícito
+- **GIVEN** la aplicación creada con `ODONTOLOGIA_ENTORNO=desarrollo`
+- **WHEN** se consultan OpenAPI, Swagger UI y ReDoc
+- **THEN** `/openapi.json`, `/docs` y `/redoc` responden HTTP 200 y OpenAPI incluye contratos de turnos, administración y sesiones
 
 #### Scenario: Documentación del único caso de uso
-- **GIVEN** la aplicación creada
-- **WHEN** se consulta OpenAPI y documentación
-- **THEN** OpenAPI contiene las operaciones protegidas de turnos y administración, las rutas de sesión, GET /health público y los estados esperados, y las páginas responden 200
+- **GIVEN** la aplicación creada en desarrollo explícito
+- **WHEN** se consultan OpenAPI y las páginas de documentación
+- **THEN** OpenAPI incluye los contratos de turnos, administración y sesiones, y las páginas responden HTTP 200
+
+#### Scenario: Documentación deshabilitada en producción
+- **GIVEN** la aplicación creada con `ODONTOLOGIA_ENTORNO=produccion`
+- **WHEN** se consultan `/openapi.json`, `/docs` y `/redoc`
+- **THEN** las tres rutas responden HTTP 404 sin publicar el esquema
+
+#### Scenario: Configuración de entorno ausente o desconocida
+- **GIVEN** `ODONTOLOGIA_ENTORNO` está ausente o tiene un valor no reconocido
+- **WHEN** se crea la aplicación y se consultan las rutas de documentación
+- **THEN** la documentación permanece deshabilitada y las rutas responden HTTP 404
 
 ### Requirement: Los turnos nuevos requieren un paciente activo
 El sistema SHALL rechazar un alta con `recurso_inactivo` cuando el ID del paciente existe pero su ficha está desactivada. SHALL conservar la prioridad de validación de C-01 para recursos desconocidos y no modificar turnos históricos.

@@ -31,7 +31,8 @@ class ApiAutenticacionTests(unittest.TestCase):
             for recurso in recursos:
                 guardar_horario(engine, tipo, recurso, abierto)
         engine.dispose()
-        with patch.dict('os.environ', {'JWT_SECRETO': self.secreto}, clear=True):
+        with patch.dict('os.environ', {
+                'JWT_SECRETO': self.secreto, 'ODONTOLOGIA_ENTORNO': 'desarrollo'}, clear=True):
             self.client = TestClient(crear_app(self.ruta))
         self.addCleanup(self.client.close)
         self.admin = self.login('admin.one', 'frase-larga-segura-2026')
@@ -58,6 +59,61 @@ class ApiAutenticacionTests(unittest.TestCase):
             'fin': '2026-10-15T09:30:00-03:00'})
         self.assertEqual(respuesta.status_code, 401)
         self.assertEqual(self.filas_turno(), 0)
+
+    def test_login_limita_al_sexto_fallo_con_retry_after_y_no_confia_en_forwarded_for(self):
+        payload = {'identificador': 'admin.one', 'password': 'clave-incorrecta-larga-2026'}
+        for _ in range(5):
+            respuesta = self.client.post(
+                '/sesiones', json=payload, headers={'X-Forwarded-For': '192.0.2.10'})
+            self.assertEqual(respuesta.status_code, 401)
+        limitado = self.client.post(
+            '/sesiones', json=payload, headers={'X-Forwarded-For': '198.51.100.9'})
+        self.assertEqual(limitado.status_code, 429)
+        self.assertEqual(limitado.json()['codigo'], 'demasiados_intentos')
+        self.assertGreater(int(limitado.headers['Retry-After']), 0)
+
+        otra_cuenta = self.client.post('/sesiones', json={
+            'identificador': 'recepcion.nueva', 'password': payload['password']})
+        self.assertEqual(otra_cuenta.status_code, 401)
+
+    def test_login_correcto_limpia_fallos_y_validacion_no_se_cuenta(self):
+        invalida = self.client.post('/sesiones', json={
+            'identificador': 'admin.one', 'password': 123})
+        self.assertEqual(invalida.status_code, 422)
+        for _ in range(5):
+            mal_formada = self.client.post('/sesiones', json={
+                'identificador': 'admin.one', 'password': 'corta'})
+            self.assertEqual(mal_formada.status_code, 401)
+        payload_malo = {'identificador': 'admin.one', 'password': 'clave-incorrecta-larga-2026'}
+        for _ in range(4):
+            self.assertEqual(self.client.post('/sesiones', json=payload_malo).status_code, 401)
+
+        correcta = self.client.post('/sesiones', json={
+            'identificador': ' ADMIN.ONE ', 'password': 'frase-larga-segura-2026'})
+        self.assertEqual(correcta.status_code, 200)
+        for _ in range(5):
+            self.assertEqual(self.client.post('/sesiones', json=payload_malo).status_code, 401)
+        limitado = self.client.post('/sesiones', json=payload_malo)
+        self.assertEqual(limitado.status_code, 429)
+
+    def test_errores_de_db_no_consumen_intentos_de_login(self):
+        ruta = Path(self.temporal.name) / 'agenda-aun-no-creada.sqlite3'
+        with patch.dict('os.environ', {'JWT_SECRETO': self.secreto}, clear=True):
+            app = crear_app(ruta)
+        with TestClient(app) as cliente:
+            payload = {'identificador': 'admin.one', 'password': 'clave-incorrecta-larga-2026'}
+            for _ in range(5):
+                self.assertEqual(cliente.post('/sesiones', json=payload).status_code, 503)
+
+            inicializar_agenda(ruta)
+            migrar_sqlite(ruta)
+            engine = crear_engine_autenticacion('sqlite', None, ruta)
+            crear_primer_administrador(engine, 'admin.one', 'frase-larga-segura-2026')
+            engine.dispose()
+
+            for _ in range(5):
+                self.assertEqual(cliente.post('/sesiones', json=payload).status_code, 401)
+            self.assertEqual(cliente.post('/sesiones', json=payload).status_code, 429)
 
     def test_recepcion_y_administrador_pueden_crear_turno_profesional_no_se_habilita(self):
         self.client.post('/usuarios', headers=self.admin, json={

@@ -334,11 +334,12 @@ Secuencia compatible con dependencias, sin prometer una optimización temporal n
 
 ### [C-13] `endurecer-seguridad-y-observabilidad`
 
-- **Estado**: [ ] planificado; no implementado ni propuesto en OpenSpec.
+- **Estado**: Implementado, validado y archivado el 2026-11-02; ver `openspec/changes/archive/2026-11-02-endurecer-seguridad-y-observabilidad/`.
 - **Scope**:
   - Revisar la superficie API/UI: autorización por recurso, sesiones, secretos, límites de solicitudes y rangos, protección de la interfaz según el mecanismo de sesión y exposición de documentación por entorno; cerrar fallos con contratos y pruebas revisados.
   - Añadir logs operativos sin información sensible, identificador de correlación, errores públicos estables y readiness separada de `GET /health`; definir alertas mínimas por fallo de DB/backup sin afirmar cumplimiento normativo.
   - Tests: accesos indebidos, abuso de límites, errores sin secretos/rutas, readiness ante DB caída y regresión del flujo de recepción. Revisar permisos, recuperación y política de datos antes de autorizar información real.
+  - Apply 12/12; backend 360 tests OK y 4 omitidos; frontend 50 tests OK; prueba focalizada de concurrencia 11/11; OpenSpec strict 12/12 antes de Archive. Revisión independiente final: sin hallazgos. Sin push.
 - **Dependencias**: C-11, C-12.
 - **Governance**: CRITICO — seguridad y acceso a datos.
 - **Leer antes**:

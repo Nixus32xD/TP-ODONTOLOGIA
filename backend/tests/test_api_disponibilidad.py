@@ -27,7 +27,8 @@ class ApiDisponibilidadTests(unittest.TestCase):
         crear_primer_administrador(self.engine, 'admin.one', 'frase-larga-segura-2026')
         crear_usuario(self.engine, 'recepcion.a', 'otra-frase-larga-segura-2026', 'recepcion')
         self.secreto = 'secreto-local-disponibilidad-test-no-reutilizar-2026'
-        with patch.dict(os.environ, {'JWT_SECRETO': self.secreto}, clear=True):
+        with patch.dict(os.environ, {
+                'JWT_SECRETO': self.secreto, 'ODONTOLOGIA_ENTORNO': 'desarrollo'}, clear=True):
             self.client = TestClient(crear_app(self.ruta))
         self.addCleanup(self.client.close)
         self.admin = self._login('admin.one', 'frase-larga-segura-2026')

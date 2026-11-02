@@ -13,8 +13,10 @@ from pydantic import BaseModel, ConfigDict, Field, StrictBool, StrictInt, Strict
 from odontologia import ErrorAgenda, Turno, crear_turno
 from odontologia.core.config import cargar_configuracion
 from odontologia.auth.almacenamiento import crear_engine_autenticacion, validar_esquema_autenticacion
+from odontologia.auth.limitador_login import LimitadorIntentosLogin
 from odontologia.auth.sesiones import ErrorSesiones, autenticar, cerrar_sesion, validar_sesion
 from odontologia.auth.tokens import validar_secreto_jwt
+from odontologia.db.readiness import comprobar_conectividad
 from odontologia.auth.usuarios import (
     ErrorUsuarios, actualizar_usuario, crear_usuario, listar_usuarios,
 )
@@ -23,6 +25,7 @@ from odontologia.catalogos import (
     ErrorCatalogos, actualizar_recurso, crear_recurso, listar_recursos, obtener_recurso,
 )
 from odontologia.consulta_turnos import ErrorConsultaTurnos, listar_turnos
+from odontologia.observability import MiddlewareObservabilidad
 from odontologia.consulta_disponibilidad import (
     ErrorConsultaDisponibilidad, calcular_opciones_disponibilidad,
 )
@@ -344,9 +347,17 @@ def crear_app(ruta_db: str | Path | None = None, *, timeout_segundos: float = 5.
         finally:
             auth_engine.dispose()
 
-    app = FastAPI(title='Agenda odontológica', version='1.1.0', lifespan=lifespan)
+    documentacion_habilitada = os.environ.get('ODONTOLOGIA_ENTORNO') == 'desarrollo'
+    app = FastAPI(
+        title='Agenda odontológica', version='1.1.0', lifespan=lifespan,
+        docs_url='/docs' if documentacion_habilitada else None,
+        redoc_url='/redoc' if documentacion_habilitada else None,
+        openapi_url='/openapi.json' if documentacion_habilitada else None,
+    )
+    app.add_middleware(MiddlewareObservabilidad)
     app.state.persistencia = persistencia
     app.state.auth_engine = auth_engine
+    app.state.limitador_login = LimitadorIntentosLogin()
     bearer = HTTPBearer(auto_error=False)
 
     @app.exception_handler(ErrorAgenda)
@@ -364,8 +375,9 @@ def crear_app(ruta_db: str | Path | None = None, *, timeout_segundos: float = 5.
 
     @app.exception_handler(ErrorSesiones)
     async def error_sesion(request: Request, exc: ErrorSesiones):
+        headers = {'Retry-After': str(exc.retry_after)} if exc.retry_after is not None else None
         return JSONResponse(status_code=exc.estado, content={
-            'codigo': exc.codigo, 'campo': None, 'mensaje': str(exc)})
+            'codigo': exc.codigo, 'campo': None, 'mensaje': str(exc)}, headers=headers)
 
     @app.exception_handler(ErrorUsuarios)
     async def error_usuario(request: Request, exc: ErrorUsuarios):
@@ -533,14 +545,16 @@ def crear_app(ruta_db: str | Path | None = None, *, timeout_segundos: float = 5.
 
     @app.post('/sesiones', response_model=RespuestaLogin, responses={
         401: {'model': ErrorHTTP, 'description': 'Credenciales inválidas.'},
-        422: {'model': ErrorHTTP}, 503: {'model': ErrorHTTP},
+        422: {'model': ErrorHTTP}, 429: {'model': ErrorHTTP}, 503: {'model': ErrorHTTP},
     })
-    def iniciar_sesion(solicitud: SolicitudLogin):
+    def iniciar_sesion(solicitud: SolicitudLogin, request: Request):
         secreto = verificar_configuracion()
         asegurar_esquema()
+        origen = request.client.host if request.client is not None else 'desconocido'
         token = autenticar(
             auth_engine, solicitud.identificador, solicitud.password, secreto,
-            duracion_segundos=expiracion_jwt)
+            duracion_segundos=expiracion_jwt,
+            limitador=app.state.limitador_login, origen=origen)
         return {'access_token': token, 'expires_in': expiracion_jwt}
 
     @app.get('/sesiones/actual', responses=respuestas_auth)
@@ -900,5 +914,13 @@ def crear_app(ruta_db: str | Path | None = None, *, timeout_segundos: float = 5.
     def health() -> dict[str, str]:
         """Liveness del proceso; no afirma disponibilidad de la DB."""
         return {'status': 'ok'}
+
+    @app.get('/ready')
+    def ready():
+        try:
+            comprobar_conectividad(persistencia, ruta, auth_engine)
+        except Exception:
+            return JSONResponse(status_code=503, content={'codigo': 'base_no_disponible'})
+        return {'status': 'ready'}
 
     return app

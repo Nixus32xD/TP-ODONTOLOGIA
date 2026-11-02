@@ -97,7 +97,7 @@ Copy-Item .env.example .env   # completar POSTGRES_PASSWORD y JWT_SECRETO con va
 docker compose up --build
 ```
 
-Levanta PostgreSQL, Redis, el backend en http://127.0.0.1:8000 (Swagger en `/docs`) y el frontend en http://127.0.0.1:5173. El backend prepara una agenda ficticia de C-01 en un volumen propio si todavía no existe. La primera vez, migrar el esquema y crear el Administrador de forma interactiva:
+Levanta PostgreSQL, Redis, el backend en http://127.0.0.1:8000 y el frontend en http://127.0.0.1:5173. El `.env.example` habilita explícitamente la documentación local con `ODONTOLOGIA_ENTORNO=desarrollo`; en producción se debe configurar `produccion`. Si falta o es desconocido, `/docs`, `/redoc` y `/openapi.json` responden 404. El backend prepara una agenda ficticia de C-01 en un volumen propio si todavía no existe. La primera vez, migrar el esquema y crear el Administrador de forma interactiva:
 
 ```powershell
 docker compose exec backend python -m alembic upgrade head
@@ -126,9 +126,10 @@ Inicializar una agenda ficticia NUEVA en disco local (no asumir N: local), y lue
 $env:ODONTOLOGIA_DB = Join-Path $env:LOCALAPPDATA 'odontologia-c01.sqlite3'
 .\.venv\Scripts\python.exe -c "import os; from odontologia import inicializar_agenda; inicializar_agenda(os.environ['ODONTOLOGIA_DB'])"
 $env:JWT_SECRETO = [Convert]::ToBase64String([Security.Cryptography.RandomNumberGenerator]::GetBytes(48))
+$env:ODONTOLOGIA_ENTORNO = 'desarrollo'
 .\.venv\Scripts\python.exe -m odontologia.auth.migrar_sqlite
 .\.venv\Scripts\python.exe -m odontologia.auth.bootstrap_admin
-.\.venv\Scripts\python.exe -m uvicorn odontologia.api:crear_app --factory --host 127.0.0.1 --port 8000
+.\.venv\Scripts\python.exe -m uvicorn odontologia.api:crear_app --factory --host 127.0.0.1 --port 8000 --no-access-log --no-proxy-headers
 ```
 
 ### Frontend sin Docker
@@ -137,7 +138,7 @@ Node 20+. Desde `frontend/`: `npm install` y `npm run dev` (http://localhost:517
 
 Bootstrap rechaza archivos existentes sin sobrescribirlos. Para reutilizar agenda ya preparada, omitir inicialización. Detener servidor con Ctrl+C. Crear app/importar no crea DB. No ejecutar bootstrap sobre agendas ajenas ni borrar archivos para repetir.
 
-GET http://127.0.0.1:8000/health devuelve liveness, no estado de DB. OpenAPI en /openapi.json; Swagger en /docs y ReDoc en /redoc. Las páginas interactivas usan recursos CDN de FastAPI y pueden requerir Internet para cargarlos; OpenAPI es completamente local. Iniciar sesión con POST `/sesiones` usando las credenciales locales; en Swagger, pulsar **Authorize** e ingresar `Bearer <access_token>`. Administrador y Recepción pueden crear turnos, consultar la agenda, operar fichas y administrar datos descriptivos de profesionales, boxes y prestaciones. Sólo Administrador modifica estados activos y administra usuarios/auditoría. En C-08, Administrador vincula cuentas Profesionales a una ficha única; Profesional sólo consulta turnos y disponibilidad de su vínculo, sin teléfono ni escritura. `/sesiones/actual` muestra la identidad vigente y permite revocar la sesión propia.
+GET `http://127.0.0.1:8000/health` devuelve liveness, sin comprobar la base; `GET /ready` prueba conectividad con `SELECT 1` y responde 503 si no está disponible. OpenAPI (`/openapi.json`), Swagger (`/docs`) y ReDoc (`/redoc`) se habilitan sólo con `ODONTOLOGIA_ENTORNO=desarrollo`; producción, valor ausente o desconocido los deshabilita. Las páginas interactivas usan recursos CDN de FastAPI y pueden requerir Internet para cargarlos; OpenAPI es completamente local. Iniciar sesión con POST `/sesiones` usando las credenciales locales; en Swagger, pulsar **Authorize** e ingresar `Bearer <access_token>`. Administrador y Recepción pueden crear turnos, consultar la agenda, operar fichas y administrar datos descriptivos de profesionales, boxes y prestaciones. Sólo Administrador modifica estados activos y administra usuarios/auditoría. En C-08, Administrador vincula cuentas Profesionales a una ficha única; Profesional sólo consulta turnos y disponibilidad de su vínculo, sin teléfono ni escritura. `/sesiones/actual` muestra la identidad vigente y permite revocar la sesión propia.
 
 POST /turnos recibe:
 

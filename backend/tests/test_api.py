@@ -33,7 +33,8 @@ class ApiTests(unittest.TestCase):
                     for dia in range(1, 8)})
         engine.dispose()
         self.secreto = 'secreto-local-de-prueba-no-reutilizar-2026'
-        with patch.dict(os.environ, {'JWT_SECRETO': self.secreto}, clear=True):
+        with patch.dict(os.environ, {
+                'JWT_SECRETO': self.secreto, 'ODONTOLOGIA_ENTORNO': 'desarrollo'}, clear=True):
             self.client = TestClient(crear_app(self.ruta))
         self.addCleanup(self.client.close)
         respuesta = self.client.post('/sesiones', json={
@@ -148,7 +149,7 @@ class ApiTests(unittest.TestCase):
         self.assertEqual(esquema.status_code, 200)
         rutas = esquema.json()['paths']
         self.assertEqual(set(rutas), {
-            '/turnos', '/disponibilidad', '/health', '/sesiones', '/sesiones/actual', '/usuarios',
+            '/turnos', '/disponibilidad', '/health', '/ready', '/sesiones', '/sesiones/actual', '/usuarios',
             '/usuarios/{usuario_id}', '/auditoria', '/pacientes', '/pacientes/{paciente_id}',
             '/profesionales', '/profesionales/{profesional_id}', '/boxes', '/boxes/{box_id}',
             '/prestaciones', '/prestaciones/{prestacion_id}',
@@ -166,6 +167,18 @@ class ApiTests(unittest.TestCase):
         self.assertEqual(modelo['properties']['inicio']['format'], 'date-time')
         self.assertEqual(self.client.get('/docs').status_code, 200)
         self.assertEqual(self.client.get('/redoc').status_code, 200)
+
+    def test_documentacion_solo_se_habilita_en_desarrollo_explicito(self):
+        for entorno, esperado in (
+                ('desarrollo', 200), ('produccion', 404), (None, 404), ('desconocido', 404),
+                ('Desarrollo', 404), ('', 404)):
+            with self.subTest(entorno=entorno):
+                entorno_prueba = {} if entorno is None else {'ODONTOLOGIA_ENTORNO': entorno}
+                with patch.dict(os.environ, entorno_prueba, clear=True):
+                    with TestClient(crear_app(self.ruta)) as cliente:
+                        for ruta in ('/openapi.json', '/docs', '/redoc'):
+                            with self.subTest(ruta=ruta):
+                                self.assertEqual(cliente.get(ruta).status_code, esperado)
 
 
 if __name__ == '__main__':

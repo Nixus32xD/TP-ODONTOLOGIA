@@ -32,7 +32,8 @@ class ApiReprogramacionTests(unittest.TestCase):
         engine.dispose()
         self.secreto_env = patch.dict(
             'os.environ', {
-                'JWT_SECRETO': 'secreto-local-de-prueba-no-reutilizar-2026'}, clear=True)
+                'JWT_SECRETO': 'secreto-local-de-prueba-no-reutilizar-2026',
+                'ODONTOLOGIA_ENTORNO': 'desarrollo'}, clear=True)
         self.secreto_env.start()
         self.addCleanup(self.secreto_env.stop)
         self.client = TestClient(crear_app(self.ruta))

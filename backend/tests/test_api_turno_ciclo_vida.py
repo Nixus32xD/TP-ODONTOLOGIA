@@ -29,7 +29,8 @@ class ApiCicloVidaTurnoTests(unittest.TestCase):
         for tipo, recurso in (('profesional', 'profesional-A'), ('box', 'box-A')):
             guardar_horario(engine, tipo, recurso, abierto)
         engine.dispose()
-        with patch.dict('os.environ', {'JWT_SECRETO': self.secreto}, clear=True):
+        with patch.dict('os.environ', {
+                'JWT_SECRETO': self.secreto, 'ODONTOLOGIA_ENTORNO': 'desarrollo'}, clear=True):
             self.client = TestClient(crear_app(self.ruta))
         self.addCleanup(self.client.close)
         login = self.client.post('/sesiones', json={
