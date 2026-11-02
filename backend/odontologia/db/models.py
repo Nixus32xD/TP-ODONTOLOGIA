@@ -49,3 +49,31 @@ class AgendaMutex(Base):
     __table_args__ = (CheckConstraint('id = 1', name='ck_agenda_mutex_singleton'),)
 
     id: Mapped[int] = mapped_column(SmallInteger, primary_key=True)
+
+class Usuario(Base):
+    __tablename__ = 'usuarios'
+    __table_args__ = (
+        CheckConstraint("rol IN ('administrador', 'recepcion')", name='ck_usuarios_rol'),
+    )
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    identificador: Mapped[str] = mapped_column(String(64), unique=True, nullable=False)
+    password_hash: Mapped[str] = mapped_column(String(300), nullable=False)
+    rol: Mapped[str] = mapped_column(String(20), nullable=False)
+    activo: Mapped[bool] = mapped_column(default=True, nullable=False)
+
+
+class Sesion(Base):
+    __tablename__ = 'sesiones'
+    __table_args__ = (
+        Index('ix_sesiones_usuario_id', 'usuario_id'),
+        Index('ix_sesiones_jti', 'jti', unique=True),
+    )
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    usuario_id: Mapped[str] = mapped_column(
+        String(36), ForeignKey('usuarios.id', ondelete='CASCADE'), nullable=False)
+    jti: Mapped[str] = mapped_column(String(36), nullable=False)
+    expira_en: Mapped[int] = mapped_column(BigInteger, nullable=False)
+    revocada_en: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
+    creado_en: Mapped[int] = mapped_column(BigInteger, nullable=False)

@@ -1,7 +1,7 @@
 # CHANGES — Secuencia de Implementación
 
 > Índice canónico del proyecto **TP-ODONTOLOGIA**, actualizado el 2026-11-01.
-> **Plan del producto completo; C-01 está archivado y C-02 implementado/validado localmente, con Archive pendiente. C-03 a C-20 son propuestas futuras, no funcionalidades entregadas ni autorizaciones para ejecutarlas.**
+> **Plan del producto completo; C-01 está archivado, C-02 implementado/validado localmente con Archive pendiente, y C-03 implementado/validado localmente con Archive pendiente. C-04 a C-20 son propuestas futuras, no funcionalidades entregadas ni autorizaciones para ejecutarlas.**
 > **Leer este archivo antes de ejecutar cualquier `/opsx:propose`.**
 
 ---
@@ -25,7 +25,7 @@ La aclaración del usuario del 2026-10-28 corrige el índice anterior: **hacer s
 
 La KB y las instrucciones existentes documentan principalmente la porción académica C-01. Sus exclusiones siguen vigentes para esa implementación; las capacidades futuras del roadmap no amplían retroactivamente las US-001 a US-004. C-02 concreta la migración a PostgreSQL conservando la fuente SQLite, con un destino de pruebas aislado. Para C-03+ faltan criterios específicos que se deben desarrollar en la KB y Propose del change correspondiente. Se mantienen datos ficticios y ninguna integración externa real.
 
-**Stack definido por la cátedra (2026-10-29):** backend con Python, FastAPI, JWT, SQLAlchemy, PostgreSQL, Redis y Docker/Docker Compose; frontend con React, TypeScript y Vite ([DD-09](knowledge-base/09_decisiones_y_supuestos.md)). C-02 ya implementa PostgreSQL + SQLAlchemy; JWT sigue en C-03, React/TS/Vite en C-11, Docker Compose de despliegue en C-14 y Redis (cola de recordatorios) en C-17. La existencia de carpetas y servicios no acredita la implementación de esos changes.
+**Stack definido por la cátedra (2026-10-29):** backend con Python, FastAPI, JWT, SQLAlchemy, PostgreSQL, Redis y Docker/Docker Compose; frontend con React, TypeScript y Vite ([DD-09](knowledge-base/09_decisiones_y_supuestos.md)). C-02 implementa PostgreSQL + SQLAlchemy; C-03 implementa JWT y permisos de personal. React/TS/Vite sigue en C-11, Docker Compose de despliegue en C-14 y Redis (cola de recordatorios) en C-17. La existencia de carpetas y servicios no acredita la implementación de esos changes.
 
 **Base técnica de C-01:** Python/FastAPI y SQLite local, movidos sin cambios a `backend/`. Bootstrap y modelos mínimos ya pertenecen a C-01; no se renumera como `foundation-setup`. Hosting y proveedores siguen siendo decisiones futuras justificadas. El contrato actual se consulta en [design.md](openspec/changes/archive/2026-10-28-crear-turno-sin-solapamientos/design.md), [spec.md](openspec/changes/archive/2026-10-28-crear-turno-sin-solapamientos/specs/alta-turnos/spec.md) y [api.py](backend/odontologia/api.py).
 
@@ -47,7 +47,7 @@ La KB y las instrucciones existentes documentan principalmente la porción acad�
 ```text
 C-01 crear-turno-sin-solapamientos (implementado y archivado)
 └── C-02 evolucionar-esquema-y-configuracion (implementado; Archive pendiente)
-    └── C-03 autenticar-y-autorizar-personal
+    └── C-03 autenticar-y-autorizar-personal (implementado; Archive pendiente)
         └── C-04 registrar-auditoria-de-operaciones
             ├── C-05 administrar-pacientes
             ├── C-06 administrar-recursos-y-prestaciones
@@ -71,14 +71,14 @@ C-11 + C-12
         └── C-20 consultar-reportes-operativos (también C-08, C-09)
 ```
 
-Los números son identificadores estables agrupados por capacidad, no un orden de ejecución por sí solos: C-09 precede a C-08 porque una consulta operativa debe conocer qué estados ocupan recursos. C-01 está archivado desde el 2026-10-28. C-02 está implementado localmente y validado; su change sigue activo hasta el Archive. C-03 es el siguiente cambio planificado.
+Los números son identificadores estables agrupados por capacidad, no un orden de ejecución por sí solos: C-09 precede a C-08 porque una consulta operativa debe conocer qué estados ocupan recursos. C-01 está archivado desde el 2026-10-28. C-02 y C-03 están implementados localmente y validados; ambos changes siguen activos hasta sus Archive.
 
 ### Paralelismo por fase
 
-Los GATES expresan dependencias del plan futuro. C-01 está archivado; C-02 ya está implementado pero sigue activo hasta Archive. El símbolo `✓` significa «una vez verificado y cerrado». No imponen fases rígidas a OPSX.
+Los GATES expresan dependencias del plan futuro. C-01 está archivado; C-02 y C-03 están implementados pero siguen activos hasta Archive. El símbolo `✓` significa «una vez verificado y cerrado». No imponen fases rígidas a OPSX.
 
 ```text
-GATE 0: C-01 ✓ → C-02 (implementado; Archive pendiente)
+GATE 0: C-01 ✓ → C-02 ✓ → C-03 (implementado; Archive pendiente)
   → C-03 → C-04                    [Agente A — secuencia de fundamento]
 
 GATE 1: C-04 ✓                       ← FORK
@@ -128,7 +128,7 @@ Secuencia compatible con dependencias, sin prometer una optimización temporal n
 | Paso | Agente A (Backend Core) | Agente B (Backend Aux) | Agente C (Frontend) |
 | --- | --- | --- | --- |
 | 0 | C-01 cerrado el 2026-10-28 | — | — |
-| 1 | C-02 implementado; Archive pendiente | — | — |
+| 1 | C-02 implementado; Archive pendiente | C-03 implementado; Archive pendiente | — |
 | 2 | C-03 | — | — |
 | 3 | C-04 | — | — |
 | 4 | C-05 | C-06 | C-12 (apoyo operativo) |
@@ -163,7 +163,7 @@ Secuencia compatible con dependencias, sin prometer una optimización temporal n
 
 ## FASE 2 — Fundamento evolutivo, acceso y trazabilidad
 
-> C-03 a C-20 están pendientes de Propose y autorización de implementación. C-02 cuenta con artefactos OpenSpec activos y una implementación validada, pero aún no archivada. En las fichas futuras, endpoints, entidades y pruebas son objetivos propuestos, no contratos HTTP vigentes. Los niveles ALTO/CRITICO exigen revisión humana antes de escribir código del dominio afectado.
+> C-03 cuenta con artefactos OpenSpec activos, implementación y verificación local en SQLite/PostgreSQL; su Archive está pendiente. C-04 a C-20 están pendientes de Propose y autorización de implementación. En las fichas futuras, endpoints, entidades y pruebas son objetivos propuestos, no contratos HTTP vigentes. Los niveles ALTO/CRITICO exigen revisión humana antes de escribir código del dominio afectado.
 
 ### [C-02] `evolucionar-esquema-y-configuracion`
 
@@ -182,11 +182,9 @@ Secuencia compatible con dependencias, sin prometer una optimización temporal n
 
 ### [C-03] `autenticar-y-autorizar-personal`
 
-- **Estado**: `[ ]` planificado.
-- **Scope**:
-  - Definir `Usuario`, rol y sesión para administración, recepción y profesional; aprobar matriz de permisos y autenticar con JWT (stack de la cátedra, `backend/odontologia/auth/`), gestionando contraseñas, expiración y revocación con controles apropiados.
-  - Proponer `POST /sesiones`, `DELETE /sesiones/actual`, `GET /sesiones/actual` y administración restringida de usuarios; proteger `POST /turnos` sin alterar su regla de solapamientos ni la semántica de errores de dominio.
-  - Tests: acceso válido, credenciales inválidas, sesión expirada/revocada y acceso de un rol a recursos prohibidos (`401/403`); no confiar sólo en ocultar botones.
+- **Estado**: implementación verificada localmente; OpenSpec Archive pendiente.
+- **Scope entregado**: JWT HS256 respaldado por sesiones revocables; derivación scrypt; migraciones explícitas SQLite y Alembic PostgreSQL; bootstrap interactivo sin credenciales por defecto; Administrador gestiona cuentas y operaciones disponibles, Recepción crea turnos, Profesional no accede hasta C-08. `POST /turnos` está protegido sin cambios en reglas ni errores del dominio C-01.
+- **Evidencia**: suites SQLite (111) y PostgreSQL temporal aislada (121) completas; `pip check`, `openspec validate --all --strict` y `git diff --check` ejecutados. Ver [registro C-03](docs/evidencia/implementacion-turnos.md#implementación-y-evidencia-c-03--2026-11-01). Archive pendiente.
 - **Dependencias**: C-02.
 - **Governance**: CRITICO — autenticación y autorización.
 - **Leer antes**:

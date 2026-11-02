@@ -2,14 +2,22 @@
 from contextlib import asynccontextmanager
 from datetime import datetime
 from pathlib import Path
+import os
 
-from fastapi import FastAPI, Request
+from fastapi import Depends, FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
-from pydantic import BaseModel, ConfigDict, Field, StrictStr, field_validator
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+from pydantic import BaseModel, ConfigDict, Field, StrictBool, StrictStr, field_validator
 
 from odontologia import ErrorAgenda, Turno, crear_turno
 from odontologia.core.config import cargar_configuracion
+from odontologia.auth.almacenamiento import crear_engine_autenticacion, validar_esquema_autenticacion
+from odontologia.auth.sesiones import ErrorSesiones, autenticar, cerrar_sesion, validar_sesion
+from odontologia.auth.tokens import validar_secreto_jwt
+from odontologia.auth.usuarios import (
+    ErrorUsuarios, actualizar_usuario, crear_usuario, listar_usuarios,
+)
 
 
 class SolicitudTurno(BaseModel):
@@ -35,6 +43,31 @@ class ErrorHTTP(BaseModel):
     mensaje: str
 
 
+class SolicitudLogin(BaseModel):
+    model_config = ConfigDict(extra='forbid')
+    identificador: StrictStr
+    password: StrictStr
+
+
+class RespuestaLogin(BaseModel):
+    access_token: str
+    token_type: str = 'bearer'
+    expires_in: int
+
+
+class SolicitudUsuario(BaseModel):
+    model_config = ConfigDict(extra='forbid')
+    identificador: StrictStr
+    password: StrictStr
+    rol: StrictStr
+
+
+class ActualizacionUsuario(BaseModel):
+    model_config = ConfigDict(extra='forbid')
+    rol: StrictStr | None = None
+    activo: StrictBool | None = None
+
+
 ESTADOS_ERROR = {'entrada_invalida': 422, 'recurso_desconocido': 404,
                  'conflicto_profesional': 409, 'conflicto_box': 409,
                  'agenda_ocupada': 503, 'almacenamiento_error': 500}
@@ -43,6 +76,9 @@ ESTADOS_ERROR = {'entrada_invalida': 422, 'recurso_desconocido': 404,
 def crear_app(ruta_db: str | Path | None = None, *, timeout_segundos: float = 5.0) -> FastAPI:
     """Crear la API sin abrir conexiones; SQLite sigue siendo el valor predeterminado."""
     engine = None
+    secreto_jwt = os.environ.get('JWT_SECRETO')
+    algoritmo_jwt = os.environ.get('JWT_ALGORITMO', 'HS256')
+    expiracion_jwt = int(os.environ.get('JWT_MINUTOS_EXPIRACION', '30')) * 60
     if ruta_db is not None:
         persistencia = 'sqlite'
         ruta = ruta_db
@@ -50,21 +86,26 @@ def crear_app(ruta_db: str | Path | None = None, *, timeout_segundos: float = 5.
         configuracion = cargar_configuracion()
         persistencia = configuracion.persistencia
         ruta = configuracion.odontologia_db
+        secreto_jwt = configuracion.jwt_secreto
+        algoritmo_jwt = configuracion.jwt_algoritmo
+        expiracion_jwt = configuracion.jwt_minutos_expiracion * 60
         if persistencia == 'postgresql':
             from odontologia.db.postgresql import crear_engine
 
             engine = crear_engine(configuracion.database_url)
+    auth_engine = engine or crear_engine_autenticacion('sqlite', None, ruta)
 
     @asynccontextmanager
     async def lifespan(_app):
         try:
             yield
         finally:
-            if engine is not None:
-                engine.dispose()
+            auth_engine.dispose()
 
-    app = FastAPI(title='Agenda odontológica — C-01', version='1.0.0', lifespan=lifespan)
+    app = FastAPI(title='Agenda odontológica', version='1.1.0', lifespan=lifespan)
     app.state.persistencia = persistencia
+    app.state.auth_engine = auth_engine
+    bearer = HTTPBearer(auto_error=False)
 
     @app.exception_handler(ErrorAgenda)
     async def error_dominio(request: Request, exc: ErrorAgenda):
@@ -79,15 +120,110 @@ def crear_app(ruta_db: str | Path | None = None, *, timeout_segundos: float = 5.
             'codigo': 'entrada_invalida', 'campo': campo,
             'mensaje': 'El cuerpo JSON no cumple el contrato.'})
 
+    @app.exception_handler(ErrorSesiones)
+    async def error_sesion(request: Request, exc: ErrorSesiones):
+        return JSONResponse(status_code=exc.estado, content={
+            'codigo': exc.codigo, 'campo': None, 'mensaje': str(exc)})
+
+    @app.exception_handler(ErrorUsuarios)
+    async def error_usuario(request: Request, exc: ErrorUsuarios):
+        return JSONResponse(status_code=exc.estado, content={
+            'codigo': exc.codigo, 'campo': None, 'mensaje': str(exc)})
+
+    def verificar_configuracion():
+        try:
+            return validar_secreto_jwt(secreto_jwt, algoritmo_jwt)
+        except ValueError as exc:
+            raise ErrorSesiones(
+                'autenticacion_no_configurada', 'La autenticación no está configurada.', 503) from exc
+
+    def asegurar_esquema() -> None:
+        try:
+            validar_esquema_autenticacion(
+                auth_engine, persistencia, ruta if persistencia == 'sqlite' else None)
+        except (RuntimeError, ValueError) as exc:
+            raise ErrorSesiones(
+                'autenticacion_no_configurada', 'El esquema de autenticación no está preparado.', 503) from exc
+
+    def identidad_actual(credenciales: HTTPAuthorizationCredentials | None = Depends(bearer)):
+        secreto = verificar_configuracion()
+        if credenciales is None or credenciales.scheme.casefold() != 'bearer':
+            raise ErrorSesiones('autenticacion_requerida', 'Se requiere autenticación.', 401)
+        asegurar_esquema()
+        return validar_sesion(auth_engine, credenciales.credentials, secreto)
+
+    def administrador(identidad=Depends(identidad_actual)):
+        if identidad['rol'] != 'administrador':
+            raise ErrorSesiones('permiso_denegado', 'No tiene permiso para esta operación.', 403)
+        return identidad
+
+    respuestas_auth = {
+        401: {'model': ErrorHTTP, 'description': 'Autenticación requerida o sesión inválida.'},
+        403: {'model': ErrorHTTP, 'description': 'Permiso insuficiente.'},
+        503: {'model': ErrorHTTP, 'description': 'Autenticación o almacenamiento no disponible.'},
+    }
+
     @app.post('/turnos', status_code=201, response_model=Turno,
-              responses={estado: {'model': ErrorHTTP} for estado in set(ESTADOS_ERROR.values())})
-    def alta(solicitud: SolicitudTurno):
+              responses={**{estado: {'model': ErrorHTTP}
+                           for estado in set(ESTADOS_ERROR.values())}, **respuestas_auth})
+    def alta(solicitud: SolicitudTurno, _identidad=Depends(identidad_actual)):
         if engine is not None:
             from odontologia.db.postgresql import crear_turno_postgresql
 
             return crear_turno_postgresql(
                 engine, **solicitud.model_dump(), timeout_segundos=timeout_segundos)
         return crear_turno(ruta, **solicitud.model_dump(), timeout_segundos=timeout_segundos)
+
+    @app.post('/sesiones', response_model=RespuestaLogin, responses={
+        401: {'model': ErrorHTTP, 'description': 'Credenciales inválidas.'},
+        422: {'model': ErrorHTTP}, 503: {'model': ErrorHTTP},
+    })
+    def iniciar_sesion(solicitud: SolicitudLogin):
+        secreto = verificar_configuracion()
+        asegurar_esquema()
+        token = autenticar(
+            auth_engine, solicitud.identificador, solicitud.password, secreto,
+            duracion_segundos=expiracion_jwt)
+        return {'access_token': token, 'expires_in': expiracion_jwt}
+
+    @app.get('/sesiones/actual', responses=respuestas_auth)
+    def sesion_actual(identidad=Depends(identidad_actual)):
+        return identidad
+
+    @app.delete('/sesiones/actual', status_code=204, responses=respuestas_auth)
+    def salir(identidad=Depends(identidad_actual),
+              credenciales: HTTPAuthorizationCredentials | None = Depends(bearer)):
+        cerrar_sesion(auth_engine, credenciales.credentials, verificar_configuracion())
+        return None
+
+    @app.get('/usuarios', responses={401: respuestas_auth[401], 403: respuestas_auth[403],
+                                     503: respuestas_auth[503]})
+    def usuarios(_identidad=Depends(administrador)):
+        asegurar_esquema()
+        return listar_usuarios(auth_engine)
+
+    @app.post('/usuarios', status_code=201, responses={
+        401: respuestas_auth[401], 403: respuestas_auth[403], 409: {'model': ErrorHTTP},
+        422: {'model': ErrorHTTP}, 503: respuestas_auth[503],
+    })
+    def alta_usuario(solicitud: SolicitudUsuario, _identidad=Depends(administrador)):
+        asegurar_esquema()
+        try:
+            return crear_usuario(auth_engine, solicitud.identificador, solicitud.password, solicitud.rol)
+        except ValueError as exc:
+            raise ErrorUsuarios('entrada_invalida', 'Los datos de la cuenta no son válidos.', 422) from exc
+
+    @app.patch('/usuarios/{usuario_id}', responses={
+        401: respuestas_auth[401], 403: respuestas_auth[403], 404: {'model': ErrorHTTP},
+        409: {'model': ErrorHTTP}, 422: {'model': ErrorHTTP}, 503: respuestas_auth[503],
+    })
+    def modificar_usuario(usuario_id: str, solicitud: ActualizacionUsuario,
+                          _identidad=Depends(administrador)):
+        asegurar_esquema()
+        if solicitud.rol is None and solicitud.activo is None:
+            raise ErrorUsuarios('entrada_invalida', 'Debe informar al menos un cambio.', 422)
+        return actualizar_usuario(
+            auth_engine, usuario_id, rol=solicitud.rol, activo=solicitud.activo)
 
     @app.get('/health')
     def health() -> dict[str, str]:

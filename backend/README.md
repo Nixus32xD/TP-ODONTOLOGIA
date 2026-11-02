@@ -7,14 +7,14 @@ API del sistema odontológico. Stack definido por la cátedra (corrección del 2
 
 | Pieza | Estado | Change |
 | --- | --- | --- |
-| Alta de turnos sin solapamientos (`POST /turnos`, `GET /health`) | Implementado; regresión incluida en 89 tests; archivado | C-01 |
+| Alta de turnos sin solapamientos (`POST /turnos`, `GET /health`) | Implementado; regresión incluida en la suite; archivado | C-01 |
 | Persistencia en SQLite local (`ODONTOLOGIA_DB`) | Predeterminada y compatible con C-01 | C-01 |
 | PostgreSQL + SQLAlchemy, Alembic y migración explícita | Implementado y validado en PostgreSQL aislado; change activo pendiente de Archive | C-02 |
-| Autenticación JWT (`odontologia/auth/`) | Estructura preparada, sin implementar | C-03 |
+| Autenticación JWT y autorización del personal | Implementado localmente en SQLite y PostgreSQL; C-03 activo, pendiente de Archive | C-03 |
 | Cola de recordatorios en Redis (`odontologia/workers/`) | Estructura preparada, sin implementar | C-17 |
 | Imagen Docker y servicios en Docker Compose | Preparados | C-02 / C-14 |
 
-C-01 y SQLite siguen disponibles. C-02 permite elegir PostgreSQL de forma explícita, versiona el esquema con Alembic y ofrece una importación manual desde SQLite. El inicio de la API no ejecuta migraciones ni importa datos. La fuente SQLite no se altera; la importación rechaza fuentes con solapamientos o destinos ya poblados.
+C-01 y SQLite siguen disponibles. C-02 permite elegir PostgreSQL de forma explícita, versiona el esquema con Alembic y ofrece una importación manual desde SQLite. C-03 agrega acceso con JWT, sesiones revocables y permisos de Administrador/Recepción. Profesional no tiene cuenta habilitada hasta C-08. El inicio de la API no ejecuta migraciones ni importa datos. La fuente SQLite no se altera; la importación rechaza fuentes con solapamientos o destinos ya poblados.
 
 ## Estructura
 
@@ -28,8 +28,8 @@ backend/
 │   ├── db/              # SQLAlchemy + PostgreSQL (C-02)
 │   ├── auth/            # JWT (C-03)
 │   └── workers/         # Redis: recordatorios en cola (C-17)
-├── alembic/             # Revisiones versionadas de C-02
-├── tests/               # Regresión C-01 y pruebas C-02
+├── alembic/             # Revisiones versionadas de C-02 y C-03
+├── tests/               # Regresión C-01, C-02 y C-03
 ├── requirements.txt         # Dependencias directas de C-01
 ├── requirements-dev.txt     # + HTTPX para tests
 ├── requirements-lock.txt    # Entorno verificado de C-01
@@ -49,6 +49,31 @@ python -m venv .venv
 ```
 
 Para levantar la API ver el README principal. Con Docker, usar `docker compose up --build` desde la raíz.
+
+## Migrar autenticación e inicializar acceso
+
+La migración se ejecuta explícitamente sobre una agenda ficticia existente. No crea el archivo SQLite ni se ejecuta al importar o iniciar FastAPI.
+
+**SQLite (valor predeterminado):** desde `backend/`, con `ODONTOLOGIA_DB` apuntando a la agenda correcta:
+
+```powershell
+$env:JWT_SECRETO = [Convert]::ToBase64String([Security.Cryptography.RandomNumberGenerator]::GetBytes(48))
+..\.venv\Scripts\python.exe -m odontologia.auth.migrar_sqlite
+..\.venv\Scripts\python.exe -m odontologia.auth.bootstrap_admin
+```
+
+El bootstrap pide identificador y contraseña de forma interactiva y oculta; no admite credenciales por argumentos ni crea usuarios predeterminados. Guardar `JWT_SECRETO` fuera del repositorio y no reutilizar el texto ilustrativo.
+
+**PostgreSQL:** definir `ODONTOLOGIA_PERSISTENCIA=postgresql`, `DATABASE_URL` y un secreto local; desde `backend/`:
+
+```powershell
+..\.venv\Scripts\python.exe -m alembic upgrade head
+..\.venv\Scripts\python.exe -m odontologia.auth.bootstrap_admin
+```
+
+Alembic aplica primero C-01 y luego las tablas de C-03. En Docker Compose, migrar el servicio backend con `docker compose exec backend python -m alembic upgrade head` y ejecutar el bootstrap interactivo con `docker compose exec backend python -m odontologia.auth.bootstrap_admin` después de configurar `.env`. No usar la API ni `GET /health` como comando de migración.
+
+`POST /sesiones` recibe `identificador` y `password`; su respuesta contiene `access_token`, `token_type` y `expires_in`. En Swagger, usar **Authorize** con `Bearer <token>`. `/sesiones/actual` permite consultar y cerrar la sesión propia. El Administrador puede consultar/crear usuarios y cambiar rol/estado; Recepción sólo crea turnos. Desactivar una cuenta, cambiarle el rol o cerrar sesión revoca sus tokens persistidos. Los fallos de credenciales devuelven un mensaje genérico. Sin secreto o esquema migrado, las operaciones protegidas fallan cerradas con 503 mientras `/health` continúa pública.
 
 ## Preparar PostgreSQL y migrar una agenda existente
 

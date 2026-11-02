@@ -7,6 +7,8 @@ import os
 import sqlite3
 import tempfile
 import unittest
+from io import StringIO
+from unittest.mock import patch
 from uuid import uuid4
 
 from alembic import command
@@ -19,8 +21,12 @@ from fastapi.testclient import TestClient
 
 from odontologia import ErrorAgenda, crear_turno, inicializar_agenda
 from odontologia.api import crear_app
+from odontologia.auth.bootstrap_admin import main as bootstrap_admin
+from odontologia.auth.usuarios import crear_usuario, actualizar_usuario
 from odontologia.db.migracion import ErrorMigracion, migrar_agenda_sqlite
-from odontologia.db.models import AgendaMutex, Base, Box, Paciente, Profesional, Turno
+from odontologia.db.models import (
+    AgendaMutex, Base, Box, Paciente, Profesional, Sesion, Turno, Usuario,
+)
 from odontologia.db.postgresql import crear_turno_postgresql
 
 
@@ -81,8 +87,10 @@ class IntegracionPostgreSQLTests(unittest.TestCase):
         cls.engine = create_engine(cls.database_url, pool_pre_ping=True)
         cls.previous_database_url = os.environ.get('DATABASE_URL')
         cls.previous_persistence = os.environ.get('ODONTOLOGIA_PERSISTENCIA')
+        cls.previous_jwt_secret = os.environ.get('JWT_SECRETO')
         os.environ['DATABASE_URL'] = cls.database_url
         os.environ['ODONTOLOGIA_PERSISTENCIA'] = 'postgresql'
+        os.environ['JWT_SECRETO'] = 'secreto-postgresql-test-local-no-reutilizar-2026'
         config = Config(str(Path(__file__).parents[1] / 'alembic.ini'))
         command.upgrade(config, 'head')
 
@@ -102,9 +110,15 @@ class IntegracionPostgreSQLTests(unittest.TestCase):
             os.environ.pop('ODONTOLOGIA_PERSISTENCIA', None)
         else:
             os.environ['ODONTOLOGIA_PERSISTENCIA'] = cls.previous_persistence
+        if cls.previous_jwt_secret is None:
+            os.environ.pop('JWT_SECRETO', None)
+        else:
+            os.environ['JWT_SECRETO'] = cls.previous_jwt_secret
 
     def setUp(self):
         with Session(self.engine) as session, session.begin():
+            session.execute(delete(Sesion))
+            session.execute(delete(Usuario))
             session.execute(delete(Turno))
             session.execute(delete(Paciente))
             session.execute(delete(Profesional))
@@ -252,7 +266,16 @@ class IntegracionPostgreSQLTests(unittest.TestCase):
 
     def test_api_postgresql_conserva_respuesta_c01(self):
         self._seed_catalogos()
+        with patch('sys.argv', ['bootstrap_admin']), \
+                patch('builtins.input', return_value='admin.test'), \
+                patch('getpass.getpass', side_effect=['frase-larga-segura-de-prueba-2026'] * 2), \
+                patch('sys.stdout', StringIO()):
+            self.assertEqual(bootstrap_admin(), 0)
         with TestClient(crear_app()) as cliente:
+            login = cliente.post('/sesiones', json={
+                'identificador': 'admin.test', 'password': 'frase-larga-segura-de-prueba-2026'})
+            self.assertEqual(login.status_code, 200, login.text)
+            headers = {'Authorization': f"Bearer {login.json()['access_token']}"}
             cuerpo = {
                 'paciente_id': 'paciente-A',
                 'profesional_id': 'profesional-A',
@@ -260,20 +283,47 @@ class IntegracionPostgreSQLTests(unittest.TestCase):
                 'inicio': '2026-10-15T12:00:00+00:00',
                 'fin': '2026-10-15T12:30:00+00:00',
             }
-            respuesta = cliente.post('/turnos', json=cuerpo)
+            respuesta = cliente.post('/turnos', headers=headers, json=cuerpo)
             adyacente = dict(cuerpo, inicio='2026-10-15T12:30:00+00:00',
                              fin='2026-10-15T13:00:00+00:00')
-            respuesta_adyacente = cliente.post('/turnos', json=adyacente)
+            respuesta_adyacente = cliente.post('/turnos', headers=headers, json=adyacente)
             desconocido = dict(cuerpo, paciente_id='paciente-inexistente',
                                inicio='2026-10-15T13:00:00+00:00',
                                fin='2026-10-15T13:30:00+00:00')
-            respuesta_desconocido = cliente.post('/turnos', json=desconocido)
+            respuesta_desconocido = cliente.post('/turnos', headers=headers, json=desconocido)
 
         self.assertEqual(respuesta.status_code, 201)
         self.assertGreater(respuesta.json()['id'], 0)
         self.assertEqual(respuesta.json()['inicio'], '2026-10-15T12:00:00Z')
         self.assertEqual(respuesta_adyacente.status_code, 201)
         self.assertEqual(respuesta_desconocido.status_code, 404)
+
+    def test_autenticacion_postgresql_revoca_al_cambiar_rol(self):
+        recepcion = crear_usuario(
+            self.engine, 'recepcion.test', 'frase-larga-segura-de-prueba-2026', 'recepcion')
+        with TestClient(crear_app()) as cliente:
+            login = cliente.post('/sesiones', json={
+                'identificador': 'recepcion.test', 'password': 'frase-larga-segura-de-prueba-2026'})
+            self.assertEqual(login.status_code, 200, login.text)
+            headers = {'Authorization': f"Bearer {login.json()['access_token']}"}
+            self.assertEqual(cliente.get('/sesiones/actual', headers=headers).status_code, 200)
+            actualizar_usuario(self.engine, recepcion['id'], rol='administrador')
+            respuesta = cliente.get('/sesiones/actual', headers=headers)
+        self.assertEqual(respuesta.status_code, 401)
+
+    def test_api_postgresql_esquema_auth_no_vigente_falla_503_sin_migrar(self):
+        with self.engine.begin() as conexion:
+            conexion.execute(text(
+                "UPDATE alembic_version SET version_num = '20261101_0001'"))
+        try:
+            with TestClient(crear_app()) as cliente:
+                respuesta = cliente.post('/sesiones', json={
+                    'identificador': 'no.existe', 'password': 'frase-larga-segura-de-prueba-2026'})
+            self.assertEqual(respuesta.status_code, 503)
+        finally:
+            with self.engine.begin() as conexion:
+                conexion.execute(text(
+                    "UPDATE alembic_version SET version_num = '20261101_0002_auth'"))
 
     def test_revision_esquema_desconocida_falla_cerrado(self):
         self._seed_catalogos()
@@ -289,7 +339,7 @@ class IntegracionPostgreSQLTests(unittest.TestCase):
         finally:
             with self.engine.begin() as conexion:
                 conexion.execute(text(
-                    "UPDATE alembic_version SET version_num = '20261101_0001'"))
+                    "UPDATE alembic_version SET version_num = '20261101_0002_auth'"))
 
         self.assertEqual(contexto.exception.codigo, 'almacenamiento_error')
         with Session(self.engine) as session:

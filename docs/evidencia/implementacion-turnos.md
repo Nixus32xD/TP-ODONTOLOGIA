@@ -181,3 +181,26 @@ La verificación usó exclusivamente filas ficticias temporales; no se migró la
 La migración es una copia unidireccional: la agenda SQLite original queda preservada y puede seleccionarse de nuevo antes de que PostgreSQL reciba nuevas escrituras. Si ya se confirmaron altas sólo en PostgreSQL, volver a la SQLite original deja esas altas fuera; el proyecto no implementa doble escritura, exportación inversa ni reconciliación. Hacer respaldo del destino y acordar una migración de retorno antes de cambiar el backend después de operar. No se modificó el default SQLite.
 
 C-02 está implementado y sus tareas técnicas están completas; el change sigue activo en OpenSpec, pendiente de Archive. No se hizo commit ni push y no se editó Discovery.
+
+## Implementación y evidencia C-03 — 2026-11-01
+
+Se incorporó autenticación JWT HS256 con sesiones persistidas y revocables, contraseñas derivadas con scrypt, migración SQLite explícita, revisión Alembic encadenada sobre C-02 y bootstrap interactivo del primer Administrador. La autorización aplica la matriz aprobada: Administrador gestiona cuentas y usa las operaciones disponibles; Recepción crea turnos; Profesional queda sin acceso hasta C-08. `POST /turnos` conserva el contrato de dominio C-01 y exige sesión vigente. `/health` se mantiene público y no accede a la DB.
+
+El control del último Administrador activo surgió de la revisión final de seguridad: la primera prueba falló porque podía desactivarse o degradarse esa cuenta; se agregó una restricción transaccional y ambas variantes ahora devuelven 409. El OpenAPI documenta 401, 403 y 503 para los recursos protegidos. No hay usuarios, contraseñas ni JWT por defecto. El testimonio de la documentación no habilita pacientes reales ni despliegue público.
+
+### Verificación ejecutada
+
+Comandos y evidencia:
+
+```powershell
+..\.venv\Scripts\python.exe -m unittest discover -s tests -q
+..\.venv\Scripts\python.exe -m pip check
+openspec validate --all --strict
+git diff --check
+```
+
+La suite SQLite final pasó **111 tests**; el test de PostgreSQL se omite si no se define la URL aislada. Con `ODONTOLOGIA_TEST_DATABASE_URL` apuntando a `odontologia_test` sobre loopback `127.0.0.1:55432`, la suite completa pasó **121 tests**, incluyendo upgrade Alembic C-01→C-03, bootstrap contra PostgreSQL, login API, revocación al cambiar rol y cierre seguro con revisión desactualizada. El clúster PostgreSQL 18 temporal `C:\Users\Oficina\AppData\Local\Temp\tp-odontologia-c03-pg-dafa8ca7ea694e288b7b78bb2b6f9833` se detuvo por su PGDATA exacto; el puerto 55432 quedó sin listener. No se usó la instancia preexistente 5432 ni servicios externos. `pip check` informó `No broken requirements found`; OpenSpec strict validó cuatro artefactos/especificaciones sin problemas; `git diff --check` no informó errores (Git sí advierte normalización LF/CRLF en archivos del checkout Windows).
+
+TDD documentado: suite base 81/1 skip; pruebas de esquema 2/2, SQLite migration 3/3, scrypt 3/3, almacenamiento 2/2, usuarios 3/3 (más el guard del último administrador), configuración 7/7, bootstrap 2/2, servicio de sesiones 3/3, migración CLI SQLite 2/2 y API HTTP 5/5 pasaron tras cada GREEN. Los nuevos tests API inicialmente fallaron porque las rutas todavía no existían. No se creó commit ni se hizo push. La revisión del diff y Archive de C-03 quedan pendientes.
+
+La base de cambios previa a esta implementación era `3c34879510594348034bfaa5472456078335cc28`; los cambios C-03 siguen locales y sin commit. El archivo `docs/discovery/informe-discovery.md` contiene un cambio preexistente del usuario y se preservó sin incluirlo en el alcance C-03.

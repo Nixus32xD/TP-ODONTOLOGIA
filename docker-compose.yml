@@ -31,6 +31,7 @@ services:
     build: ./backend
     environment:
       ODONTOLOGIA_DB: /data/agenda-c01.sqlite3
+      ODONTOLOGIA_PERSISTENCIA: postgresql
       DATABASE_URL: postgresql+psycopg://odontologia:${POSTGRES_PASSWORD}@db:5432/odontologia
       REDIS_URL: redis://redis:6379/0
       JWT_SECRETO: ${JWT_SECRETO:?Definir JWT_SECRETO en .env}
