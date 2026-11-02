@@ -12,8 +12,8 @@ from odontologia.version import __version__
 
 VERSION_FORMATO = 1
 ESQUEMAS_SOPORTADOS = {
-    'sqlite': '12',
-    'postgresql': '20261102_0013_patient_self_service',
+    'sqlite': '13',
+    'postgresql': '20261102_0014_financial_ledger',
 }
 TABLAS_ESQUEMA_ACTUAL = {
     'sqlite': {
@@ -22,6 +22,8 @@ TABLAS_ESQUEMA_ACTUAL = {
         'planes_tratamiento', 'etapas_plan_tratamiento',
         'recordatorios_outbox',
         'idempotencia_portal_paciente',
+        'cargos_financieros', 'cobros_financieros', 'reversiones_cobros',
+        'idempotencia_financiera',
         'excepciones_horario', 'horarios_semanales', 'pacientes', 'prestaciones',
         'profesionales', 'sesiones', 'tramos_excepcion', 'turnos', 'usuarios',
     },
@@ -31,6 +33,8 @@ TABLAS_ESQUEMA_ACTUAL = {
         'hallazgos_odontograma', 'planes_tratamiento', 'etapas_plan_tratamiento',
         'recordatorios_outbox',
         'idempotencia_portal_paciente',
+        'cargos_financieros', 'cobros_financieros', 'reversiones_cobros',
+        'idempotencia_financiera',
         'excepciones_horario', 'horarios_semanales',
         'pacientes', 'prestaciones', 'profesionales', 'sesiones',
         'tramos_excepcion', 'turnos', 'usuarios',

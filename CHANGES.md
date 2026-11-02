@@ -1,7 +1,7 @@
 # CHANGES — Secuencia de Implementación
 
 > Índice canónico del proyecto **TP-ODONTOLOGIA**, actualizado el 2026-11-02.
-> **Plan del producto completo; C-01-C-13 y C-15-C-18 están implementados, validados y archivados localmente. C-14 es opcional y queda fuera de la entrega; C-19-C-20 siguen planificados.**
+> **Plan del producto completo; C-01-C-13 y C-15-C-19 están implementados, validados y archivados localmente. C-20 sigue planificado. C-14 es opcional y queda fuera de la entrega.**
 > **Leer este archivo antes de ejecutar cualquier `/opsx:propose`.**
 
 ---
@@ -20,7 +20,7 @@ La aclaración del usuario del 2026-10-28 corrige el índice anterior: **hacer s
 
 - **Entrega académica archivada:** C-01 `crear-turno-sin-solapamientos`, con 18/18 tareas completas y Archive confirmado el 2026-10-28; la spec principal es [alta-turnos](openspec/specs/alta-turnos/spec.md). No se cambia su nombre, su spec, su código ni su contrato. C-02, C-03 y C-04 también están implementados, validados y archivados localmente.
 - **MVP académico demostrable:** C-03 a C-13 completan una agenda de recepción administrable, con cambios revisables, pruebas y demostración local. C-02 ya aporta el backend PostgreSQL optativo y está archivado; la seguridad, auditoría y recuperación usan datos ficticios. No se requiere desplegar el sistema ni levantar contenedores.
-- **Evolución del producto:** C-15 a C-20 agregan clínica, odontograma/plan de tratamiento, recordatorios, reserva del paciente, cobros y reportes. C-15 a C-18 quedaron implementados, validados y archivados; C-19 y C-20 siguen planificados, con contratos propios.
+- **Evolución del producto:** C-15 a C-20 agregan clínica, odontograma/plan de tratamiento, recordatorios, reserva del paciente, cobros y reportes. C-15 a C-19 quedaron implementados, validados y archivados; C-20 sigue planificado, con contrato propio.
 - **Opciones no comprometidas:** multisede/SaaS multitenant, IA, obras sociales y facturación electrónica ARCA no se vuelven obligatorias por aparecer en productos comparados. Si se eligen, se agregarán changes posteriores con investigación y aprobación específicas. C-19 no incluye emisión fiscal ni conexión con pagos reales.
 
 La KB y las instrucciones existentes documentan principalmente la porción académica C-01. Sus exclusiones siguen vigentes para esa implementación; las capacidades futuras del roadmap no amplían retroactivamente las US-001 a US-004. C-02 concreta la migración a PostgreSQL conservando la fuente SQLite; C-03/C-04 autenticación, permisos y auditoría; C-05 la ficha mínima; C-06 catálogos; C-07 disponibilidad; C-08 consultas de agenda; C-09 estados; y C-10 reprogramación atómica. C-01 standalone conserva compatibilidad. Se mantienen datos ficticios y ninguna integración externa real.
@@ -426,11 +426,14 @@ Secuencia compatible con dependencias, sin prometer una optimización temporal n
 
 ### [C-19] `registrar-cobros-y-movimientos`
 
-- **Estado**: `[ ]` planificado; administración no fiscal, sin proveedor de pagos real.
+- **Estado**: implementado, validado y archivado localmente el 2026-11-02 en `openspec/changes/archive/2026-11-02-registrar-cobros-y-movimientos/`. Commit local pendiente de esta revisión final; sin push.
 - **Scope**:
-  - Proponer `Cargo`, `Cobro` y `Reversion` vinculados al paciente/prestación, con moneda y precisión acordadas; representar importes exactamente y rechazar valores incorrectos sin redondear o compensar silenciosamente.
-  - Proponer `POST /cobros`, consulta de saldo/movimientos y reversión autorizada con motivo; conservar historial y probar idempotencia de comandos monetarios. Sin facturas fiscales, ARCA, conciliación bancaria ni pasarela real en este change.
-  - Tests ficticios: cobro válido, monto inválido/excesivo, repetición, reversión parcial/total según contrato, permisos y auditoría; un fallo intermedio no debe alterar el saldo ni registrar éxito ficticio.
+  - Registrar cargos manuales por ficha activa, cobros asociados a cargos y reversiones asociadas a cobros; no crear importes automáticamente desde turnos, prestaciones o planes.
+  - Representar cada movimiento como centavos enteros y aceptar importes sólo en texto decimal estricto. Cada operación admite hasta ARS 999.999.999,99; ninguna conversión usa float ni redondea.
+  - Derivar el saldo del ledger, impedir sobrepago/reversión excesiva, mantener movimientos append-only e idempotencia por actor/operación/clave, con resultado original en replay.
+  - Auditar metadata-only dentro de la misma transacción; fallo de auditoría revierte movimiento e idempotencia. Admin/Recepción consultan cuenta, registran cargo y cobro; sólo Admin revierte.
+  - SQLite v13 / PostgreSQL Alembic `20261102_0014_financial_ledger`. Backup/restore preserva las cuatro entidades financieras y publica sólo conteos agregados. Validación: backend 563 OK/3 skips, PostgreSQL 4/4, backup SQLite 25 OK/1 skip, frontend 72 OK, build y OpenSpec strict 20/20; ver [evidencia C-19](backend/evidence/C-19-verificacion.md).
+  - Exclusiones: no proveedor, banco, HTTP/email/WhatsApp, ARCA, comprobante fiscal, caja real ni datos financieros reales.
 - **Dependencias**: C-05, C-06, C-09, C-13.
 - **Governance**: CRITICO — dinero y audit trail.
 - **Leer antes**:

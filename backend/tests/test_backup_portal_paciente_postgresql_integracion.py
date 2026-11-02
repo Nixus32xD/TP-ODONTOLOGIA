@@ -94,7 +94,7 @@ class BackupPortalPacientePostgreSQLIntegracionTests(unittest.TestCase):
         with TemporaryDirectory() as temporal:
             bundle = Path(temporal) / 'bundle-c18'
             manifest = crear_bundle_postgresql(self.engine, bundle)
-            self.assertEqual(manifest['schema_version'], '20261102_0013_patient_self_service')
+            self.assertEqual(manifest['schema_version'], '20261102_0014_financial_ledger')
             self.assertEqual(manifest['table_counts']['idempotencia_portal_paciente'], 1)
             texto = (bundle / 'manifest.json').read_text(encoding='utf-8')
             self.assertNotIn(paciente_id, texto)

@@ -22,7 +22,8 @@ class EsquemaPostgreSQLTests(unittest.TestCase):
              'excepciones_horario', 'tramos_excepcion', 'bloqueos_agenda',
              'evoluciones_clinicas', 'versiones_odontograma', 'hallazgos_odontograma',
              'planes_tratamiento', 'etapas_plan_tratamiento', 'recordatorios_outbox',
-             'idempotencia_portal_paciente'},
+             'idempotencia_portal_paciente', 'cargos_financieros', 'cobros_financieros',
+             'reversiones_cobros', 'idempotencia_financiera'},
         )
         self.assertEqual(
             set(Turno.__table__.columns.keys()),
@@ -93,7 +94,7 @@ class EsquemaPostgreSQLTests(unittest.TestCase):
         self.assertEqual(modulo.down_revision, '20261102_0009_turn_rescheduling')
         self.assertTrue(callable(modulo.upgrade))
         self.assertTrue(callable(modulo.downgrade))
-        self.assertEqual(REVISION_ESQUEMA_ACTUAL, '20261102_0013_patient_self_service')
+        self.assertEqual(REVISION_ESQUEMA_ACTUAL, '20261102_0014_financial_ledger')
 
     def test_migracion_c18_agrega_vinculo_paciente_y_tabla_idempotencia(self):
         ruta = Path(__file__).parents[1] / 'alembic' / 'versions' / '20261102_0013_patient_self_service.py'
@@ -105,7 +106,16 @@ class EsquemaPostgreSQLTests(unittest.TestCase):
         self.assertEqual(modulo.down_revision, '20261102_0012_appointment_reminders')
         self.assertTrue(callable(modulo.upgrade))
         self.assertTrue(callable(modulo.downgrade))
-        self.assertEqual(REVISION_ESQUEMA_ACTUAL, '20261102_0013_patient_self_service')
+        self.assertEqual(REVISION_ESQUEMA_ACTUAL, '20261102_0014_financial_ledger')
+
+    def test_migracion_c19_encadena_el_ledger_despues_de_c18(self):
+        ruta = Path(__file__).parents[1] / 'alembic' / 'versions' / '20261102_0014_financial_ledger.py'
+        spec = importlib.util.spec_from_file_location('revision_financial_ledger', ruta)
+        modulo = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(modulo)
+
+        self.assertEqual(modulo.revision, '20261102_0014_financial_ledger')
+        self.assertEqual(modulo.down_revision, '20261102_0013_patient_self_service')
 
 
 if __name__ == '__main__':

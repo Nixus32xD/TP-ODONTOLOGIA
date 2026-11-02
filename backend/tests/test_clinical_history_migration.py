@@ -53,7 +53,7 @@ class MigracionHistoriaClinicaSQLiteTests(unittest.TestCase):
 
         with closing(sqlite3.connect(self.ruta)) as conexion:
             self.assertEqual(conexion.execute(
-                'SELECT version FROM auth_schema_version').fetchone(), (12,))
+                'SELECT version FROM auth_schema_version').fetchone(), (13,))
             tablas = {fila[0] for fila in conexion.execute(
                 "SELECT name FROM sqlite_master WHERE type='table'")}
             self.assertIn('evoluciones_clinicas', tablas)
@@ -85,7 +85,7 @@ class MigracionHistoriaClinicaSQLiteTests(unittest.TestCase):
 
         with closing(sqlite3.connect(self.ruta)) as conexion:
             self.assertEqual(conexion.execute(
-                'SELECT version FROM auth_schema_version').fetchone(), (12,))
+                'SELECT version FROM auth_schema_version').fetchone(), (13,))
             self.assertEqual(conexion.execute(
                 'SELECT COUNT(*) FROM turnos WHERE id=?', (self.turno.id,)).fetchone(), (1,))
             self.assertEqual(conexion.execute(

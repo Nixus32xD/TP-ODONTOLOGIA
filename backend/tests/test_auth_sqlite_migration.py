@@ -32,7 +32,7 @@ class MigracionAutenticacionSQLiteTests(unittest.TestCase):
         with closing(sqlite3.connect(self.ruta)) as conexion:
             self.assertEqual(conexion.execute('SELECT COUNT(*) FROM pacientes').fetchone()[0], 2)
             self.assertEqual(conexion.execute('SELECT COUNT(*) FROM turnos').fetchone()[0], 0)
-            self.assertEqual(conexion.execute('SELECT version FROM auth_schema_version').fetchone()[0], 12)
+            self.assertEqual(conexion.execute('SELECT version FROM auth_schema_version').fetchone()[0], 13)
 
     def test_migracion_repetida_no_modifica_la_agenda(self):
         migrar_sqlite(self.ruta)
@@ -41,6 +41,46 @@ class MigracionAutenticacionSQLiteTests(unittest.TestCase):
             self.assertEqual(conexion.execute('SELECT COUNT(*) FROM pacientes').fetchone()[0], 2)
             self.assertEqual(conexion.execute('SELECT COUNT(*) FROM turnos').fetchone()[0], 0)
             self.assertEqual(conexion.execute('SELECT COUNT(*) FROM auth_schema_version').fetchone()[0], 1)
+
+    def test_v13_agrega_ledger_append_only_y_auditoria_financiera(self):
+        migrar_sqlite(self.ruta)
+        with closing(sqlite3.connect(self.ruta)) as conexion:
+            self.assertEqual(conexion.execute(
+                'SELECT version FROM auth_schema_version').fetchone(), (13,))
+            self.assertTrue({'cargos_financieros', 'cobros_financieros',
+                             'reversiones_cobros', 'idempotencia_financiera'} <= self.tablas())
+            conexion.execute("INSERT INTO cargos_financieros VALUES "
+                             "('cargo-1', 'paciente-A', 1200, 'Consulta', '2026-11-02T12:00:00')")
+            with self.assertRaises(sqlite3.IntegrityError):
+                conexion.execute("UPDATE cargos_financieros SET concepto='cambio' WHERE id='cargo-1'")
+            with self.assertRaises(sqlite3.IntegrityError):
+                conexion.execute("DELETE FROM cargos_financieros WHERE id='cargo-1'")
+            conexion.execute("INSERT INTO eventos_auditoria(created_at, action, resource_type, "
+                             "resource_id, result) VALUES "
+                             "('2026-11-02T12:00:00', 'cargo.creado', 'finanzas', 'cargo-1', 'confirmado')")
+            conexion.commit()
+
+    def test_upgrade_v12_a_v13_conserva_eventos_y_agrega_tablas_financieras(self):
+        migrar_sqlite(self.ruta)
+        with closing(sqlite3.connect(self.ruta)) as conexion:
+            conexion.execute('PRAGMA foreign_keys=OFF')
+            for tabla in ('idempotencia_financiera', 'reversiones_cobros',
+                          'cobros_financieros', 'cargos_financieros'):
+                conexion.execute(f'DROP TABLE {tabla}')
+            conexion.execute('UPDATE auth_schema_version SET version=12')
+            conexion.execute("INSERT INTO eventos_auditoria(created_at, action, resource_type, "
+                             "result) VALUES ('2026-11-02T11:00:00', 'cuenta.bootstrap', "
+                             "'cuenta', 'confirmado')")
+            conexion.commit()
+        migrar_sqlite(self.ruta)
+        with closing(sqlite3.connect(self.ruta)) as conexion:
+            self.assertEqual(conexion.execute(
+                'SELECT version FROM auth_schema_version').fetchone(), (13,))
+            self.assertEqual(conexion.execute(
+                "SELECT count(*) FROM eventos_auditoria WHERE action='cuenta.bootstrap'"
+            ).fetchone(), (1,))
+            self.assertTrue({'cargos_financieros', 'cobros_financieros',
+                             'reversiones_cobros', 'idempotencia_financiera'} <= self.tablas())
 
     def test_base_ausente_se_rechaza_y_no_se_crea(self):
         ausente = Path(self.temporal.name) / 'ausente.sqlite3'
@@ -68,7 +108,7 @@ class MigracionAutenticacionSQLiteTests(unittest.TestCase):
                 conexion.execute('SELECT id, paciente_id FROM turnos').fetchone(),
                 (turno.id, 'paciente-A'))
             self.assertEqual(conexion.execute(
-                'SELECT version FROM auth_schema_version').fetchone(), (12,))
+                'SELECT version FROM auth_schema_version').fetchone(), (13,))
             with self.assertRaises(sqlite3.IntegrityError):
                 conexion.execute(
                     "INSERT INTO pacientes(id, nombre, telefono, activo) "
@@ -148,7 +188,7 @@ class MigracionAutenticacionSQLiteTests(unittest.TestCase):
             columnas = {fila[1] for fila in conexion.execute('PRAGMA table_info(usuarios)')}
             self.assertIn('profesional_id', columnas)
             self.assertEqual(conexion.execute(
-                'SELECT version FROM auth_schema_version').fetchone(), (12,))
+                'SELECT version FROM auth_schema_version').fetchone(), (13,))
             self.assertEqual(conexion.execute(
                 "SELECT id, rol, profesional_id FROM usuarios WHERE id='usuario-admin'"
             ).fetchone(), ('usuario-admin', 'administrador', None))
@@ -227,7 +267,7 @@ class MigracionAutenticacionSQLiteTests(unittest.TestCase):
         with closing(sqlite3.connect(self.ruta)) as conexion:
             conexion.execute('PRAGMA foreign_keys=ON')
             self.assertEqual(conexion.execute(
-                'SELECT version FROM auth_schema_version').fetchone(), (12,))
+                'SELECT version FROM auth_schema_version').fetchone(), (13,))
             columnas = {fila[1] for fila in conexion.execute('PRAGMA table_info(usuarios)')}
             self.assertIn('paciente_id', columnas)
             self.assertEqual(conexion.execute(
@@ -274,7 +314,7 @@ class MigracionAutenticacionSQLiteTests(unittest.TestCase):
                 rol TEXT NOT NULL CHECK (rol IN ('administrador', 'recepcion')),
                 activo INTEGER NOT NULL CHECK (activo IN (0, 1))
             )''')
-            conexion.execute('UPDATE auth_schema_version SET version=12')
+            conexion.execute('UPDATE auth_schema_version SET version=13')
             conexion.commit()
         engine = crear_engine_autenticacion('sqlite', None, self.ruta)
         self.addCleanup(engine.dispose)

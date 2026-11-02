@@ -62,6 +62,25 @@ class RestauracionSQLiteTests(unittest.TestCase):
             conexion.execute('''INSERT INTO etapas_plan_tratamiento
                 (id, plan_id, prestacion_id, orden)
                 VALUES ('etapa-demo', 'plan-demo', 'prestacion-demo', 1)''')
+            conexion.execute('''INSERT INTO cargos_financieros
+                (id, paciente_id, monto_centavos, concepto, created_at)
+                VALUES ('cargo-demo', ?, 1201, 'Cargo sintético', '2026-11-02T12:00:00Z')''',
+                (self.paciente_id,))
+            conexion.execute('''INSERT INTO cobros_financieros
+                (id, cargo_id, monto_centavos, created_at)
+                VALUES ('cobro-demo', 'cargo-demo', 400, '2026-11-02T12:01:00Z')''')
+            conexion.execute('''INSERT INTO reversiones_cobros
+                (id, cobro_id, monto_centavos, motivo, created_at)
+                VALUES ('reversion-demo', 'cobro-demo', 100, 'Motivo sintético',
+                        '2026-11-02T12:02:00Z')''')
+            conexion.execute('''INSERT INTO usuarios
+                (id, identificador, password_hash, rol, activo, profesional_id, paciente_id)
+                VALUES ('usuario-backup', 'admin.backup', 'hash-sintetico',
+                        'administrador', 1, NULL, NULL)''')
+            conexion.execute('''INSERT INTO idempotencia_financiera
+                (id, actor_id, operacion, clave, fingerprint, respuesta_json, created_at)
+                VALUES ('idem-backup', 'usuario-backup', 'cargo', 'clave-backup', ?,
+                        '{"id":"cargo-demo"}', '2026-11-02T12:03:00Z')''', ('a' * 64,))
             conexion.commit()
         crear_bundle_sqlite(self.origen, self.bundle)
 
@@ -138,9 +157,14 @@ class RestauracionSQLiteTests(unittest.TestCase):
         resultado = restaurar_bundle_sqlite(
             self.bundle, destino, origen_activo=self.origen)
         self.assertTrue(resultado['restored'])
-        self.assertEqual(resultado['schema_version'], '12')
+        self.assertEqual(resultado['schema_version'], '13')
         manifiesto = leer_manifiesto(self.bundle / 'manifest.json')
         self.assertEqual(manifiesto['table_counts']['evoluciones_clinicas'], 1)
+        self.assertEqual({tabla: manifiesto['table_counts'][tabla] for tabla in (
+            'cargos_financieros', 'cobros_financieros', 'reversiones_cobros',
+            'idempotencia_financiera')}, {
+                'cargos_financieros': 1, 'cobros_financieros': 1,
+                'reversiones_cobros': 1, 'idempotencia_financiera': 1})
         self.assertEqual({tabla: manifiesto['table_counts'][tabla] for tabla in (
             'versiones_odontograma', 'hallazgos_odontograma',
             'planes_tratamiento', 'etapas_plan_tratamiento')}, {
@@ -148,6 +172,8 @@ class RestauracionSQLiteTests(unittest.TestCase):
                 'planes_tratamiento': 1, 'etapas_plan_tratamiento': 1})
         self.assertNotIn('Nota clínica ficticia de respaldo.', str(manifiesto))
         self.assertNotIn('Hallazgo odontológico sintético.', str(manifiesto))
+        self.assertNotIn('Cargo sintético', str(manifiesto))
+        self.assertNotIn('Motivo sintético', str(manifiesto))
 
         with closing(sqlite3.connect(destino)) as conexion:
             self.assertEqual(
@@ -155,6 +181,15 @@ class RestauracionSQLiteTests(unittest.TestCase):
                                  (self.paciente_id,)).fetchone(),
                 ('Paciente ficticio',),
             )
+            self.assertEqual(conexion.execute(
+                "SELECT monto_centavos, concepto FROM cargos_financieros WHERE id='cargo-demo'"
+            ).fetchone(), (1201, 'Cargo sintético'))
+            self.assertEqual(conexion.execute(
+                "SELECT monto_centavos FROM reversiones_cobros WHERE id='reversion-demo'"
+            ).fetchone(), (100,))
+            self.assertEqual(conexion.execute(
+                "SELECT clave FROM idempotencia_financiera WHERE id='idem-backup'"
+            ).fetchone(), ('clave-backup',))
             self.assertEqual(conexion.execute(
                 'SELECT paciente_id, profesional_id, turno_id, nota, corrige_a_id '
                 'FROM evoluciones_clinicas WHERE id=?', ('evolucion-demo',)).fetchone(),

@@ -62,6 +62,10 @@ _MATRIZ_EVENTOS = {
     'portal.turno.cancelado': ('turno', 'confirmado'),
     'portal.turno.reprogramado': ('turno', 'confirmado'),
     'portal.acceso.denegado': ('portal', 'rechazado'),
+    'cargo.creado': ('finanzas', 'confirmado'),
+    'cobro.registrado': ('finanzas', 'confirmado'),
+    'cobro.revertido': ('finanzas', 'confirmado'),
+    'finanzas.consultadas': ('finanzas', 'confirmado'),
 }
 
 

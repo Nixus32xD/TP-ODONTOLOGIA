@@ -48,7 +48,7 @@ def validar_esquema_autenticacion(engine, persistencia: str,
             raise RuntimeError('Ruta SQLite requerida.')
         validar_ruta_sqlite_existente(ruta_sqlite)
         consulta = text('SELECT version FROM auth_schema_version')
-        version_esperada = 12
+        version_esperada = 13
         validar_version = lambda version: version == version_esperada
         consulta_tablas = text(
             "SELECT name FROM sqlite_master WHERE type='table' "
@@ -56,12 +56,14 @@ def validar_esquema_autenticacion(engine, persistencia: str,
             '\'tramos_excepcion\', \'bloqueos_agenda\', \'evoluciones_clinicas\', '
             '\'versiones_odontograma\', \'hallazgos_odontograma\', '
             '\'planes_tratamiento\', \'etapas_plan_tratamiento\', '
-            '\'recordatorios_outbox\', \'idempotencia_portal_paciente\')')
+            '\'recordatorios_outbox\', \'idempotencia_portal_paciente\', '
+            '\'cargos_financieros\', \'cobros_financieros\', \'reversiones_cobros\', '
+            '\'idempotencia_financiera\')')
         consulta_estado_turno = text('PRAGMA table_info(turnos)')
         consulta_vinculo_profesional = text('PRAGMA table_info(usuarios)')
     elif persistencia == 'postgresql':
         consulta = text('SELECT version_num FROM alembic_version')
-        version_esperada = '20261102_0013_patient_self_service'
+        version_esperada = '20261102_0014_financial_ledger'
         validar_version = lambda version: version == version_esperada
         consulta_tablas = text(
             'SELECT table_name FROM information_schema.tables '
@@ -69,7 +71,8 @@ def validar_esquema_autenticacion(engine, persistencia: str,
             "('horarios_semanales', 'excepciones_horario', 'tramos_excepcion', "
             "'bloqueos_agenda', 'evoluciones_clinicas', 'versiones_odontograma', "
             "'hallazgos_odontograma', 'planes_tratamiento', 'etapas_plan_tratamiento', "
-            "'recordatorios_outbox', 'idempotencia_portal_paciente')")
+            "'recordatorios_outbox', 'idempotencia_portal_paciente', 'cargos_financieros', "
+            "'cobros_financieros', 'reversiones_cobros', 'idempotencia_financiera')")
         consulta_estado_turno = text(
             'SELECT column_name FROM information_schema.columns '
             "WHERE table_schema = current_schema() AND table_name = 'turnos' "
@@ -101,6 +104,9 @@ def validar_esquema_autenticacion(engine, persistencia: str,
                 'planes_tratamiento', 'etapas_plan_tratamiento',
                 'recordatorios_outbox', 'idempotencia_portal_paciente'} <= tablas:
             raise RuntimeError('El esquema de odontograma y planes no está preparado.')
+        if not {'cargos_financieros', 'cobros_financieros', 'reversiones_cobros',
+                'idempotencia_financiera'} <= tablas:
+            raise RuntimeError('El esquema financiero no está preparado.')
         if 'estado' not in columnas_turnos:
             raise RuntimeError('La columna de estado de turnos no está preparada.')
         if 'version' not in columnas_turnos:

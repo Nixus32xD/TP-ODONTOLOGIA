@@ -38,7 +38,7 @@ El sistema SHALL confirmar cada mutación auditable y su evento en la misma tran
 - **THEN** la operación termina con error 503 genérico y no expone si la cuenta existe
 
 ### Requirement: Operaciones incluidas en auditoría
-El sistema SHALL auditar altas de turno confirmadas y reprogramaciones confirmadas; creación, cambio de rol y cambio de estado de cuentas; bootstrap del Administrador; aperturas, cierres y rechazos de sesión; cambios de consentimiento de recordatorios; y programación, invalidación, procesamiento y fallos sintéticos del outbox.
+El sistema SHALL auditar altas de turno confirmadas y reprogramaciones confirmadas; creación, cambio de rol y cambio de estado de cuentas; bootstrap del Administrador; aperturas, cierres y rechazos de sesión; cambios de consentimiento de recordatorios; y programación, invalidación, procesamiento y fallos sintéticos del outbox; y altas de cargos, cobros y reversiones monetarias.
 
 #### Scenario: Cuenta actualizada
 - **GIVEN** un Administrador crea una cuenta o cambia su rol o estado
@@ -74,6 +74,17 @@ El sistema SHALL auditar altas de turno confirmadas y reprogramaciones confirmad
 - **GIVEN** una operación del outbox cuya auditoría no puede persistirse
 - **WHEN** termina la transacción
 - **THEN** se revierten el cambio de estado del recordatorio y el evento, sin cambiar ni borrar el turno
+
+#### Scenario: Movimiento monetario auditado sin contenido financiero
+- **GIVEN** Administrador o Recepción confirma un cargo o cobro, o Administrador confirma una reversión
+- **WHEN** se registra su evento de auditoría
+- **THEN** incluye actor, acción, recurso opaco y resultado, y omite importe, moneda, concepto, paciente y motivo
+
+#### Scenario: Rechazo o rollback de movimiento monetario
+- **GIVEN** un comando monetario inválido, repetido de forma idempotente o cuya auditoría falla
+- **WHEN** finaliza la operación
+- **THEN** no se registra evento de éxito nuevo y ningún movimiento parcial queda persistido
+
 ### Requirement: Consulta de auditoría protegida y paginada
 El sistema SHALL exponer una consulta paginada de eventos sólo para Administrador, con límite predeterminado de 50 y máximo de 100, desplazamiento no negativo y orden estable por fecha UTC descendente e identificador descendente.
 

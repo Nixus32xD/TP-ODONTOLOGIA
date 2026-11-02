@@ -367,6 +367,80 @@ class IdempotenciaPortalPaciente(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
 
 
+class CargoFinanciero(Base):
+    __tablename__ = 'cargos_financieros'
+    __table_args__ = (
+        CheckConstraint('monto_centavos BETWEEN 1 AND 99999999999',
+                        name='ck_cargos_financieros_monto'),
+        CheckConstraint('length(trim(concepto)) BETWEEN 1 AND 200',
+                        name='ck_cargos_financieros_concepto'),
+        Index('ix_cargos_financieros_paciente_fecha_id', 'paciente_id', 'created_at', 'id'),
+    )
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    paciente_id: Mapped[str] = mapped_column(
+        String(64), ForeignKey('pacientes.id', ondelete='RESTRICT'), nullable=False)
+    monto_centavos: Mapped[int] = mapped_column(BigInteger, nullable=False)
+    concepto: Mapped[str] = mapped_column(String(200), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+
+
+class CobroFinanciero(Base):
+    __tablename__ = 'cobros_financieros'
+    __table_args__ = (
+        CheckConstraint('monto_centavos BETWEEN 1 AND 99999999999',
+                        name='ck_cobros_financieros_monto'),
+        Index('ix_cobros_financieros_cargo_fecha_id', 'cargo_id', 'created_at', 'id'),
+    )
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    cargo_id: Mapped[str] = mapped_column(
+        String(36), ForeignKey('cargos_financieros.id', ondelete='RESTRICT'), nullable=False)
+    monto_centavos: Mapped[int] = mapped_column(BigInteger, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+
+
+class ReversionCobro(Base):
+    __tablename__ = 'reversiones_cobros'
+    __table_args__ = (
+        CheckConstraint('monto_centavos BETWEEN 1 AND 99999999999',
+                        name='ck_reversiones_cobros_monto'),
+        CheckConstraint('length(trim(motivo)) BETWEEN 1 AND 500',
+                        name='ck_reversiones_cobros_motivo'),
+        Index('ix_reversiones_cobros_cobro_fecha_id', 'cobro_id', 'created_at', 'id'),
+    )
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    cobro_id: Mapped[str] = mapped_column(
+        String(36), ForeignKey('cobros_financieros.id', ondelete='RESTRICT'), nullable=False)
+    monto_centavos: Mapped[int] = mapped_column(BigInteger, nullable=False)
+    motivo: Mapped[str] = mapped_column(String(500), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+
+
+class IdempotenciaFinanciera(Base):
+    __tablename__ = 'idempotencia_financiera'
+    __table_args__ = (
+        CheckConstraint("operacion IN ('cargo', 'cobro', 'reversion')",
+                        name='ck_idempotencia_financiera_operacion'),
+        CheckConstraint('length(clave) BETWEEN 1 AND 128',
+                        name='ck_idempotencia_financiera_clave'),
+        CheckConstraint('length(fingerprint) = 64',
+                        name='ck_idempotencia_financiera_fingerprint'),
+        UniqueConstraint('actor_id', 'operacion', 'clave',
+                         name='uq_idempotencia_financiera_actor_operacion_clave'),
+    )
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    actor_id: Mapped[str] = mapped_column(
+        String(36), ForeignKey('usuarios.id', ondelete='RESTRICT'), nullable=False)
+    operacion: Mapped[str] = mapped_column(String(16), nullable=False)
+    clave: Mapped[str] = mapped_column(String(128), nullable=False)
+    fingerprint: Mapped[str] = mapped_column(String(64), nullable=False)
+    respuesta_json: Mapped[str] = mapped_column(Text, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+
+
 class Sesion(Base):
     __tablename__ = 'sesiones'
     __table_args__ = (
@@ -405,12 +479,13 @@ class EventoAuditoria(Base):
             "'recordatorio.procesado', 'recordatorio.fallo', "
             "'portal.disponibilidad.consultada', 'portal.turnos.consultados', "
             "'portal.turno.reservado', 'portal.turno.cancelado', "
-            "'portal.turno.reprogramado', 'portal.acceso.denegado')",
+            "'portal.turno.reprogramado', 'portal.acceso.denegado', 'cargo.creado', "
+            "'cobro.registrado', 'cobro.revertido', 'finanzas.consultadas')",
             name='ck_eventos_auditoria_action'),
         CheckConstraint(
             "resource_type IN ('turno', 'paciente', 'profesional', 'box', 'prestacion', "
             "'horario', 'excepcion', 'bloqueo', 'cuenta', 'sesion', 'historia', 'evolucion', "
-            "'odontograma', 'plan', 'recordatorio', 'portal')",
+            "'odontograma', 'plan', 'recordatorio', 'portal', 'finanzas')",
             name='ck_eventos_auditoria_resource_type'),
         CheckConstraint(
             "result IN ('confirmado', 'rechazado')",
@@ -468,7 +543,11 @@ class EventoAuditoria(Base):
             "(action = 'portal.turno.reservado' AND resource_type = 'turno' AND result = 'confirmado') OR "
             "(action = 'portal.turno.cancelado' AND resource_type = 'turno' AND result = 'confirmado') OR "
             "(action = 'portal.turno.reprogramado' AND resource_type = 'turno' AND result = 'confirmado') OR "
-            "(action = 'portal.acceso.denegado' AND resource_type = 'portal' AND result = 'rechazado')",
+            "(action = 'portal.acceso.denegado' AND resource_type = 'portal' AND result = 'rechazado') OR "
+            "(action = 'cargo.creado' AND resource_type = 'finanzas' AND result = 'confirmado') OR "
+            "(action = 'cobro.registrado' AND resource_type = 'finanzas' AND result = 'confirmado') OR "
+            "(action = 'cobro.revertido' AND resource_type = 'finanzas' AND result = 'confirmado') OR "
+            "(action = 'finanzas.consultadas' AND resource_type = 'finanzas' AND result = 'confirmado')",
             name='ck_eventos_auditoria_combinacion'),
         CheckConstraint(
             "resource_type != 'sesion' OR resource_id IS NULL",

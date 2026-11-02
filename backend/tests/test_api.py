@@ -164,7 +164,11 @@ class ApiTests(unittest.TestCase):
             '/turnos/{turno_id}/atencion', '/turnos/{turno_id}/ausencia',
             '/turnos/{turno_id}/reprogramacion', '/portal/disponibilidad', '/mis-turnos',
             '/mis-turnos/{turno_id}/cancelacion',
-            '/mis-turnos/{turno_id}/reprogramacion'})
+            '/mis-turnos/{turno_id}/reprogramacion',
+            '/finanzas/pacientes/{paciente_id}',
+            '/finanzas/pacientes/{paciente_id}/cargos',
+            '/finanzas/cargos/{cargo_id}/cobros',
+            '/finanzas/cobros/{cobro_id}/reversiones'})
         self.assertEqual(set(rutas['/turnos']), {'get', 'post'})
         self.assertEqual(set(rutas['/turnos']['post']['responses']),
                          {'201', '401', '403', '422', '404', '409', '503', '500'})

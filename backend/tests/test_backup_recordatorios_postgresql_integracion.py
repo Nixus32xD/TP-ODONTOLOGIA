@@ -122,7 +122,7 @@ class BackupRecordatoriosPostgreSQLIntegracionTests(unittest.TestCase):
             bundle = Path(temporal) / 'bundle-c17'
             manifiesto = crear_bundle_postgresql(self.engine, bundle)
             self.assertEqual(
-                manifiesto['schema_version'], '20261102_0013_patient_self_service')
+                manifiesto['schema_version'], '20261102_0014_financial_ledger')
             self.assertEqual(manifiesto['table_counts']['recordatorios_outbox'], 4)
             texto_manifest = (bundle / 'manifest.json').read_text(encoding='utf-8')
             self.assertNotIn('Nombre ficticio C-17', texto_manifest)

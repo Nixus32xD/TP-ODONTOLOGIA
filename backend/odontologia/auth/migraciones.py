@@ -3,7 +3,7 @@ from pathlib import Path
 import sqlite3
 
 
-VERSION_ESQUEMA_AUTENTICACION = 12
+VERSION_ESQUEMA_AUTENTICACION = 13
 
 
 def _migrar_auditoria(conexion: sqlite3.Connection) -> None:
@@ -34,11 +34,13 @@ def _migrar_auditoria(conexion: sqlite3.Connection) -> None:
                 'recordatorio.invalidado', 'recordatorio.procesado', 'recordatorio.fallo',
                 'portal.disponibilidad.consultada', 'portal.turnos.consultados',
                 'portal.turno.reservado', 'portal.turno.cancelado',
-                'portal.turno.reprogramado', 'portal.acceso.denegado')),
+                'portal.turno.reprogramado', 'portal.acceso.denegado',
+                'cargo.creado', 'cobro.registrado', 'cobro.revertido',
+                'finanzas.consultadas')),
             resource_type TEXT NOT NULL CHECK (resource_type IN (
                 'turno', 'paciente', 'profesional', 'box', 'prestacion',
                 'horario', 'excepcion', 'bloqueo', 'cuenta', 'sesion', 'historia', 'evolucion',
-                'odontograma', 'plan', 'recordatorio', 'portal')),
+                'odontograma', 'plan', 'recordatorio', 'portal', 'finanzas')),
             resource_id TEXT,
             result TEXT NOT NULL CHECK (result IN ('confirmado', 'rechazado')),
             CHECK (
@@ -94,7 +96,11 @@ def _migrar_auditoria(conexion: sqlite3.Connection) -> None:
                 (action = 'portal.turno.reservado' AND resource_type = 'turno' AND result = 'confirmado') OR
                 (action = 'portal.turno.cancelado' AND resource_type = 'turno' AND result = 'confirmado') OR
                 (action = 'portal.turno.reprogramado' AND resource_type = 'turno' AND result = 'confirmado') OR
-                (action = 'portal.acceso.denegado' AND resource_type = 'portal' AND result = 'rechazado')
+                (action = 'portal.acceso.denegado' AND resource_type = 'portal' AND result = 'rechazado') OR
+                (action = 'cargo.creado' AND resource_type = 'finanzas' AND result = 'confirmado') OR
+                (action = 'cobro.registrado' AND resource_type = 'finanzas' AND result = 'confirmado') OR
+                (action = 'cobro.revertido' AND resource_type = 'finanzas' AND result = 'confirmado') OR
+                (action = 'finanzas.consultadas' AND resource_type = 'finanzas' AND result = 'confirmado')
             ),
             CHECK (resource_type != 'sesion' OR resource_id IS NULL),
             CHECK (action != 'sesion.rechazada' OR (actor_id IS NULL AND resource_id IS NULL))
@@ -644,6 +650,69 @@ def _migrar_portal_paciente(conexion: sqlite3.Connection) -> None:
             UNIQUE (paciente_id, operacion, clave)
         )
     ''')
+def _migrar_finanzas(conexion: sqlite3.Connection) -> None:
+    conexion.execute('''CREATE TABLE IF NOT EXISTS cargos_financieros (
+        id TEXT PRIMARY KEY,
+        paciente_id TEXT NOT NULL REFERENCES pacientes(id) ON DELETE RESTRICT,
+        monto_centavos INTEGER NOT NULL CHECK (
+            typeof(monto_centavos) = 'integer' AND monto_centavos BETWEEN 1 AND 99999999999),
+        concepto TEXT NOT NULL CHECK (length(trim(concepto)) BETWEEN 1 AND 200),
+        created_at TEXT NOT NULL
+    )''')
+    conexion.execute('''CREATE TABLE IF NOT EXISTS cobros_financieros (
+        id TEXT PRIMARY KEY,
+        cargo_id TEXT NOT NULL REFERENCES cargos_financieros(id) ON DELETE RESTRICT,
+        monto_centavos INTEGER NOT NULL CHECK (
+            typeof(monto_centavos) = 'integer' AND monto_centavos BETWEEN 1 AND 99999999999),
+        created_at TEXT NOT NULL
+    )''')
+    conexion.execute('''CREATE TABLE IF NOT EXISTS reversiones_cobros (
+        id TEXT PRIMARY KEY,
+        cobro_id TEXT NOT NULL REFERENCES cobros_financieros(id) ON DELETE RESTRICT,
+        monto_centavos INTEGER NOT NULL CHECK (
+            typeof(monto_centavos) = 'integer' AND monto_centavos BETWEEN 1 AND 99999999999),
+        motivo TEXT NOT NULL CHECK (length(trim(motivo)) BETWEEN 1 AND 500),
+        created_at TEXT NOT NULL
+    )''')
+    conexion.execute('''CREATE TABLE IF NOT EXISTS idempotencia_financiera (
+        id TEXT PRIMARY KEY,
+        actor_id TEXT NOT NULL REFERENCES usuarios(id) ON DELETE RESTRICT,
+        operacion TEXT NOT NULL CHECK (operacion IN ('cargo', 'cobro', 'reversion')),
+        clave TEXT NOT NULL CHECK (length(clave) BETWEEN 1 AND 128),
+        fingerprint TEXT NOT NULL CHECK (length(fingerprint) = 64),
+        respuesta_json TEXT NOT NULL,
+        created_at TEXT NOT NULL,
+        UNIQUE (actor_id, operacion, clave)
+    )''')
+    conexion.execute('''CREATE INDEX IF NOT EXISTS ix_cargos_financieros_paciente_fecha_id
+        ON cargos_financieros(paciente_id, created_at, id)''')
+    conexion.execute('''CREATE INDEX IF NOT EXISTS ix_cobros_financieros_cargo_fecha_id
+        ON cobros_financieros(cargo_id, created_at, id)''')
+    conexion.execute('''CREATE INDEX IF NOT EXISTS ix_reversiones_cobros_cobro_fecha_id
+        ON reversiones_cobros(cobro_id, created_at, id)''')
+    for tabla in ('cargos_financieros', 'cobros_financieros', 'reversiones_cobros'):
+        for operacion in ('UPDATE', 'DELETE'):
+            conexion.execute(f'''CREATE TRIGGER IF NOT EXISTS {tabla}_no_{operacion.lower()}
+                BEFORE {operacion} ON {tabla} BEGIN
+                SELECT RAISE(ABORT, '{tabla} es append-only'); END''')
+
+
+def _actualizar_auditoria_finanzas(conexion: sqlite3.Connection) -> None:
+    triggers = {'eventos_auditoria_no_update', 'eventos_auditoria_no_delete'}
+    existentes = {fila[0] for fila in conexion.execute(
+        "SELECT name FROM sqlite_master WHERE type='trigger'")}
+    for trigger in triggers & existentes:
+        conexion.execute(f'DROP TRIGGER {trigger}')
+    conexion.execute('DROP INDEX IF EXISTS ix_eventos_auditoria_fecha_id')
+    conexion.execute('ALTER TABLE eventos_auditoria RENAME TO eventos_auditoria_v12')
+    _migrar_auditoria(conexion)
+    conexion.execute('''INSERT INTO eventos_auditoria
+        (id, created_at, actor_id, action, resource_type, resource_id, result)
+        SELECT id, created_at, actor_id, action, resource_type, resource_id, result
+        FROM eventos_auditoria_v12''')
+    conexion.execute('DROP TABLE eventos_auditoria_v12')
+
+
 class MigracionAutenticacionError(RuntimeError):
     """Error público y genérico al preparar el almacenamiento de autenticación."""
 
@@ -688,7 +757,7 @@ def migrar_sqlite(ruta_db: str | Path) -> None:
                 conexion.execute('UPDATE auth_schema_version SET version=2')
                 tablas.add('eventos_auditoria')
                 version = (2,)
-            if version not in ((2,), (3,), (4,), (5,), (6,), (7,), (8,), (9,), (10,), (11,),
+            if version not in ((2,), (3,), (4,), (5,), (6,), (7,), (8,), (9,), (10,), (11,), (12,),
                                (VERSION_ESQUEMA_AUTENTICACION,)):
                 raise MigracionAutenticacionError('La versión de autenticación no es compatible.')
             if not {'usuarios', 'sesiones', 'eventos_auditoria'} <= tablas:
@@ -756,8 +825,15 @@ def migrar_sqlite(ruta_db: str | Path) -> None:
                 _actualizar_auditoria_portal(conexion)
                 _migrar_portal_paciente(conexion)
                 conexion.execute('UPDATE auth_schema_version SET version=12')
+                version = (12,)
             else:
                 _migrar_portal_paciente(conexion)
+            if version == (12,):
+                _actualizar_auditoria_finanzas(conexion)
+                _migrar_finanzas(conexion)
+                conexion.execute('UPDATE auth_schema_version SET version=13')
+            else:
+                _migrar_finanzas(conexion)
             if conexion.execute('PRAGMA foreign_key_check').fetchone() is not None:
                 raise MigracionAutenticacionError(
                     'La migración produciría referencias incompletas.')
@@ -806,6 +882,7 @@ def migrar_sqlite(ruta_db: str | Path) -> None:
         _migrar_odontograma_y_planes(conexion)
         _migrar_recordatorios(conexion)
         _migrar_portal_paciente(conexion)
+        _migrar_finanzas(conexion)
         if conexion.execute('PRAGMA foreign_key_check').fetchone() is not None:
             raise MigracionAutenticacionError(
                 'La migración produciría referencias incompletas.')

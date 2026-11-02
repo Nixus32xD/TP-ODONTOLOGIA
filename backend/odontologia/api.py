@@ -64,6 +64,9 @@ from odontologia.portal_paciente import (
     reprogramar_turno_portal,
     reservar_turno_paciente,
 )
+from odontologia.finanzas_ledger import (
+    ErrorFinanzas, consultar_cuenta, crear_cargo, registrar_cobro, revertir_cobro,
+)
 
 
 class SolicitudTurno(BaseModel):
@@ -229,6 +232,23 @@ class SolicitudPaciente(BaseModel):
     nombre: StrictStr
     telefono: StrictStr | None = None
     acepta_recordatorios: StrictBool = False
+
+
+class SolicitudCargoFinanciero(BaseModel):
+    model_config = ConfigDict(extra='forbid')
+    monto_ars: StrictStr
+    concepto: StrictStr
+
+
+class SolicitudMovimientoFinanciero(BaseModel):
+    model_config = ConfigDict(extra='forbid')
+    monto_ars: StrictStr
+
+
+class SolicitudReversionFinanciera(BaseModel):
+    model_config = ConfigDict(extra='forbid')
+    monto_ars: StrictStr
+    motivo: StrictStr
 
 
 class ActualizacionPaciente(BaseModel):
@@ -586,6 +606,11 @@ def crear_app(ruta_db: str | Path | None = None, *, timeout_segundos: float = 5.
 
     @app.exception_handler(ErrorPortalPaciente)
     async def error_portal_paciente(request: Request, exc: ErrorPortalPaciente):
+        return JSONResponse(status_code=exc.estado, content={
+            'codigo': exc.codigo, 'campo': None, 'mensaje': str(exc)})
+
+    @app.exception_handler(ErrorFinanzas)
+    async def error_finanzas(request: Request, exc: ErrorFinanzas):
         return JSONResponse(status_code=exc.estado, content={
             'codigo': exc.codigo, 'campo': None, 'mensaje': str(exc)})
 
@@ -1257,6 +1282,54 @@ def crear_app(ruta_db: str | Path | None = None, *, timeout_segundos: float = 5.
         asegurar_esquema()
         eliminar_bloqueo(auth_engine, bloqueo_id, actor_id=_identidad['usuario_id'])
         return None
+
+    @app.get('/finanzas/pacientes/{paciente_id}', responses={
+        401: respuestas_auth[401], 403: respuestas_auth[403], 404: {'model': ErrorHTTP},
+        503: respuestas_auth[503],
+    })
+    def cuenta_financiera(paciente_id: str, identidad=Depends(personal_operativo)):
+        asegurar_esquema()
+        return consultar_cuenta(auth_engine, paciente_id=paciente_id,
+                                actor_id=identidad['usuario_id'])
+
+    @app.post('/finanzas/pacientes/{paciente_id}/cargos', status_code=201, responses={
+        401: respuestas_auth[401], 403: respuestas_auth[403], 404: {'model': ErrorHTTP},
+        409: {'model': ErrorHTTP}, 422: {'model': ErrorHTTP}, 503: respuestas_auth[503],
+    })
+    def alta_cargo_financiero(
+            paciente_id: str, solicitud: SolicitudCargoFinanciero,
+            clave: str = Header(..., alias='Idempotency-Key', min_length=1, max_length=128),
+            identidad=Depends(personal_operativo)):
+        asegurar_esquema()
+        return crear_cargo(auth_engine, paciente_id=paciente_id,
+                           actor_id=identidad['usuario_id'], clave=clave,
+                           monto_ars=solicitud.monto_ars, concepto=solicitud.concepto)
+
+    @app.post('/finanzas/cargos/{cargo_id}/cobros', status_code=201, responses={
+        401: respuestas_auth[401], 403: respuestas_auth[403], 404: {'model': ErrorHTTP},
+        409: {'model': ErrorHTTP}, 422: {'model': ErrorHTTP}, 503: respuestas_auth[503],
+    })
+    def alta_cobro_financiero(
+            cargo_id: str, solicitud: SolicitudMovimientoFinanciero,
+            clave: str = Header(..., alias='Idempotency-Key', min_length=1, max_length=128),
+            identidad=Depends(personal_operativo)):
+        asegurar_esquema()
+        return registrar_cobro(auth_engine, cargo_id=cargo_id,
+                               actor_id=identidad['usuario_id'], clave=clave,
+                               monto_ars=solicitud.monto_ars)
+
+    @app.post('/finanzas/cobros/{cobro_id}/reversiones', status_code=201, responses={
+        401: respuestas_auth[401], 403: respuestas_auth[403], 404: {'model': ErrorHTTP},
+        409: {'model': ErrorHTTP}, 422: {'model': ErrorHTTP}, 503: respuestas_auth[503],
+    })
+    def alta_reversion_financiera(
+            cobro_id: str, solicitud: SolicitudReversionFinanciera,
+            clave: str = Header(..., alias='Idempotency-Key', min_length=1, max_length=128),
+            identidad=Depends(administrador)):
+        asegurar_esquema()
+        return revertir_cobro(auth_engine, cobro_id=cobro_id,
+                              actor_id=identidad['usuario_id'], clave=clave,
+                              monto_ars=solicitud.monto_ars, motivo=solicitud.motivo)
 
     @app.get('/auditoria', responses={
         401: respuestas_auth[401], 403: respuestas_auth[403],

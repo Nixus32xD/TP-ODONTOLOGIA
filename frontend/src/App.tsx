@@ -5,6 +5,7 @@ import Catalogos from './pages/Catalogos'
 import Disponibilidad from './pages/Disponibilidad'
 import AtencionesClinicas from './pages/AtencionesClinicas'
 import PortalPaciente from './pages/PortalPaciente'
+import CuentaCorriente from './pages/CuentaCorriente'
 
 function InicioSesionActiva() {
   const { identidad, cerrar, token } = useSession()
@@ -49,6 +50,7 @@ function InicioSesionActiva() {
       {identidad.rol !== 'profesional' && <>
         <Catalogos rol={identidad.rol} token={token} />
         <Disponibilidad token={token} />
+        <CuentaCorriente rol={identidad.rol} token={token} />
       </>}
     </main>
   )

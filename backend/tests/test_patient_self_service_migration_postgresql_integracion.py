@@ -84,7 +84,7 @@ class PatientSelfServiceMigrationPostgreSQLTests(unittest.TestCase):
                 "VALUES ('paciente-c18-a','profesional-c18','box-c18',100,130) RETURNING id"
             )).scalar_one()
 
-        command.upgrade(self.config, 'head')
+        command.upgrade(self.config, '20261102_0013_patient_self_service')
 
         with self.engine.begin() as connection:
             revision = connection.execute(text(
