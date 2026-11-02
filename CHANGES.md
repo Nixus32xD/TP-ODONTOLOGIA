@@ -376,7 +376,7 @@ Secuencia compatible con dependencias, sin prometer una optimización temporal n
 
 ### [C-16] `gestionar-odontograma-y-plan`
 
-- **Estado**: `[ ]` planificado; extensión clínica.
+- **Estado**: `[ ]` propuesta OpenSpec lista para Apply, sin implementación; ver `openspec/changes/gestionar-odontograma-y-plan/`.
 - **Scope**:
   - Definir `HallazgoOdontograma`, `PlanTratamiento` y sus prestaciones/etapas, con nomenclatura y transiciones revisadas por quien define el dominio; no inferir diagnósticos ni automatizar decisiones clínicas.
   - Proponer consulta/registro versionado de odontograma y plan por paciente, con detalle de estado, profesional y fecha; una nueva versión no elimina observaciones previas. Presentar vista clínica mínima sobre la base UI existente.
