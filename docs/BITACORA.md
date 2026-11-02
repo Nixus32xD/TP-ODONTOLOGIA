@@ -235,3 +235,13 @@ Se implementaron horarios semanales, excepciones fechadas y bloqueos por profesi
 Validación completa tras revisión: SQLite **200 tests OK, 1 PostgreSQL omitido**; PostgreSQL temporal aislado en `127.0.0.1:55432`, **223/223 OK**; migraciones incluidas; `pip check` limpio; prueba de carga IANA OK; OpenSpec strict **9/9**; `git diff --check` sin errores (sólo avisos normales LF/CRLF del checkout). El clúster temporal se detuvo y el puerto quedó libre. No se usó la instancia local 5432 ni servicios externos.
 
 La [evidencia TDD y comandos](evidencia/implementacion-disponibilidad.md) registra los límites de trazabilidad por tarea: algunas rutas/servicios ya existían al retomar C-07 y no se atribuyen RED separados donde no hay evidencia; la matriz de carreras reutiliza el lock de C-01. La revisión añadió el caso límite de turno que termina exactamente a las 00:00: el turno cabe en `23:00–24:00`, pero sigue rechazándose si continúa después de medianoche. C-07 quedó sincronizado, archivado y comiteado localmente como `fd21a9a`. No se hizo push; el informe Discovery preexistente no se modificó.
+
+## 2026-11-02 — C-09 estados y cancelaciones de turnos
+
+Se implementó C-09 en Apply: SQLite v6 y PostgreSQL Alembic 0007 agregan estado y preservan turnos existentes; sólo `reservado` y `confirmado` ocupan recursos. Administrador y Recepción pueden confirmar, cancelar, marcar atendido o ausente. La cancelación repetida es idempotente; cada transición efectiva usa auditoría metadata-only atómica. El estado comparte el lock de altas en ambos motores y C-01 standalone conserva su contrato no migrado.
+
+Revisión independiente corrigió dos defectos: la validación C-07 ahora ignora estados terminales al cambiar horarios, excepciones y bloqueos, y el chequeo de esquema exige `turnos.estado` antes de atender operaciones migradas. Se agregaron pruebas RED/GREEN en SQLite y PostgreSQL; los turnos ocupantes aún generan 409 y un esquema incompleto responde 503 antes de mutar.
+
+Validación final tras sincronizar specs: SQLite **222 tests OK, 1 integración PostgreSQL omitida**; PostgreSQL temporal aislado `127.0.0.1:55432`, **251/251 OK**; `pip check` limpio; OpenSpec strict **9/9**; `git diff --check` sin errores (avisos normales LF/CRLF). El servidor temporal se detuvo y `pg_ctl status` confirmó que no corre. La [evidencia de C-09](evidencia/implementacion-estados-turnos.md) documenta comandos, resultados y límites TDD observados.
+
+C-09 quedó sincronizado y archivado localmente; se prepara un commit separado, sin push ni publicación.

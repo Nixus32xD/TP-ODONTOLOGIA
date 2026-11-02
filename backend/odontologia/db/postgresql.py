@@ -16,7 +16,7 @@ from odontologia.agenda import (
 from odontologia.db.models import AgendaMutex, Box, Paciente, Profesional, Turno
 
 
-REVISION_ESQUEMA_ACTUAL = '20261102_0006_agenda_availability'
+REVISION_ESQUEMA_ACTUAL = '20261102_0007_turn_status'
 
 
 def crear_engine(database_url: str) -> Engine:
@@ -55,6 +55,7 @@ def _hay_solapamiento(session: Session, columna: str, recurso_id: str,
             campo == recurso_id,
             modelo.inicio_minuto < fin_minuto,
             modelo.fin_minuto > inicio_minuto,
+            modelo.estado.in_(('reservado', 'confirmado')),
         )
         .limit(1)
     ) is not None

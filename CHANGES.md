@@ -1,7 +1,7 @@
 # CHANGES — Secuencia de Implementación
 
 > Índice canónico del proyecto **TP-ODONTOLOGIA**, actualizado el 2026-11-02.
-> **Plan del producto completo; C-01–C-07 están implementados, validados y archivados localmente. C-08–C-20 son futuros, con autorizaciones específicas de decisiones materiales según R-10.**
+> **Plan del producto completo; C-01-C-07 y C-09 están implementados, validados y archivados localmente. C-08 y C-10-C-20 siguen planificados, con autorizaciones específicas de decisiones materiales según R-10.**
 > **Leer este archivo antes de ejecutar cualquier `/opsx:propose`.**
 
 ---
@@ -35,8 +35,8 @@ La KB y las instrucciones existentes documentan principalmente la porción acad�
 | --- | --- | --- |
 | Versionado de esquema y migración a PostgreSQL con SQLAlchemy (stack de la cátedra) | C-02 | Implementado, validado con PostgreSQL aislado y archivado; copia unidireccional, fuente SQLite preservada. |
 | Identidades, permisos, sesiones y auditoría | C-03/C-04 | C-03 y C-04 implementados, validados y archivados. |
-| Datos mínimos, prestaciones y disponibilidad | C-05/C-06/C-07 | C-05–C-07 implementados y archivados localmente; C-07 aplica disponibilidad con SQLite v5/Alembic 0006 |
-| Estados, cancelación y reprogramación | C-09/C-10 | Transiciones y concurrencia especificadas; exclusión del paciente explícitamente decidida |
+| Datos mínimos, prestaciones y disponibilidad | C-05/C-06/C-07 | C-05–C-07 implementados y archivados localmente; C-09 extiende el esquema a SQLite v6/Alembic 0007 |
+| Estados, cancelación y reprogramación | C-09/C-10 | C-09 implementa estados, transiciones y concurrencia en Apply; C-10 sigue planificado; exclusión del paciente explícitamente decidida |
 | UI y operación desplegada | C-11/C-12/C-13/C-14 | Interfaz en React + TypeScript + Vite (fijada por la cátedra), despliegue con Docker Compose, recuperación y seguridad probadas |
 | Datos clínicos, comunicaciones y dinero | C-15 a C-20 | Revisión de permisos, privacidad, reglas clínicas/monetarias y proveedor cuando corresponda; sólo simulación en este ejercicio |
 
@@ -241,8 +241,8 @@ Secuencia compatible con dependencias, sin prometer una optimización temporal n
 - **Scope**:
   - SQLite v5 y Alembic `20261102_0006_agenda_availability`; `America/Argentina/Mendoza`, con `tzdata` fijado para Windows.
   - `GET/PUT /horarios`, gestión de excepciones fechadas y `GET/POST/DELETE /bloqueos`, para Administrador y Recepción. Excepción reemplaza la semana del recurso/día; lista vacía cierra; bloqueo pertenece a exactamente un profesional o box.
-  - Nuevas reservas deben caber en un tramo del profesional y del box, sin cruce de medianoche ni solapamiento con bloqueos. Los cambios incompatibles con turnos pasados o futuros devuelven 409 y se revierten sin evento.
-  - La API valida versión y tablas C-07 y falla cerrada; el servicio standalone C-01 en SQLite no migrado preserva su contrato. Auditoría metadata-only y atómica.
+  - Nuevas reservas deben caber en un tramo del profesional y del box, sin cruce de medianoche ni solapamiento con bloqueos. Cambios incompatibles con turnos ocupantes (`reservado`/`confirmado`), incluso pasados, devuelven 409; los terminales se conservan pero no bloquean la reconfiguración.
+  - La API valida versión, tablas C-07 y la columna `turnos.estado`, y falla cerrada; el servicio standalone C-01 en SQLite no migrado preserva su contrato. Auditoría metadata-only y atómica.
   - Evidencia: [implementacion-disponibilidad.md](docs/evidencia/implementacion-disponibilidad.md).
 - **Dependencias**: C-05, C-06.
 - **Governance**: MEDIO.
@@ -269,11 +269,13 @@ Secuencia compatible con dependencias, sin prometer una optimización temporal n
 
 ### [C-09] `gestionar-estados-y-cancelaciones`
 
-- **Estado**: [ ] planificado; no implementado ni propuesto en OpenSpec.
-- **Scope**:
-  - Añadir estados de turno y transiciones revisadas: reservado, confirmado, atendido, ausente y cancelado como propuesta inicial; definir cuáles ocupan recursos y cómo se conserva el historial.
-  - Proponer `POST /turnos/{id}/confirmacion` y `POST /turnos/{id}/cancelacion`; modificar consultas de exclusión para liberar sólo ocupaciones canceladas. Migrar filas existentes a un estado ocupante, sin alterar su horario o identidad.
-  - Tests: transición válida/inválida, cancelación repetida con resultado explícito, permisos, liberación de recursos y competencia cancelación/alta; sin borrado físico de evidencia.
+- **Estado**: Implementado, validado y archivado localmente; commit local separado de C-07.
+- **Scope aplicado**:
+  - Estado restringido: `reservado`, `confirmado`, `atendido`, `ausente`, `cancelado`; transiciones `reservado`→`confirmado`/`cancelado` y `confirmado`→`atendido`/`ausente`/`cancelado`; los estados terminales permanecen en historial.
+  - Sólo estados `reservado` y `confirmado` ocupan profesional/box. Alta nueva responde `reservado`; migración conserva ID, referencias e intervalo de turnos existentes.
+  - Endpoints protegidos `POST /turnos/{id}/confirmacion`, `/cancelacion`, `/atencion`, `/ausencia` para Administrador y Recepción; respuesta de transición `{id, estado}`. Cancelación repetida responde igual sin otra mutación auditada.
+  - Acción de auditoría `turno.estado_actualizado`, metadata-only y atómica; SQLite v6 reconstruye tabla append-only preservando eventos, PostgreSQL usa Alembic `20261102_0007_turn_status`. Transiciones comparten lock de altas en ambos motores.
+  - Compatibilidad del servicio C-01 standalone no migrado; Profesional continúa sin acceso a la API; no hay reprogramación ni borrado físico.
 - **Dependencias**: C-04, C-05, C-06.
 - **Governance**: MEDIO — máquina de estados y ocupación.
 - **Leer antes**:

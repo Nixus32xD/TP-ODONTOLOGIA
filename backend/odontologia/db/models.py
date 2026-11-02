@@ -66,6 +66,9 @@ class Turno(Base):
     __table_args__ = (
         CheckConstraint('id > 0', name='ck_turnos_id_positivo'),
         CheckConstraint('inicio_minuto < fin_minuto', name='ck_turnos_intervalo'),
+        CheckConstraint(
+            "estado IN ('reservado', 'confirmado', 'atendido', 'ausente', 'cancelado')",
+            name='ck_turnos_estado'),
         Index('ix_turnos_profesional_inicio', 'profesional_id', 'inicio_minuto'),
         Index('ix_turnos_box_inicio', 'box_id', 'inicio_minuto'),
     )
@@ -77,6 +80,8 @@ class Turno(Base):
     box_id: Mapped[str] = mapped_column(String(64), ForeignKey('boxes.id'), nullable=False)
     inicio_minuto: Mapped[int] = mapped_column(BigInteger, nullable=False)
     fin_minuto: Mapped[int] = mapped_column(BigInteger, nullable=False)
+    estado: Mapped[str] = mapped_column(
+        String(16), default='reservado', server_default='reservado', nullable=False)
 
 
 class AgendaMutex(Base):
@@ -200,7 +205,7 @@ class EventoAuditoria(Base):
     __tablename__ = 'eventos_auditoria'
     __table_args__ = (
         CheckConstraint(
-            "action IN ('turno.creado', 'paciente.creado', 'paciente.actualizado', "
+            "action IN ('turno.creado', 'turno.estado_actualizado', 'paciente.creado', 'paciente.actualizado', "
             "'paciente.desactivado', 'paciente.reactivado', 'profesional.creado', "
             "'profesional.actualizado', 'profesional.desactivado', 'profesional.reactivado', "
             "'box.creado', 'box.actualizado', 'box.desactivado', 'box.reactivado', "
@@ -216,6 +221,7 @@ class EventoAuditoria(Base):
             name='ck_eventos_auditoria_result'),
         CheckConstraint(
             "(action = 'turno.creado' AND resource_type = 'turno' AND result = 'confirmado') OR "
+            "(action = 'turno.estado_actualizado' AND resource_type = 'turno' AND result = 'confirmado') OR "
             "(action = 'paciente.creado' AND resource_type = 'paciente' AND result = 'confirmado') OR "
             "(action = 'paciente.actualizado' AND resource_type = 'paciente' AND result = 'confirmado') OR "
             "(action = 'paciente.desactivado' AND resource_type = 'paciente' AND result = 'confirmado') OR "

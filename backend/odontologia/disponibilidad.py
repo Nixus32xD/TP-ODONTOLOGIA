@@ -250,7 +250,10 @@ def _registrar(session: Session, *, accion: str, tipo: str,
 def _validar_turnos_existentes(session: Session, tipo_recurso: str, recurso_id: str,
                                *, fecha_local: date | None = None) -> None:
     _, columna = _recurso(tipo_recurso)
-    consulta = select(Turno).where(getattr(Turno, columna) == recurso_id)
+    consulta = select(Turno).where(
+        getattr(Turno, columna) == recurso_id,
+        Turno.estado.in_(('reservado', 'confirmado')),
+    )
     epoch = datetime(1970, 1, 1, tzinfo=timezone.utc)
     for turno in session.scalars(consulta):
         inicio = epoch + timedelta(minutes=turno.inicio_minuto)
@@ -271,6 +274,7 @@ def _exigir_sin_turnos_solapados(session: Session, tipo_recurso: str, recurso_id
     _, columna = _recurso(tipo_recurso)
     turno_id = session.scalar(select(Turno.id).where(
         getattr(Turno, columna) == recurso_id,
+        Turno.estado.in_(('reservado', 'confirmado')),
         Turno.inicio_minuto < fin_minuto,
         Turno.fin_minuto > inicio_minuto,
     ).limit(1))

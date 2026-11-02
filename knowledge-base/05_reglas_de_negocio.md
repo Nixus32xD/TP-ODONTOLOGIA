@@ -36,7 +36,7 @@ Solapamiento: existente.inicio < solicitado.fin y existente.fin > solicitado.ini
 | Concurrencia | BEGIN IMMEDIATE antes de consultar; mismo archivo local vía módulo |
 | Timeout | 5s por defecto; número finito positivo; no deadline global |
 
-El alcance histórico de C-01 no incluye horarios. C-07 lo amplía sólo en la API con el esquema migrado a SQLite v5 o PostgreSQL 0006; esa capa rechaza cruces de medianoche y turnos fuera de horario según las reglas de disponibilidad indicadas abajo.
+El alcance histórico de C-01 no incluye horarios ni estado. C-07 y C-09 amplían sólo la API con el esquema migrado a SQLite v6 o PostgreSQL 0007; esa capa rechaza cruces de medianoche y turnos fuera de horario según las reglas de disponibilidad indicadas abajo.
 
 ## Dominio: catálogos — C-06
 
@@ -60,9 +60,21 @@ El alcance histórico de C-01 no incluye horarios. C-07 lo amplía sólo en la A
 | Excepciones | Reemplazan el horario semanal para ese recurso y fecha local; lista vacía cierra y borrar restaura la recurrencia |
 | Reservas | En SQLite v5 y PostgreSQL 0006 el turno debe caber entero dentro de un tramo de ambos recursos; un recurso sin configuración está cerrado |
 | Bloqueos | Intervalo ISO 8601 con offset, comparación UTC; un solapamiento impide nuevas reservas |
-| Cambios de configuración | Si el cambio invalida algún turno del recurso objetivo, incluso pasado, responder `turnos_afectados`/409 y no alterar configuración ni auditoría; permite configurar profesional y box progresivamente tras migrar turnos anteriores |
-| Compatibilidad | API falla cerrada si faltan la versión o tablas C-07; servicio standalone C-01 sin `auth_schema_version` conserva el contrato histórico hasta migración explícita |
+| Cambios de configuración | Si el cambio invalida un turno ocupante (`reservado` o `confirmado`) del recurso objetivo, incluso pasado, responder `turnos_afectados`/409 y no alterar configuración ni auditoría; los estados terminales se preservan como historial y no impiden reconfigurar |
+| Compatibilidad | API falla cerrada si faltan versión, tablas C-07 o la columna `turnos.estado`; servicio standalone C-01 sin `auth_schema_version` conserva el contrato histórico hasta migración explícita |
 | Auditoría | Mutaciones confirmadas guardan actor, acción, tipo, ID opaco y resultado; no fecha, horas, tramos ni cuerpo; fallo revierte la transacción |
+
+## Dominio: ciclo de vida de turnos — C-09
+
+| Tema | Contrato aplicado |
+| --- | --- |
+| Estados | `reservado`, `confirmado`, `atendido`, `ausente`, `cancelado`; toda alta migrada comienza `reservado` y las filas históricas se inicializan así |
+| Transiciones | `reservado`→`confirmado` o `cancelado`; `confirmado`→`atendido`, `ausente` o `cancelado`; los tres últimos son terminales |
+| Ocupación | Sólo `reservado` y `confirmado` bloquean profesional/box; estados terminales conservan turno e historial y liberan ambos |
+| Operaciones | `POST /turnos/{id}/confirmacion`, `/cancelacion`, `/atencion`, `/ausencia`; Administrador y Recepción, respuesta `{id, estado}` |
+| Repetición | Cancelar un turno ya cancelado devuelve 200 con el mismo estado, sin actualizar ni emitir evento adicional; otras transiciones inválidas responden 409 |
+| Auditoría | Mutación efectiva y `turno.estado_actualizado` son atómicas; sólo actor, acción, recurso, ID opaco y resultado; sin referencias ni datos del horario |
+| Concurrencia | Transición comparte `BEGIN IMMEDIATE` SQLite o `AgendaMutex` PostgreSQL con las altas; C-01 standalone sin migrar conserva su contrato anterior |
 
 ## Excepciones globales y restricciones confirmadas
 

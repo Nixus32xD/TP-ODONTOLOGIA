@@ -29,7 +29,7 @@ class MigracionAutenticacionSQLiteTests(unittest.TestCase):
         with closing(sqlite3.connect(self.ruta)) as conexion:
             self.assertEqual(conexion.execute('SELECT COUNT(*) FROM pacientes').fetchone()[0], 2)
             self.assertEqual(conexion.execute('SELECT COUNT(*) FROM turnos').fetchone()[0], 0)
-            self.assertEqual(conexion.execute('SELECT version FROM auth_schema_version').fetchone()[0], 5)
+            self.assertEqual(conexion.execute('SELECT version FROM auth_schema_version').fetchone()[0], 6)
 
     def test_migracion_repetida_no_modifica_la_agenda(self):
         migrar_sqlite(self.ruta)
@@ -65,7 +65,7 @@ class MigracionAutenticacionSQLiteTests(unittest.TestCase):
                 conexion.execute('SELECT id, paciente_id FROM turnos').fetchone(),
                 (turno.id, 'paciente-A'))
             self.assertEqual(conexion.execute(
-                'SELECT version FROM auth_schema_version').fetchone(), (5,))
+                'SELECT version FROM auth_schema_version').fetchone(), (6,))
             with self.assertRaises(sqlite3.IntegrityError):
                 conexion.execute(
                     "INSERT INTO pacientes(id, nombre, telefono, activo) "

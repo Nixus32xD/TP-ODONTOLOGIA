@@ -122,8 +122,7 @@ El sistema SHALL tratar los intervalos como `[inicio, fin)`, permitiendo empezar
 - **THEN** se registra el segundo turno
 
 ### Requirement: Políticas excluidas de esta porción
-
-El sistema SHALL aceptar duración positiva libre sin asociarla a prestaciones; con C-07 aplicado, cada alta nueva además SHALL caber íntegramente en la disponibilidad local del profesional y del box y no solaparse con bloqueos. Todo turno registrado SHALL ocupar recursos; no hay cancelación ni estados. SHALL permitir el mismo paciente simultáneo si profesional y box difieren, sin compatibilidad adicional ni excepción de sobreturno.
+El sistema SHALL aceptar duración positiva libre, sin asociarla a prestaciones. Con C-07, cada alta SHALL caber en la disponibilidad del profesional y del box y no solaparse con bloqueos. Con C-09, sólo `reservado` y `confirmado` SHALL ocupar recursos; los estados terminales liberan sus intervalos sin borrar la fila. El mismo paciente SHALL poder tener turnos simultáneos si profesional y box difieren, sin compatibilidad adicional ni sobreturnos.
 
 #### Scenario: Cruce de medianoche
 - **GIVEN** un turno que comienza un día local y finaliza al siguiente, y horarios que no cruzan medianoche
@@ -134,7 +133,6 @@ El sistema SHALL aceptar duración positiva libre sin asociarla a prestaciones; 
 - **GIVEN** paciente-A tiene turno con profesional-A y box-A
 - **WHEN** el mismo paciente solicita el mismo intervalo con profesional-B y box-B libres y disponibles
 - **THEN** se acepta; la exclusión del paciente queda expresamente fuera del contrato
-
 ### Requirement: Competencia sobre una agenda compartida local
 Para solicitudes simultáneas válidas mediante esta operación sobre la misma agenda en disco local, el sistema SHALL confirmar como máximo una cuando comparten profesional o box e intervalos superpuestos. Una solicitud competidora que obtiene acceso antes del timeout SHALL evaluar los turnos ya confirmados; si el timeout se agota SHALL informar `agenda_ocupada` sin éxito ficticio.
 

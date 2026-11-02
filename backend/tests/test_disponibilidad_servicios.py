@@ -137,6 +137,53 @@ class ServiciosDisponibilidadSQLiteTests(unittest.TestCase):
             box_id='box-A', inicio=inicio,
             fin=inicio.replace(minute=30), actor_id=self.admin['id'])
 
+    def _cambiar_estado_turno(self, turno_id, estado):
+        with closing(sqlite3.connect(self.ruta)) as conexion:
+            conexion.execute('UPDATE turnos SET estado=? WHERE id=?', (estado, turno_id))
+            conexion.commit()
+
+    def test_turno_terminal_no_impide_reemplazar_horario(self):
+        horario = {'1': [{'inicio': '09:00', 'fin': '12:00'}]}
+        guardar_horario(self.engine, 'profesional', 'profesional-A', horario)
+        guardar_horario(self.engine, 'box', 'box-A', horario)
+        turno = self._turno('2026-11-02')
+        self._cambiar_estado_turno(turno.id, 'cancelado')
+
+        actualizado = guardar_horario(self.engine, 'profesional', 'profesional-A', {
+            '1': [{'inicio': '10:00', 'fin': '12:00'}]})
+
+        self.assertEqual(actualizado['dias']['1'], [{'inicio': '10:00', 'fin': '12:00'}])
+
+    def test_turno_terminal_no_impide_cerrar_excepcion(self):
+        horario = {'1': [{'inicio': '09:00', 'fin': '12:00'}]}
+        guardar_horario(self.engine, 'profesional', 'profesional-A', horario)
+        guardar_horario(self.engine, 'box', 'box-A', horario)
+        turno = self._turno('2026-11-02')
+        excepcion = guardar_excepcion(
+            self.engine, 'profesional', 'profesional-A', '2026-11-02', horario['1'])
+        self._cambiar_estado_turno(turno.id, 'atendido')
+
+        actualizada = guardar_excepcion(
+            self.engine, 'profesional', 'profesional-A', '2026-11-02', [])
+
+        self.assertEqual(actualizada['id'], excepcion['id'])
+        self.assertEqual(actualizada['tramos'], [])
+
+    def test_turno_terminal_no_impide_crear_bloqueo(self):
+        horario = {'1': [{'inicio': '09:00', 'fin': '12:00'}]}
+        guardar_horario(self.engine, 'profesional', 'profesional-A', horario)
+        guardar_horario(self.engine, 'box', 'box-A', horario)
+        turno = self._turno('2026-11-02')
+        self._cambiar_estado_turno(turno.id, 'ausente')
+
+        bloqueo = crear_bloqueo(
+            self.engine, 'box', 'box-A',
+            datetime.fromisoformat('2026-11-02T12:15:00+00:00'),
+            datetime.fromisoformat('2026-11-02T12:45:00+00:00'))
+
+        self.assertEqual(len(listar_bloqueos(self.engine)), 1)
+        self.assertEqual(bloqueo['tipo_recurso'], 'box')
+
     def test_cambio_horario_rechaza_turnos_pasados_y_futuros_sin_evento(self):
         horario = {'1': [{'inicio': '09:00', 'fin': '12:00'}]}
         guardar_horario(self.engine, 'profesional', 'profesional-A', horario,

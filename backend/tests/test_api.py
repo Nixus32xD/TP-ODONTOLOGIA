@@ -56,7 +56,8 @@ class ApiTests(unittest.TestCase):
         respuesta = self.post_turno(json=self.datos)
         self.assertEqual(respuesta.status_code, 201)
         self.assertEqual(respuesta.json(), dict(self.datos, id=1,
-                         inicio='2026-10-15T12:00:00Z', fin='2026-10-15T12:30:00Z'))
+                         inicio='2026-10-15T12:00:00Z', fin='2026-10-15T12:30:00Z',
+                         estado='reservado'))
         self.assertEqual(self.filas(), 1)
 
     def test_adyacencia_y_recursos_independientes(self):
@@ -153,7 +154,9 @@ class ApiTests(unittest.TestCase):
             '/prestaciones', '/prestaciones/{prestacion_id}',
             '/horarios/{tipo_recurso}/{recurso_id}',
             '/horarios/{tipo_recurso}/{recurso_id}/excepciones/{fecha}',
-            '/bloqueos', '/bloqueos/{bloqueo_id}'})
+            '/bloqueos', '/bloqueos/{bloqueo_id}',
+            '/turnos/{turno_id}/confirmacion', '/turnos/{turno_id}/cancelacion',
+            '/turnos/{turno_id}/atencion', '/turnos/{turno_id}/ausencia'})
         self.assertEqual(set(rutas['/turnos']), {'post'})
         self.assertEqual(set(rutas['/turnos']['post']['responses']),
                          {'201', '401', '403', '422', '404', '409', '503', '500'})

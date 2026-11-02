@@ -6,7 +6,7 @@ import multiprocessing
 import os
 import sqlite3
 import tempfile
-from threading import Event, Thread
+from threading import Barrier, Event, Thread
 import unittest
 from io import StringIO
 from unittest.mock import patch
@@ -38,12 +38,13 @@ from odontologia.disponibilidad import (
     listar_bloqueos, obtener_excepcion, obtener_horario,
 )
 from odontologia.pacientes import ErrorPacientes, actualizar_paciente, crear_paciente
+from odontologia.turnos import transicionar_estado_turno
 from odontologia.db.migracion import ErrorMigracion, migrar_agenda_sqlite
 from odontologia.db.models import (
     AgendaMutex, Base, BloqueoAgenda, Box, EventoAuditoria, ExcepcionHorario,
     HorarioSemanal, Paciente, Prestacion, Profesional, Sesion, TramoExcepcion, Turno, Usuario,
 )
-from odontologia.db.postgresql import crear_turno_postgresql
+from odontologia.db.postgresql import _hay_solapamiento, crear_turno_postgresql
 
 
 def _url_test_database_permitida(url):
@@ -650,7 +651,7 @@ class IntegracionPostgreSQLTests(unittest.TestCase):
         finally:
             with self.engine.begin() as conexion:
                 conexion.execute(text(
-                    "UPDATE alembic_version SET version_num = '20261102_0006_agenda_availability'"))
+                    "UPDATE alembic_version SET version_num = '20261102_0007_turn_status'"))
 
     def test_revision_esquema_desconocida_falla_cerrado(self):
         self._seed_catalogos()
@@ -666,7 +667,7 @@ class IntegracionPostgreSQLTests(unittest.TestCase):
         finally:
             with self.engine.begin() as conexion:
                 conexion.execute(text(
-                    "UPDATE alembic_version SET version_num = '20261102_0006_agenda_availability'"))
+                    "UPDATE alembic_version SET version_num = '20261102_0007_turn_status'"))
 
         self.assertEqual(contexto.exception.codigo, 'almacenamiento_error')
         with Session(self.engine) as session:
@@ -789,10 +790,73 @@ class IntegracionPostgreSQLTests(unittest.TestCase):
                         'SELECT COUNT(*) FROM horarios_semanales')).scalar_one()
             finally:
                 upgrade_engine.dispose()
-            self.assertEqual(revision, '20261102_0006_agenda_availability')
+            self.assertEqual(revision, '20261102_0007_turn_status')
             self.assertEqual(tuple(turno), ('paciente-A', 'profesional-A', 'box-A'))
             self.assertEqual(evento, 1)
             self.assertEqual(horarios, 0)
+        finally:
+            with self.root_engine.begin() as conexion:
+                conexion.execute(text(f'DROP SCHEMA {schema} CASCADE'))
+
+    def test_upgrade_desde_c07_inicializa_estado_y_preserva_turno(self):
+        schema = f'tp_odontologia_turn_status_{uuid4().hex}'
+        with self.root_engine.begin() as conexion:
+            conexion.execute(text(f'CREATE SCHEMA {schema}'))
+        url = str(make_url(os.environ['DATABASE_URL']).update_query_dict(
+            {'options': f'-csearch_path={schema}'}))
+        config = Config(str(Path(__file__).parents[1] / 'alembic.ini'))
+        try:
+            with patch.dict(os.environ, {'DATABASE_URL': url}):
+                command.upgrade(config, '20261102_0006_agenda_availability')
+                upgrade_engine = create_engine(url)
+                try:
+                    with upgrade_engine.begin() as conexion:
+                        conexion.execute(text(
+                            "INSERT INTO pacientes(id,nombre,telefono,activo) "
+                            "VALUES ('paciente-A','Paciente de prueba',NULL,true)"))
+                        conexion.execute(text(
+                            "INSERT INTO profesionales(id,nombre,activo) "
+                            "VALUES ('profesional-A','Profesional de prueba',true)"))
+                        conexion.execute(text(
+                            "INSERT INTO boxes(id,nombre,activo) "
+                            "VALUES ('box-A','Box de prueba',true)"))
+                        conexion.execute(text(
+                            "INSERT INTO turnos(paciente_id,profesional_id,box_id,"
+                            "inicio_minuto,fin_minuto) "
+                            "VALUES ('paciente-A','profesional-A','box-A',29700000,29700030)"))
+                        conexion.execute(text(
+                            "INSERT INTO eventos_auditoria(created_at,action,resource_type,"
+                            "resource_id,result) VALUES (now(),'turno.creado','turno','1',"
+                            "'confirmado')"))
+                finally:
+                    upgrade_engine.dispose()
+                command.upgrade(config, 'head')
+
+            upgrade_engine = create_engine(url)
+            try:
+                with upgrade_engine.connect() as conexion:
+                    revision = conexion.execute(text(
+                        'SELECT version_num FROM alembic_version')).scalar_one()
+                    turno = conexion.execute(text(
+                        'SELECT paciente_id, profesional_id, box_id, inicio_minuto, '
+                        'fin_minuto, estado FROM turnos')).one()
+                    eventos = conexion.execute(text(
+                        "SELECT COUNT(*) FROM eventos_auditoria WHERE action='turno.creado' "
+                        "AND resource_id='1'")).scalar_one()
+                with upgrade_engine.begin() as conexion:
+                    conexion.execute(text(
+                        "INSERT INTO eventos_auditoria(created_at,action,resource_type,"
+                        "resource_id,result) VALUES (now(),'turno.estado_actualizado',"
+                        "'turno','1','confirmado')"))
+                with self.assertRaises(SQLAlchemyError):
+                    with upgrade_engine.begin() as conexion:
+                        conexion.execute(text("UPDATE turnos SET estado='desconocido'"))
+            finally:
+                upgrade_engine.dispose()
+            self.assertEqual(revision, '20261102_0007_turn_status')
+            self.assertEqual(tuple(turno), (
+                'paciente-A', 'profesional-A', 'box-A', 29700000, 29700030, 'reservado'))
+            self.assertEqual(eventos, 1)
         finally:
             with self.root_engine.begin() as conexion:
                 conexion.execute(text(f'DROP SCHEMA {schema} CASCADE'))
@@ -897,6 +961,27 @@ class IntegracionPostgreSQLTests(unittest.TestCase):
         self.assertEqual(obtener_horario(
             self.engine, 'profesional', 'profesional-A')['dias']['1'], horario['1'])
 
+    def test_disponibilidad_postgresql_ignora_turnos_terminales(self):
+        self._seed_catalogos()
+        turno = crear_turno_postgresql(
+            self.engine, paciente_id='paciente-A', profesional_id='profesional-A',
+            box_id='box-A', inicio=datetime(2026, 10, 26, 12, tzinfo=timezone.utc),
+            fin=datetime(2026, 10, 26, 12, 30, tzinfo=timezone.utc))
+        with Session(self.engine) as session, session.begin():
+            session.get(Turno, turno.id).estado = 'cancelado'
+
+        horario = {'1': [{'inicio': '10:00', 'fin': '12:00'}]}
+        guardar_horario(self.engine, 'profesional', 'profesional-A', horario)
+        bloqueo = crear_bloqueo(
+            self.engine, 'box', 'box-A',
+            datetime(2026, 10, 26, 12, 15, tzinfo=timezone.utc),
+            datetime(2026, 10, 26, 12, 45, tzinfo=timezone.utc))
+
+        self.assertEqual(obtener_horario(
+            self.engine, 'profesional', 'profesional-A')['dias']['1'], horario['1'])
+        self.assertEqual(len(listar_bloqueos(self.engine)), 1)
+        self.assertEqual(bloqueo['tipo_recurso'], 'box')
+
     def test_carrera_reserva_y_cambio_usa_mutex_postgresql(self):
         import odontologia.disponibilidad as disponibilidad
 
@@ -947,6 +1032,87 @@ class IntegracionPostgreSQLTests(unittest.TestCase):
         self.assertFalse(hilo_turno.is_alive())
         self.assertEqual(resultado, ['cambio-confirmado', 'fuera_de_disponibilidad'])
 
+    def test_solapamiento_postgresql_depende_del_estado_ocupante(self):
+        self._seed_catalogos()
+        with self.engine.begin() as conexion:
+            conexion.execute(text(
+                "INSERT INTO turnos(paciente_id,profesional_id,box_id,inicio_minuto,"
+                "fin_minuto,estado) VALUES ('paciente-A','profesional-A','box-A',"
+                "29700000,29700030,'reservado')"))
+
+        for estado, ocupa in (
+            ('reservado', True), ('confirmado', True),
+            ('atendido', False), ('ausente', False), ('cancelado', False),
+        ):
+            with self.subTest(estado=estado):
+                with self.engine.begin() as conexion:
+                    conexion.execute(text('UPDATE turnos SET estado=:estado'),
+                                     {'estado': estado})
+                with Session(self.engine) as session:
+                    hay_conflicto = _hay_solapamiento(
+                        session, 'profesional_id', 'profesional-A',
+                        29700015, 29700045)
+                self.assertEqual(hay_conflicto, ocupa)
+
+    def test_cancelacion_postgresql_se_serializa_con_alta_concurrente(self):
+        self._seed_catalogos()
+        turno = crear_turno_postgresql(
+            self.engine, paciente_id='paciente-A', profesional_id='profesional-A',
+            box_id='box-A', inicio=datetime(2026, 10, 15, 12, tzinfo=timezone.utc),
+            fin=datetime(2026, 10, 15, 12, 30, tzinfo=timezone.utc))
+        barrera = Barrier(2)
+        resultados = []
+
+        def cancelar():
+            barrera.wait()
+            resultados.append(('cancelar', transicionar_estado_turno(
+                self.engine, turno.id, 'cancelado', actor_id=None)))
+
+        def reservar():
+            barrera.wait()
+            try:
+                nueva = crear_turno_postgresql(
+                    self.engine, paciente_id='paciente-A', profesional_id='profesional-A',
+                    box_id='box-A', inicio=datetime(2026, 10, 15, 12, tzinfo=timezone.utc),
+                    fin=datetime(2026, 10, 15, 12, 30, tzinfo=timezone.utc))
+                resultados.append(('reservar', nueva))
+            except ErrorAgenda as error:
+                resultados.append(('reservar', error.codigo))
+
+        hilos = [Thread(target=cancelar), Thread(target=reservar)]
+        for hilo in hilos:
+            hilo.start()
+        for hilo in hilos:
+            hilo.join(10)
+        self.assertTrue(all(not hilo.is_alive() for hilo in hilos))
+        alta = next(resultado for nombre, resultado in resultados if nombre == 'reservar')
+        with Session(self.engine) as session:
+            estado = session.get(Turno, turno.id).estado
+            cantidad = session.scalar(select(func.count()).select_from(Turno))
+        self.assertEqual(estado, 'cancelado')
+        if isinstance(alta, str):
+            self.assertEqual(alta, 'conflicto_profesional')
+            self.assertEqual(cantidad, 1)
+        else:
+            self.assertEqual(cantidad, 2)
+
+    def test_timeout_de_lock_transicion_postgresql_no_modifica_estado(self):
+        self._seed_catalogos()
+        turno = crear_turno_postgresql(
+            self.engine, paciente_id='paciente-A', profesional_id='profesional-A',
+            box_id='box-A', inicio=datetime(2026, 10, 15, 12, tzinfo=timezone.utc),
+            fin=datetime(2026, 10, 15, 12, 30, tzinfo=timezone.utc))
+        with Session(self.engine) as bloqueador, bloqueador.begin():
+            bloqueador.scalar(select(AgendaMutex.id).where(
+                AgendaMutex.id == 1).with_for_update())
+            with self.assertRaises(ErrorAgenda) as error:
+                transicionar_estado_turno(
+                    self.engine, turno.id, 'cancelado', actor_id=None,
+                    timeout_segundos=0.05)
+            self.assertEqual(error.exception.codigo, 'agenda_ocupada')
+        with Session(self.engine) as session:
+            self.assertEqual(session.get(Turno, turno.id).estado, 'reservado')
+
     def test_validador_postgresql_falla_cerrado_si_falta_tabla_c07(self):
         schema = f'tp_odontologia_missing_availability_{uuid4().hex}'
         with self.root_engine.begin() as conexion:
@@ -968,6 +1134,40 @@ class IntegracionPostgreSQLTests(unittest.TestCase):
                 engine.dispose()
             with self.root_engine.begin() as conexion:
                 conexion.execute(text(f'DROP SCHEMA {schema} CASCADE'))
+
+    def test_api_postgresql_falla_cerrado_si_falta_estado_en_turnos(self):
+        self._seed_catalogos()
+        crear_primer_administrador(
+            self.engine, 'admin.estado-ausente', 'frase-larga-segura-prueba-2026')
+        with TestClient(crear_app()) as client:
+            sesion = client.post('/sesiones', json={
+                'identificador': 'admin.estado-ausente',
+                'password': 'frase-larga-segura-prueba-2026'})
+            self.assertEqual(sesion.status_code, 200, sesion.text)
+            headers = {'Authorization': f"Bearer {sesion.json()['access_token']}"}
+
+            with self.engine.begin() as conexion:
+                conexion.execute(text('ALTER TABLE turnos DROP CONSTRAINT ck_turnos_estado'))
+                conexion.execute(text('ALTER TABLE turnos DROP COLUMN estado'))
+            try:
+                respuesta = client.post('/turnos', headers=headers, json={
+                    'paciente_id': 'paciente-A', 'profesional_id': 'profesional-A',
+                    'box_id': 'box-A', 'inicio': '2026-11-02T12:00:00Z',
+                    'fin': '2026-11-02T12:30:00Z'})
+                self.assertEqual(respuesta.status_code, 503, respuesta.text)
+                self.assertEqual(respuesta.json()['codigo'], 'autenticacion_no_configurada')
+                with Session(self.engine) as session:
+                    self.assertEqual(session.scalar(select(func.count()).select_from(Turno)), 0)
+                    self.assertEqual(session.scalar(select(func.count()).select_from(
+                        EventoAuditoria).where(EventoAuditoria.action == 'turno.creado')), 0)
+            finally:
+                with self.engine.begin() as conexion:
+                    conexion.execute(text(
+                        "ALTER TABLE turnos ADD COLUMN estado VARCHAR(16) NOT NULL "
+                        "DEFAULT 'reservado'"))
+                    conexion.execute(text(
+                        "ALTER TABLE turnos ADD CONSTRAINT ck_turnos_estado CHECK "
+                        "(estado IN ('reservado', 'confirmado', 'atendido', 'ausente', 'cancelado'))"))
 
 
 if __name__ == '__main__':

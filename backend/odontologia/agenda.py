@@ -22,6 +22,8 @@ class ErrorAgenda(Exception):
             'conflicto_box': 'El box ya está ocupado en ese intervalo.',
             'agenda_ocupada': 'La agenda está ocupada por otro escritor.',
             'almacenamiento_error': 'No se pudo completar la operación de almacenamiento.',
+            'transicion_invalida': 'La transición de estado del turno no está permitida.',
+            'turno_no_encontrado': 'El turno solicitado no existe.',
             'agenda_existente': 'La agenda ya existe y no se sobrescribió.',
         }
         mensaje = mensajes[codigo]
@@ -188,10 +190,15 @@ def crear_turno(ruta_db: str | Path, *, paciente_id: str, profesional_id: str,
             if 'activo' in columnas and conexion.execute(
                     f'SELECT activo FROM {tabla} WHERE id=?', (identificador,)).fetchone() != (1,):
                 raise ErrorAgenda('recurso_inactivo', campo)
+        columnas_turnos = {columna[1] for columna in conexion.execute(
+            'PRAGMA table_info(turnos)')}
+        filtro_estado = (
+            " AND estado IN ('reservado', 'confirmado')"
+            if 'estado' in columnas_turnos else '')
         for campo, identificador in [('profesional', profesional_id), ('box', box_id)]:
             if conexion.execute(
                     f'SELECT 1 FROM turnos WHERE {campo}_id=? '
-                    'AND inicio_minuto < ? AND fin_minuto > ? LIMIT 1',
+                    'AND inicio_minuto < ? AND fin_minuto > ?' + filtro_estado + ' LIMIT 1',
                     (identificador, fin_minuto, inicio_minuto)).fetchone() is not None:
                 raise ErrorAgenda(f'conflicto_{campo}', campo)
         version_auth = conexion.execute(

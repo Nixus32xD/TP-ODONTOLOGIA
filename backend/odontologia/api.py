@@ -34,6 +34,7 @@ from odontologia.disponibilidad import (
     obtener_horario,
 )
 from odontologia.pacientes import ErrorPacientes, actualizar_paciente, crear_paciente, listar_pacientes, obtener_paciente
+from odontologia.turnos import transicionar_estado_turno
 
 
 class SolicitudTurno(BaseModel):
@@ -57,6 +58,21 @@ class ErrorHTTP(BaseModel):
     codigo: str
     campo: str | None
     mensaje: str
+
+
+class RespuestaTurno(BaseModel):
+    id: int
+    paciente_id: str
+    profesional_id: str
+    box_id: str
+    inicio: datetime
+    fin: datetime
+    estado: str
+
+
+class RespuestaEstadoTurno(BaseModel):
+    id: int
+    estado: str
 
 
 class SolicitudLogin(BaseModel):
@@ -227,6 +243,7 @@ class RespuestaListaBloqueos(BaseModel):
 
 
 ESTADOS_ERROR = {'entrada_invalida': 422, 'recurso_desconocido': 404,
+                 'turno_no_encontrado': 404, 'transicion_invalida': 409,
                  'recurso_inactivo': 409,
                  'fuera_de_disponibilidad': 409, 'turnos_afectados': 409,
                  'conflicto_profesional': 409, 'conflicto_box': 409,
@@ -343,19 +360,49 @@ def crear_app(ruta_db: str | Path | None = None, *, timeout_segundos: float = 5.
         503: {'model': ErrorHTTP, 'description': 'Autenticación o almacenamiento no disponible.'},
     }
 
-    @app.post('/turnos', status_code=201, response_model=Turno,
+    @app.post('/turnos', status_code=201, response_model=RespuestaTurno,
               responses={**{estado: {'model': ErrorHTTP}
                            for estado in set(ESTADOS_ERROR.values())}, **respuestas_auth})
     def alta(solicitud: SolicitudTurno, _identidad=Depends(identidad_actual)):
         if engine is not None:
             from odontologia.db.postgresql import crear_turno_postgresql
 
-            return crear_turno_postgresql(
+            turno = crear_turno_postgresql(
                 engine, **solicitud.model_dump(), timeout_segundos=timeout_segundos,
                 actor_id=_identidad['usuario_id'])
-        return crear_turno(
-            ruta, **solicitud.model_dump(), timeout_segundos=timeout_segundos,
-            actor_id=_identidad['usuario_id'])
+        else:
+            turno = crear_turno(
+                ruta, **solicitud.model_dump(), timeout_segundos=timeout_segundos,
+                actor_id=_identidad['usuario_id'])
+        return RespuestaTurno(
+            id=turno.id, paciente_id=turno.paciente_id,
+            profesional_id=turno.profesional_id, box_id=turno.box_id,
+            inicio=turno.inicio, fin=turno.fin, estado='reservado')
+
+    def cambiar_estado(turno_id: int, destino: str, identidad):
+        return transicionar_estado_turno(
+            engine or auth_engine, turno_id, destino,
+            actor_id=identidad['usuario_id'], timeout_segundos=timeout_segundos)
+
+    @app.post('/turnos/{turno_id}/confirmacion', response_model=RespuestaEstadoTurno,
+              responses={404: {'model': ErrorHTTP}, 409: {'model': ErrorHTTP}, **respuestas_auth})
+    def confirmar_turno(turno_id: int, identidad=Depends(personal_operativo)):
+        return cambiar_estado(turno_id, 'confirmado', identidad)
+
+    @app.post('/turnos/{turno_id}/cancelacion', response_model=RespuestaEstadoTurno,
+              responses={404: {'model': ErrorHTTP}, 409: {'model': ErrorHTTP}, **respuestas_auth})
+    def cancelar_turno(turno_id: int, identidad=Depends(personal_operativo)):
+        return cambiar_estado(turno_id, 'cancelado', identidad)
+
+    @app.post('/turnos/{turno_id}/atencion', response_model=RespuestaEstadoTurno,
+              responses={404: {'model': ErrorHTTP}, 409: {'model': ErrorHTTP}, **respuestas_auth})
+    def atender_turno(turno_id: int, identidad=Depends(personal_operativo)):
+        return cambiar_estado(turno_id, 'atendido', identidad)
+
+    @app.post('/turnos/{turno_id}/ausencia', response_model=RespuestaEstadoTurno,
+              responses={404: {'model': ErrorHTTP}, 409: {'model': ErrorHTTP}, **respuestas_auth})
+    def marcar_ausente(turno_id: int, identidad=Depends(personal_operativo)):
+        return cambiar_estado(turno_id, 'ausente', identidad)
 
     @app.post('/sesiones', response_model=RespuestaLogin, responses={
         401: {'model': ErrorHTTP, 'description': 'Credenciales inválidas.'},

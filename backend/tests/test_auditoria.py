@@ -34,7 +34,7 @@ class AuditoriaEsquemaSQLiteTests(unittest.TestCase):
             self.assertEqual(columnas, {
                 'id', 'created_at', 'actor_id', 'action', 'resource_type', 'resource_id', 'result'})
             self.assertEqual(
-                conexion.execute('SELECT version FROM auth_schema_version').fetchone(), (5,))
+                conexion.execute('SELECT version FROM auth_schema_version').fetchone(), (6,))
 
     def test_auditoria_no_guarda_payload_ni_identificador_intentado(self):
         from odontologia.audit import registrar_evento_sqlite
@@ -188,7 +188,7 @@ class AuditoriaEsquemaSQLiteTests(unittest.TestCase):
             self.assertEqual(conexion.execute(
                 'SELECT COUNT(*) FROM usuarios').fetchone()[0], 1)
             self.assertEqual(conexion.execute(
-                'SELECT version FROM auth_schema_version').fetchone()[0], 5)
+                'SELECT version FROM auth_schema_version').fetchone()[0], 6)
             self.assertEqual(conexion.execute(
                 "SELECT COUNT(*) FROM sqlite_master WHERE type='table' "
                 "AND name='eventos_auditoria'").fetchone()[0], 1)

@@ -226,6 +226,31 @@ class ApiDisponibilidadTests(unittest.TestCase):
         self.assertEqual(respuesta.status_code, 503, respuesta.text)
         self.assertEqual(respuesta.json()['codigo'], 'autenticacion_no_configurada')
 
+    def test_api_falla_cerrado_si_falta_estado_en_turnos_antes_de_mutar(self):
+        with closing(sqlite3.connect(self.ruta)) as conexion:
+            conexion.execute('DROP TABLE turnos')
+            conexion.execute('''CREATE TABLE turnos (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                paciente_id TEXT NOT NULL,
+                profesional_id TEXT NOT NULL,
+                box_id TEXT NOT NULL,
+                inicio_minuto INTEGER NOT NULL,
+                fin_minuto INTEGER NOT NULL
+            )''')
+            conexion.commit()
+
+        respuesta = self.client.post('/turnos', headers=self.admin, json={
+            'paciente_id': 'paciente-A', 'profesional_id': 'profesional-A', 'box_id': 'box-A',
+            'inicio': '2026-11-02T12:00:00Z', 'fin': '2026-11-02T12:30:00Z'})
+
+        self.assertEqual(respuesta.status_code, 503, respuesta.text)
+        self.assertEqual(respuesta.json()['codigo'], 'autenticacion_no_configurada')
+        with closing(sqlite3.connect(self.ruta)) as conexion:
+            self.assertEqual(conexion.execute('SELECT COUNT(*) FROM turnos').fetchone()[0], 0)
+            self.assertEqual(conexion.execute(
+                "SELECT COUNT(*) FROM eventos_auditoria WHERE action='turno.creado'"
+            ).fetchone()[0], 0)
+
 
 if __name__ == '__main__':
     unittest.main()
