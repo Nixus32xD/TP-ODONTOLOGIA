@@ -175,7 +175,12 @@ class BloqueoAgenda(Base):
 class Usuario(Base):
     __tablename__ = 'usuarios'
     __table_args__ = (
-        CheckConstraint("rol IN ('administrador', 'recepcion')", name='ck_usuarios_rol'),
+        CheckConstraint("rol IN ('administrador', 'recepcion', 'profesional')", name='ck_usuarios_rol'),
+        CheckConstraint(
+            "(rol = 'profesional' AND profesional_id IS NOT NULL) OR "
+            "(rol IN ('administrador', 'recepcion') AND profesional_id IS NULL)",
+            name='ck_usuarios_vinculo_profesional'),
+        UniqueConstraint('profesional_id', name='uq_usuarios_profesional_id'),
     )
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True)
@@ -183,6 +188,8 @@ class Usuario(Base):
     password_hash: Mapped[str] = mapped_column(String(300), nullable=False)
     rol: Mapped[str] = mapped_column(String(20), nullable=False)
     activo: Mapped[bool] = mapped_column(default=True, nullable=False)
+    profesional_id: Mapped[str | None] = mapped_column(
+        String(64), ForeignKey('profesionales.id', ondelete='RESTRICT'), nullable=True)
 
 
 class Sesion(Base):

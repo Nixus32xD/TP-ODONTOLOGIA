@@ -25,7 +25,7 @@ class MigracionCatalogosTests(unittest.TestCase):
 
             with closing(sqlite3.connect(ruta)) as conexion:
                 self.assertEqual(
-                    conexion.execute('SELECT version FROM auth_schema_version').fetchone(), (6,))
+                    conexion.execute('SELECT version FROM auth_schema_version').fetchone(), (7,))
                 self.assertEqual(conexion.execute(
                     'SELECT id, nombre, activo FROM profesionales ORDER BY id').fetchall(), [
                         ('profesional-A', 'Profesional de demostración profesional-A', 1),

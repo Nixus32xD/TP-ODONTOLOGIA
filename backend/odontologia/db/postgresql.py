@@ -16,7 +16,7 @@ from odontologia.agenda import (
 from odontologia.db.models import AgendaMutex, Box, Paciente, Profesional, Turno
 
 
-REVISION_ESQUEMA_ACTUAL = '20261102_0007_turn_status'
+REVISION_ESQUEMA_ACTUAL = '20261102_0008_professional_accounts'
 
 
 def crear_engine(database_url: str) -> Engine:

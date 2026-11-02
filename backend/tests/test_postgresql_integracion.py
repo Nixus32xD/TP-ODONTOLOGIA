@@ -651,7 +651,7 @@ class IntegracionPostgreSQLTests(unittest.TestCase):
         finally:
             with self.engine.begin() as conexion:
                 conexion.execute(text(
-                    "UPDATE alembic_version SET version_num = '20261102_0007_turn_status'"))
+                    "UPDATE alembic_version SET version_num = '20261102_0008_professional_accounts'"))
 
     def test_revision_esquema_desconocida_falla_cerrado(self):
         self._seed_catalogos()
@@ -667,7 +667,7 @@ class IntegracionPostgreSQLTests(unittest.TestCase):
         finally:
             with self.engine.begin() as conexion:
                 conexion.execute(text(
-                    "UPDATE alembic_version SET version_num = '20261102_0007_turn_status'"))
+                    "UPDATE alembic_version SET version_num = '20261102_0008_professional_accounts'"))
 
         self.assertEqual(contexto.exception.codigo, 'almacenamiento_error')
         with Session(self.engine) as session:
@@ -790,7 +790,7 @@ class IntegracionPostgreSQLTests(unittest.TestCase):
                         'SELECT COUNT(*) FROM horarios_semanales')).scalar_one()
             finally:
                 upgrade_engine.dispose()
-            self.assertEqual(revision, '20261102_0007_turn_status')
+            self.assertEqual(revision, '20261102_0008_professional_accounts')
             self.assertEqual(tuple(turno), ('paciente-A', 'profesional-A', 'box-A'))
             self.assertEqual(evento, 1)
             self.assertEqual(horarios, 0)
@@ -853,7 +853,7 @@ class IntegracionPostgreSQLTests(unittest.TestCase):
                         conexion.execute(text("UPDATE turnos SET estado='desconocido'"))
             finally:
                 upgrade_engine.dispose()
-            self.assertEqual(revision, '20261102_0007_turn_status')
+            self.assertEqual(revision, '20261102_0008_professional_accounts')
             self.assertEqual(tuple(turno), (
                 'paciente-A', 'profesional-A', 'box-A', 29700000, 29700030, 'reservado'))
             self.assertEqual(eventos, 1)
@@ -1128,6 +1128,93 @@ class IntegracionPostgreSQLTests(unittest.TestCase):
             with engine.begin() as conexion:
                 conexion.execute(text('DROP TABLE horarios_semanales'))
             with self.assertRaises(RuntimeError):
+                validar_esquema_autenticacion(engine, 'postgresql')
+        finally:
+            if engine is not None:
+                engine.dispose()
+            with self.root_engine.begin() as conexion:
+                conexion.execute(text(f'DROP SCHEMA {schema} CASCADE'))
+
+    def test_upgrade_postgresql_desde_0007_agrega_vinculo_unico_y_preserva_cuentas(self):
+        schema = f'tp_odontologia_professional_link_{uuid4().hex}'
+        with self.root_engine.begin() as conexion:
+            conexion.execute(text(f'CREATE SCHEMA {schema}'))
+        url = str(make_url(os.environ['ODONTOLOGIA_TEST_DATABASE_URL']).update_query_dict(
+            {'options': f'-csearch_path={schema}'}))
+        config = Config(str(Path(__file__).parents[1] / 'alembic.ini'))
+        engine = None
+        try:
+            with patch.dict(os.environ, {'DATABASE_URL': url}):
+                command.upgrade(config, '20261102_0007_turn_status')
+            engine = create_engine(url)
+            with engine.begin() as conexion:
+                conexion.execute(text(
+                    "INSERT INTO profesionales(id, nombre, activo) "
+                    "VALUES ('profesional-A', 'Profesional ficticio A', true)"))
+                conexion.execute(text(
+                    "INSERT INTO usuarios(id, identificador, password_hash, rol, activo) "
+                    "VALUES ('usuario-admin', 'admin.one', 'hash-ficticio', 'administrador', true)"))
+                conexion.execute(text(
+                    "INSERT INTO sesiones(id, usuario_id, jti, expira_en, revocada_en, creado_en) "
+                    "VALUES ('sesion-1', 'usuario-admin', 'jti-1', 5000, NULL, 1000)"))
+                conexion.execute(text(
+                    "INSERT INTO eventos_auditoria(created_at, actor_id, action, resource_type, "
+                    "resource_id, result) VALUES (now(), 'usuario-admin', 'cuenta.bootstrap', "
+                    "'cuenta', 'usuario-admin', 'confirmado')"))
+            with patch.dict(os.environ, {'DATABASE_URL': url}):
+                command.upgrade(config, 'head')
+            with engine.begin() as conexion:
+                revision = conexion.execute(text('SELECT version_num FROM alembic_version')).scalar_one()
+                columnas = {fila[0] for fila in conexion.execute(text(
+                    "SELECT column_name FROM information_schema.columns "
+                    "WHERE table_schema=current_schema() AND table_name='usuarios'"))}
+                self.assertEqual(revision, '20261102_0008_professional_accounts')
+                self.assertIn('profesional_id', columnas)
+                self.assertEqual(conexion.execute(text(
+                    "SELECT id, rol, profesional_id FROM usuarios WHERE id='usuario-admin'"
+                )).one(), ('usuario-admin', 'administrador', None))
+                self.assertEqual(conexion.execute(text(
+                    "SELECT usuario_id FROM sesiones WHERE id='sesion-1'"
+                )).scalar_one(), 'usuario-admin')
+                self.assertEqual(conexion.execute(text(
+                    "SELECT actor_id FROM eventos_auditoria WHERE action='cuenta.bootstrap'"
+                )).scalar_one(), 'usuario-admin')
+                conexion.execute(text(
+                    "INSERT INTO usuarios(id, identificador, password_hash, rol, activo, profesional_id) "
+                    "VALUES ('usuario-prof', 'profesional.a', 'hash-ficticio', 'profesional', true, "
+                    "'profesional-A')"))
+                with self.assertRaises(SQLAlchemyError):
+                    with conexion.begin_nested():
+                        conexion.execute(text(
+                            "INSERT INTO usuarios(id, identificador, password_hash, rol, activo, profesional_id) "
+                            "VALUES ('usuario-prof-2', 'profesional.b', 'hash-ficticio', 'profesional', true, "
+                            "'profesional-A')"))
+        finally:
+            if engine is not None:
+                engine.dispose()
+            with self.root_engine.begin() as conexion:
+                conexion.execute(text(f'DROP SCHEMA {schema} CASCADE'))
+
+    def test_validador_postgresql_falla_cerrado_si_version_vigente_no_tiene_vinculo(self):
+        schema = f'tp_odontologia_missing_professional_link_{uuid4().hex}'
+        with self.root_engine.begin() as conexion:
+            conexion.execute(text(f'CREATE SCHEMA {schema}'))
+        url = str(make_url(os.environ['ODONTOLOGIA_TEST_DATABASE_URL']).update_query_dict(
+            {'options': f'-csearch_path={schema}'}))
+        config = Config(str(Path(__file__).parents[1] / 'alembic.ini'))
+        engine = None
+        try:
+            with patch.dict(os.environ, {'DATABASE_URL': url}):
+                command.upgrade(config, '20261102_0007_turn_status')
+            engine = create_engine(url)
+            with engine.begin() as conexion:
+                conexion.execute(text(
+                    "UPDATE alembic_version SET version_num='20261102_0008_professional_accounts'"))
+                conexion.execute(text(
+                    'ALTER TABLE usuarios ADD COLUMN profesional_id VARCHAR(64)'))
+                conexion.execute(text(
+                    'ALTER TABLE usuarios DROP COLUMN profesional_id'))
+            with self.assertRaisesRegex(RuntimeError, 'vínculo profesional'):
                 validar_esquema_autenticacion(engine, 'postgresql')
         finally:
             if engine is not None:

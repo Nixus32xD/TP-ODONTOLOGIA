@@ -11,11 +11,12 @@ from odontologia.auth.credenciales import (
     normalizar_identificador,
     validar_password,
 )
-from odontologia.db.models import AgendaMutex, Sesion, Usuario
+from odontologia.db.models import AgendaMutex, Profesional, Sesion, Usuario
 from odontologia.audit import ErrorAuditoria
 
 
-ROLES_HABILITADOS = {'administrador', 'recepcion'}
+ROLES_HABILITADOS = {'administrador', 'recepcion', 'profesional'}
+_SIN_CAMBIO = object()
 
 
 class ErrorUsuarios(RuntimeError):
@@ -45,7 +46,40 @@ def _publico(usuario: Usuario) -> dict[str, object]:
         'identificador': usuario.identificador,
         'rol': usuario.rol,
         'activo': usuario.activo,
+        'profesional_id': usuario.profesional_id,
     }
+
+
+def _validar_vinculo_profesional(session: Session, rol: str,
+                                 profesional_id: object,
+                                 *, excluir_usuario_id: str | None = None) -> str | None:
+    if rol != 'profesional':
+        if profesional_id is not None:
+            raise ErrorUsuarios(
+                'vinculo_profesional_incompatible',
+                'Sólo una cuenta Profesional puede tener vínculo profesional.', 422)
+        return None
+    if (not isinstance(profesional_id, str) or not profesional_id
+            or len(profesional_id) > 64 or profesional_id.strip() != profesional_id):
+        raise ErrorUsuarios(
+            'vinculo_profesional_invalido',
+            'La cuenta Profesional requiere un identificador de profesional válido.', 422)
+    profesional = session.get(Profesional, profesional_id)
+    if profesional is None:
+        raise ErrorUsuarios(
+            'profesional_desconocido', 'El profesional no existe.', 404)
+    if not profesional.activo:
+        raise ErrorUsuarios(
+            'profesional_inactivo', 'El profesional no está activo.', 409)
+    consulta_vinculo = select(Usuario.id).where(
+        Usuario.profesional_id == profesional_id)
+    if excluir_usuario_id is not None:
+        consulta_vinculo = consulta_vinculo.where(Usuario.id != excluir_usuario_id)
+    vinculado = session.scalar(consulta_vinculo.limit(1))
+    if vinculado is not None:
+        raise ErrorUsuarios(
+            'profesional_vinculado', 'El profesional ya tiene una cuenta vinculada.', 409)
+    return profesional_id
 
 
 def crear_primer_administrador(engine, identificador: str, password: str) -> dict[str, object]:
@@ -85,7 +119,8 @@ def crear_primer_administrador(engine, identificador: str, password: str) -> dic
 
 
 def crear_usuario(engine, identificador: str, password: str, rol: str,
-                  *, actor_id: str | None = None) -> dict[str, object]:
+                  *, profesional_id: str | None = None,
+                  actor_id: str | None = None) -> dict[str, object]:
     normalizado = normalizar_identificador(identificador)
     validar_password(password)
     if not isinstance(rol, str) or rol not in ROLES_HABILITADOS:
@@ -97,6 +132,8 @@ def crear_usuario(engine, identificador: str, password: str, rol: str,
     try:
         with Session(engine) as session, session.begin():
             _iniciar_escritura(session)
+            usuario.profesional_id = _validar_vinculo_profesional(
+                session, rol, profesional_id)
             session.add(usuario)
             session.flush()
             if actor_id is not None:
@@ -110,6 +147,10 @@ def crear_usuario(engine, identificador: str, password: str, rol: str,
     except ErrorAuditoria as exc:
         raise ErrorUsuarios('almacenamiento_error', 'No se pudo guardar la cuenta.', 503) from exc
     except IntegrityError as exc:
+        if 'profesional_id' in str(getattr(exc, 'orig', exc)):
+            raise ErrorUsuarios(
+                'profesional_vinculado', 'El profesional ya tiene una cuenta vinculada.', 409
+            ) from exc
         raise ErrorUsuarios('identificador_duplicado', 'El identificador ya existe.', 409) from exc
     except SQLAlchemyError as exc:
         raise ErrorUsuarios('almacenamiento_error', 'No se pudo guardar la cuenta.', 503) from exc
@@ -125,6 +166,7 @@ def listar_usuarios(engine) -> list[dict[str, object]]:
 
 
 def actualizar_usuario(engine, usuario_id: str, *, rol: str | None = None,
+                       profesional_id: str | None | object = _SIN_CAMBIO,
                        activo: bool | None = None, ahora: int | None = None,
                        actor_id: str | None = None) -> dict[str, object]:
     if rol is not None and (not isinstance(rol, str) or rol not in ROLES_HABILITADOS):
@@ -150,10 +192,24 @@ def actualizar_usuario(engine, usuario_id: str, *, rol: str | None = None,
                     raise ErrorUsuarios(
                         'ultimo_administrador',
                         'No se puede quitar el acceso al último Administrador activo.', 409)
-            cambio = (rol is not None and rol != usuario.rol) or (
+            nuevo_rol = usuario.rol if rol is None else rol
+            nuevo_profesional_id = usuario.profesional_id
+            if nuevo_rol == 'profesional':
+                solicitado = (usuario.profesional_id if profesional_id is _SIN_CAMBIO
+                              else profesional_id)
+                nuevo_profesional_id = _validar_vinculo_profesional(
+                    session, nuevo_rol, solicitado,
+                    excluir_usuario_id=usuario_id)
+            else:
+                if profesional_id is not _SIN_CAMBIO and profesional_id is not None:
+                    _validar_vinculo_profesional(session, nuevo_rol, profesional_id)
+                nuevo_profesional_id = None
+            cambio_vinculo = nuevo_profesional_id != usuario.profesional_id
+            cambio_rol = nuevo_rol != usuario.rol
+            cambio = cambio_rol or cambio_vinculo or (
                 activo is not None and activo != usuario.activo)
-            if rol is not None:
-                usuario.rol = rol
+            usuario.rol = nuevo_rol
+            usuario.profesional_id = nuevo_profesional_id
             if activo is not None:
                 usuario.activo = activo
             if cambio:
@@ -175,6 +231,12 @@ def actualizar_usuario(engine, usuario_id: str, *, rol: str | None = None,
     except ErrorUsuarios:
         raise
     except ErrorAuditoria as exc:
+        raise ErrorUsuarios('almacenamiento_error', 'No se pudo actualizar la cuenta.', 503) from exc
+    except IntegrityError as exc:
+        if 'profesional_id' in str(getattr(exc, 'orig', exc)):
+            raise ErrorUsuarios(
+                'profesional_vinculado', 'El profesional ya tiene una cuenta vinculada.', 409
+            ) from exc
         raise ErrorUsuarios('almacenamiento_error', 'No se pudo actualizar la cuenta.', 503) from exc
     except SQLAlchemyError as exc:
         raise ErrorUsuarios('almacenamiento_error', 'No se pudo actualizar la cuenta.', 503) from exc

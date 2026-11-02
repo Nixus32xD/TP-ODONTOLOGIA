@@ -47,7 +47,7 @@ class MigracionCicloVidaSQLiteTests(unittest.TestCase):
                 self.assertEqual(
                     conexion.execute('SELECT id FROM turnos').fetchall(), [(creado.id,)])
 
-    def test_migracion_v6_preserva_turno_y_lo_inicializa_reservado(self):
+    def test_migracion_v7_preserva_turno_y_lo_inicializa_reservado(self):
         with TemporaryDirectory() as temporal:
             ruta = Path(temporal) / 'agenda.sqlite3'
             inicializar_agenda(ruta)
@@ -65,7 +65,7 @@ class MigracionCicloVidaSQLiteTests(unittest.TestCase):
             with closing(sqlite3.connect(ruta)) as conexion:
                 self.assertEqual(
                     conexion.execute('SELECT version FROM auth_schema_version').fetchone(),
-                    (6,),
+                    (7,),
                 )
                 columnas = {fila[1] for fila in conexion.execute('PRAGMA table_info(turnos)')}
                 self.assertIn('estado', columnas)
@@ -81,7 +81,7 @@ class MigracionCicloVidaSQLiteTests(unittest.TestCase):
                     conexion.execute(
                         "UPDATE turnos SET estado='desconocido' WHERE id=?", (creado.id,))
 
-    def test_migracion_v6_repetida_conserva_estado_y_version(self):
+    def test_migracion_v7_repetida_conserva_estado_y_version(self):
         with TemporaryDirectory() as temporal:
             ruta = Path(temporal) / 'agenda.sqlite3'
             inicializar_agenda(ruta)
@@ -89,10 +89,10 @@ class MigracionCicloVidaSQLiteTests(unittest.TestCase):
             migrar_sqlite(ruta)
 
             with closing(sqlite3.connect(ruta)) as conexion:
-                self.assertEqual(VERSION_ESQUEMA_AUTENTICACION, 6)
+                self.assertEqual(VERSION_ESQUEMA_AUTENTICACION, 7)
                 self.assertEqual(
                     conexion.execute('SELECT version FROM auth_schema_version').fetchone(),
-                    (6,),
+                    (7,),
                 )
 
     def test_migracion_amplia_catalogo_auditoria_y_preserva_eventos(self):

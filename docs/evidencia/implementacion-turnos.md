@@ -245,3 +245,7 @@ Las altas y cambios se registran en la auditoría append-only dentro de la misma
 - `..\.venv\Scripts\python.exe -m pip check` → **No broken requirements found**; `openspec validate --all --strict` → **6/6 válidos**; `git diff --check` sin errores.
 - PostgreSQL temporal se detuvo y `127.0.0.1:55432` quedó libre. Sólo se usaron datos ficticios y bases de prueba en loopback.
 - `docs/discovery/informe-discovery.md` tenía una edición previa ajena; se dejó fuera de los commits.
+
+## Verificación de límite diario en consulta C-08 — 2026-11-02
+
+Como seguimiento de Apply C-08, se agregó una prueba de la capa de consulta para fecha local `2026-10-15`, horario `23:45–24:00` de profesional y box, y duración de 15 minutos. La opción `23:45–00:00` se devuelve. La prueba pasó antes de cualquier edición de producción: `turno_cabe_en_tramos` ya acepta el final exacto de medianoche local cuando el tramo termina en `24:00`. Fue una cobertura faltante señalada en revisión independiente, no un defecto vigente reproducible. Este registro complementa la evidencia de C-08; no amplía el alcance de C-01 ni declara C-08 archivado.

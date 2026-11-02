@@ -148,7 +148,7 @@ class ApiTests(unittest.TestCase):
         self.assertEqual(esquema.status_code, 200)
         rutas = esquema.json()['paths']
         self.assertEqual(set(rutas), {
-            '/turnos', '/health', '/sesiones', '/sesiones/actual', '/usuarios',
+            '/turnos', '/disponibilidad', '/health', '/sesiones', '/sesiones/actual', '/usuarios',
             '/usuarios/{usuario_id}', '/auditoria', '/pacientes', '/pacientes/{paciente_id}',
             '/profesionales', '/profesionales/{profesional_id}', '/boxes', '/boxes/{box_id}',
             '/prestaciones', '/prestaciones/{prestacion_id}',
@@ -157,7 +157,7 @@ class ApiTests(unittest.TestCase):
             '/bloqueos', '/bloqueos/{bloqueo_id}',
             '/turnos/{turno_id}/confirmacion', '/turnos/{turno_id}/cancelacion',
             '/turnos/{turno_id}/atencion', '/turnos/{turno_id}/ausencia'})
-        self.assertEqual(set(rutas['/turnos']), {'post'})
+        self.assertEqual(set(rutas['/turnos']), {'get', 'post'})
         self.assertEqual(set(rutas['/turnos']['post']['responses']),
                          {'201', '401', '403', '422', '404', '409', '503', '500'})
         modelo = esquema.json()['components']['schemas']['SolicitudTurno']

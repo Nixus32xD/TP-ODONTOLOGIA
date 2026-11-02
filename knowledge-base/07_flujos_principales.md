@@ -26,9 +26,15 @@ Dos procesos usan el mismo archivo local y conexiones propias. BEGIN IMMEDIATE a
 
 Fallo controlado anterior al commit produce almacenamiento_error; rollback y cierre conservan registros anteriores. Un trigger AFTER INSERT RAISE(FAIL) prueba reversión real y recuperación. No se promete reconciliación de IO extremo ni garantía sobre escritores SQL externos.
 
+## Flujo 8: consultar agenda y opciones orientativas — C-08 (Apply)
+
+Administrador o Recepción consulta `GET /turnos` con `desde` y `hasta` offset-aware, rango semiabierto de hasta 31 días, filtros opcionales y paginación limitada. Profesional necesita una cuenta vinculada de forma única a una ficha; el JWT y la sesión validada fijan ese ID. Si filtra otro profesional, recibe 403. Su proyección sólo contiene inicio, fin y nombre del paciente; la consulta operativa omite teléfonos.
+
+`GET /disponibilidad` toma una fecha `America/Argentina/Mendoza`, profesional, box y duración positiva. Propone inicios cada 15 minutos que caben en los tramos vigentes de ambos recursos, sin bloquear por estados terminales y excluyendo recursos inactivos, bloqueos y turnos `reservado`/`confirmado`. La consulta no escribe ni audita. El `POST /turnos` posterior vuelve a validar recursos, horarios y conflictos dentro de su transacción; una sugerencia no es una reserva.
+
 ## Autenticación y funciones posteriores
 
-Sin login, reserva pública, WhatsApp, pagos o historia clínica. Recepción es actor conceptual, no identidad autenticada de producción.
+C-08 mantiene la consulta autenticada; no habilita reserva pública, WhatsApp, pagos o historia clínica. No se conecta a proveedores externos ni se usan datos reales.
 
 ## Flujo 7: reserva con disponibilidad C-07
 

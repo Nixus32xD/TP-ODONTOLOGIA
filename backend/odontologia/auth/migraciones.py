@@ -3,7 +3,7 @@ from pathlib import Path
 import sqlite3
 
 
-VERSION_ESQUEMA_AUTENTICACION = 6
+VERSION_ESQUEMA_AUTENTICACION = 7
 
 
 def _migrar_auditoria(conexion: sqlite3.Connection) -> None:
@@ -243,6 +243,33 @@ def _migrar_estado_turnos(conexion: sqlite3.Connection) -> None:
         ''')
 
 
+def _migrar_vinculo_profesional(conexion: sqlite3.Connection) -> None:
+    """Agregar un rol Profesional y su vínculo 1:1 sin perder FKs dependientes."""
+    columnas = {fila[1] for fila in conexion.execute('PRAGMA table_info(usuarios)')}
+    if 'profesional_id' in columnas:
+        return
+    conexion.execute('''
+        CREATE TABLE usuarios_v7 (
+            id TEXT PRIMARY KEY,
+            identificador TEXT NOT NULL UNIQUE,
+            password_hash TEXT NOT NULL,
+            rol TEXT NOT NULL CHECK (rol IN ('administrador', 'recepcion', 'profesional')),
+            activo INTEGER NOT NULL CHECK (activo IN (0, 1)),
+            profesional_id TEXT UNIQUE REFERENCES profesionales(id) ON DELETE RESTRICT,
+            CHECK (
+                (rol = 'profesional' AND profesional_id IS NOT NULL) OR
+                (rol IN ('administrador', 'recepcion') AND profesional_id IS NULL)
+            )
+        )
+    ''')
+    conexion.execute('''
+        INSERT INTO usuarios_v7(id, identificador, password_hash, rol, activo, profesional_id)
+        SELECT id, identificador, password_hash, rol, activo, NULL FROM usuarios
+    ''')
+    conexion.execute('DROP TABLE usuarios')
+    conexion.execute('ALTER TABLE usuarios_v7 RENAME TO usuarios')
+
+
 def _actualizar_auditoria_catalogos(conexion: sqlite3.Connection) -> None:
     triggers = {'eventos_auditoria_no_update', 'eventos_auditoria_no_delete'}
     existentes = {fila[0] for fila in conexion.execute(
@@ -320,9 +347,11 @@ def migrar_sqlite(ruta_db: str | Path) -> None:
     """Agregar el esquema de autenticación sólo por invocación local explícita."""
     conexion = _abrir_existente(ruta_db)
     try:
-        conexion.execute('PRAGMA foreign_keys=ON')
-        if conexion.execute('PRAGMA foreign_keys').fetchone()[0] != 1:
-            raise MigracionAutenticacionError('No se pudieron activar las claves foráneas.')
+        # Se reconstruye usuarios para ampliar su CHECK de rol. Las claves foráneas se
+        # deshabilitan sólo para el DDL y se verifican antes del commit.
+        conexion.execute('PRAGMA foreign_keys=OFF')
+        if conexion.execute('PRAGMA foreign_keys').fetchone()[0] != 0:
+            raise MigracionAutenticacionError('No se pudo preparar la migración SQLite.')
         conexion.execute('BEGIN IMMEDIATE')
         tablas = {fila[0] for fila in conexion.execute(
             "SELECT name FROM sqlite_master WHERE type='table'")}
@@ -340,7 +369,8 @@ def migrar_sqlite(ruta_db: str | Path) -> None:
                 conexion.execute('UPDATE auth_schema_version SET version=2')
                 tablas.add('eventos_auditoria')
                 version = (2,)
-            if version not in ((2,), (3,), (4,), (5,), (VERSION_ESQUEMA_AUTENTICACION,)):
+            if version not in ((2,), (3,), (4,), (5,), (6,),
+                               (VERSION_ESQUEMA_AUTENTICACION,)):
                 raise MigracionAutenticacionError('La versión de autenticación no es compatible.')
             if not {'usuarios', 'sesiones', 'eventos_auditoria'} <= tablas:
                 raise MigracionAutenticacionError('El esquema de autenticación está incompleto.')
@@ -366,9 +396,19 @@ def migrar_sqlite(ruta_db: str | Path) -> None:
                 _actualizar_auditoria_ciclo_turnos(conexion)
                 _migrar_estado_turnos(conexion)
                 conexion.execute('UPDATE auth_schema_version SET version=6')
+                version = (6,)
             else:
                 _migrar_estado_turnos(conexion)
+            if version == (6,):
+                _migrar_vinculo_profesional(conexion)
+                conexion.execute('UPDATE auth_schema_version SET version=7')
+            else:
+                _migrar_vinculo_profesional(conexion)
+            if conexion.execute('PRAGMA foreign_key_check').fetchone() is not None:
+                raise MigracionAutenticacionError(
+                    'La migración produciría referencias incompletas.')
             conexion.execute('COMMIT')
+            conexion.execute('PRAGMA foreign_keys=ON')
             return
 
         if {'usuarios', 'sesiones'} & tablas:
@@ -382,8 +422,13 @@ def migrar_sqlite(ruta_db: str | Path) -> None:
                 id TEXT PRIMARY KEY,
                 identificador TEXT NOT NULL UNIQUE,
                 password_hash TEXT NOT NULL,
-                rol TEXT NOT NULL CHECK (rol IN ('administrador', 'recepcion')),
-                activo INTEGER NOT NULL CHECK (activo IN (0, 1))
+                rol TEXT NOT NULL CHECK (rol IN ('administrador', 'recepcion', 'profesional')),
+                activo INTEGER NOT NULL CHECK (activo IN (0, 1)),
+                profesional_id TEXT UNIQUE REFERENCES profesionales(id) ON DELETE RESTRICT,
+                CHECK (
+                    (rol = 'profesional' AND profesional_id IS NOT NULL) OR
+                    (rol IN ('administrador', 'recepcion') AND profesional_id IS NULL)
+                )
             )
         ''')
         conexion.execute('''
@@ -402,7 +447,11 @@ def migrar_sqlite(ruta_db: str | Path) -> None:
         _migrar_catalogos(conexion)
         _migrar_disponibilidad(conexion)
         _migrar_estado_turnos(conexion)
+        if conexion.execute('PRAGMA foreign_key_check').fetchone() is not None:
+            raise MigracionAutenticacionError(
+                'La migración produciría referencias incompletas.')
         conexion.execute('COMMIT')
+        conexion.execute('PRAGMA foreign_keys=ON')
     except MigracionAutenticacionError:
         if conexion.in_transaction:
             conexion.execute('ROLLBACK')

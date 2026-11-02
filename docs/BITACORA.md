@@ -245,3 +245,17 @@ Revisión independiente corrigió dos defectos: la validación C-07 ahora ignora
 Validación final tras sincronizar specs: SQLite **222 tests OK, 1 integración PostgreSQL omitida**; PostgreSQL temporal aislado `127.0.0.1:55432`, **251/251 OK**; `pip check` limpio; OpenSpec strict **9/9**; `git diff --check` sin errores (avisos normales LF/CRLF). El servidor temporal se detuvo y `pg_ctl status` confirmó que no corre. La [evidencia de C-09](evidencia/implementacion-estados-turnos.md) documenta comandos, resultados y límites TDD observados.
 
 C-09 quedó sincronizado y archivado localmente; se prepara un commit separado, sin push ni publicación.
+
+## 2026-11-02 — C-08 consultas de agenda y disponibilidad (Apply)
+
+Se implementaron `GET /turnos` paginado por rango offset-aware, filtros y proyección de privacidad, y `GET /disponibilidad` como sugerencia local cada 15 minutos sin mutación. El Administrador puede vincular una cuenta Profesional con una ficha activa única; el JWT/identidad valida el vínculo actual y el rol Profesional sólo consulta su propia agenda. Cambio de rol/vínculo revoca sesiones. SQLite sube a v7 y PostgreSQL a Alembic 0008; C-01 standalone conserva su contrato.
+
+Una regresión inicial de OpenAPI requería actualizar la lista de rutas. El primer run PG completo encontró dos fixtures que restablecían la revisión a 0007; tras corregir ambos para restablecer 0008, PostgreSQL pasó completo.
+
+Validación final de Apply tras cubrir el borde a medianoche: SQLite **244 tests OK, 1 PostgreSQL omitido**; PostgreSQL aislado loopback `127.0.0.1:55432`, **275/275 OK**; `pip check` limpio; OpenSpec strict **10/10**; `git diff --check` limpio. El clúster temporal se detuvo (`pg_ctl status`: no server running; puerto 55432 libre). La [evidencia C-08](evidencia/implementacion-consultas-agenda.md) reúne TDD, contratos y límites. No se modificó Discovery.
+
+C-08 sigue en Apply y queda pendiente revisión independiente y Archive. No hay commit ni push en este avance.
+
+### Seguimiento C-08 — fin local exacto a medianoche
+
+Una revisión independiente señaló el borde `23:45–00:00` con duración de 15 minutos. La prueba de regresión se añadió y ejecutó antes de cualquier cambio productivo; pasó con la lógica existente, que acepta exactamente el fin local `00:00` siguiente cuando el tramo termina en `24:00`. No se encontró defecto vigente ni se modificó código productivo. Se documenta cobertura adicional en la [evidencia C-08](evidencia/implementacion-consultas-agenda.md). Se repitieron las suites completas SQLite y PostgreSQL aislado con esta prueba nueva.

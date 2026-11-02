@@ -59,6 +59,13 @@ C-01 implementa estas cuatro historias. Los checkboxes indican verificación aut
 
 La consigna exige escenarios dado/cuando/entonces de caso feliz, error y borde, revisión real de Propose, pruebas ejecutadas y Archive. La evidencia registra RED/GREEN ejecutados y las comprobaciones que ya pasaron al añadirse, sin fabricar RED. Runner unittest; Archive confirmado el 2026-10-28. Las revisiones humanas y la aceptación académica se acreditan por separado.
 
+## Consulta de agenda y disponibilidad — C-08 (Apply)
+
+- `GET /turnos` requiere fechas con offset explícito, rango semiabierto máximo de 31 días, filtros opcionales por profesional/box/estado y paginación estable de 1–100.
+- Administrador y Recepción consultan campos operativos sin teléfono. El Administrador asigna a cada cuenta Profesional una ficha activa única; Profesional sólo consulta horarios y nombre del paciente en su propio calendario.
+- `GET /disponibilidad` calcula opciones locales en intervalos de 15 minutos, usando horarios y excepciones C-07, recursos activos, bloqueos y ocupación C-09. Es orientativo y no reserva; `POST /turnos` revalida transaccionalmente.
+- SQLite v7 / PostgreSQL Alembic 0008 añaden vínculo de cuenta; cambiar rol o vínculo revoca sesiones. C-08 continúa en Apply; validación completa y Archive siguen pendientes.
+
 ## Funcionalidades postergadas
 
 Editar/cancelar turnos, autoservicio, notificaciones WhatsApp, pagos, facturación, historia clínica, multisede, autenticación de producción y UI completa no se convierten en historias obligatorias por aparecer en el relevamiento. Ver [01](01_vision_y_objetivos.md) y [10](10_preguntas_abiertas.md).

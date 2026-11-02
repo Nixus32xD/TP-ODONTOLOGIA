@@ -22,6 +22,10 @@ from odontologia.audit import listar_eventos
 from odontologia.catalogos import (
     ErrorCatalogos, actualizar_recurso, crear_recurso, listar_recursos, obtener_recurso,
 )
+from odontologia.consulta_turnos import ErrorConsultaTurnos, listar_turnos
+from odontologia.consulta_disponibilidad import (
+    ErrorConsultaDisponibilidad, calcular_opciones_disponibilidad,
+)
 from odontologia.disponibilidad import (
     ErrorDisponibilidad,
     crear_bloqueo,
@@ -75,6 +79,17 @@ class RespuestaEstadoTurno(BaseModel):
     estado: str
 
 
+class RespuestaListaTurnos(BaseModel):
+    items: list[dict[str, object]]
+    limit: int
+    offset: int
+
+
+class RespuestaListaDisponibilidad(BaseModel):
+    fecha: str
+    items: list[dict[str, datetime]]
+
+
 class SolicitudLogin(BaseModel):
     model_config = ConfigDict(extra='forbid')
     identificador: StrictStr
@@ -92,12 +107,14 @@ class SolicitudUsuario(BaseModel):
     identificador: StrictStr
     password: StrictStr
     rol: StrictStr
+    profesional_id: StrictStr | None = None
 
 
 class ActualizacionUsuario(BaseModel):
     model_config = ConfigDict(extra='forbid')
     rol: StrictStr | None = None
     activo: StrictBool | None = None
+    profesional_id: StrictStr | None = None
 
 
 class SolicitudPaciente(BaseModel):
@@ -322,6 +339,16 @@ def crear_app(ruta_db: str | Path | None = None, *, timeout_segundos: float = 5.
         return JSONResponse(status_code=exc.estado, content={
             'codigo': exc.codigo, 'campo': None, 'mensaje': str(exc)})
 
+    @app.exception_handler(ErrorConsultaTurnos)
+    async def error_consulta_turnos(request: Request, exc: ErrorConsultaTurnos):
+        return JSONResponse(status_code=exc.estado, content={
+            'codigo': exc.codigo, 'campo': None, 'mensaje': str(exc)})
+
+    @app.exception_handler(ErrorConsultaDisponibilidad)
+    async def error_consulta_disponibilidad(request: Request, exc: ErrorConsultaDisponibilidad):
+        return JSONResponse(status_code=exc.estado, content={
+            'codigo': exc.codigo, 'campo': None, 'mensaje': str(exc)})
+
     def verificar_configuracion():
         try:
             return validar_secreto_jwt(secreto_jwt, algoritmo_jwt)
@@ -360,10 +387,43 @@ def crear_app(ruta_db: str | Path | None = None, *, timeout_segundos: float = 5.
         503: {'model': ErrorHTTP, 'description': 'Autenticación o almacenamiento no disponible.'},
     }
 
+    @app.get('/turnos', response_model=RespuestaListaTurnos, responses={
+        401: respuestas_auth[401], 403: respuestas_auth[403], 404: {'model': ErrorHTTP},
+        422: {'model': ErrorHTTP}, 503: respuestas_auth[503],
+    })
+    def consulta_turnos(
+            desde: datetime = Query(..., description='ISO 8601 con offset explícito.'),
+            hasta: datetime = Query(..., description='ISO 8601 con offset explícito.'),
+            profesional_id: str | None = None, box_id: str | None = None,
+            estado: str | None = None, limit: int = Query(default=50, ge=1, le=100),
+            offset: int = Query(default=0, ge=0), identidad=Depends(identidad_actual)):
+        asegurar_esquema()
+        return listar_turnos(
+            auth_engine, desde=desde, hasta=hasta, profesional_id=profesional_id,
+            box_id=box_id, estado=estado, limit=limit, offset=offset,
+            profesional_vinculado_id=(identidad['profesional_id']
+                                      if identidad['rol'] == 'profesional' else None))
+
+    @app.get('/disponibilidad', response_model=RespuestaListaDisponibilidad, responses={
+        401: respuestas_auth[401], 403: respuestas_auth[403], 404: {'model': ErrorHTTP},
+        422: {'model': ErrorHTTP}, 503: respuestas_auth[503],
+    })
+    def consulta_disponibilidad(
+            fecha: str = Query(..., description='Fecha local YYYY-MM-DD.'),
+            profesional_id: str = Query(...), box_id: str = Query(...),
+            duracion_minutos: int = Query(..., gt=0),
+            identidad=Depends(identidad_actual)):
+        asegurar_esquema()
+        return calcular_opciones_disponibilidad(
+            auth_engine, fecha=fecha, profesional_id=profesional_id,
+            box_id=box_id, duracion_minutos=duracion_minutos,
+            profesional_vinculado_id=(identidad['profesional_id']
+                                      if identidad['rol'] == 'profesional' else None))
+
     @app.post('/turnos', status_code=201, response_model=RespuestaTurno,
               responses={**{estado: {'model': ErrorHTTP}
                            for estado in set(ESTADOS_ERROR.values())}, **respuestas_auth})
-    def alta(solicitud: SolicitudTurno, _identidad=Depends(identidad_actual)):
+    def alta(solicitud: SolicitudTurno, _identidad=Depends(personal_operativo)):
         if engine is not None:
             from odontologia.db.postgresql import crear_turno_postgresql
 
@@ -441,6 +501,7 @@ def crear_app(ruta_db: str | Path | None = None, *, timeout_segundos: float = 5.
         try:
             return crear_usuario(
                 auth_engine, solicitud.identificador, solicitud.password, solicitud.rol,
+                profesional_id=solicitud.profesional_id,
                 actor_id=_identidad['usuario_id'])
         except ValueError as exc:
             raise ErrorUsuarios('entrada_invalida', 'Los datos de la cuenta no son válidos.', 422) from exc
@@ -452,10 +513,14 @@ def crear_app(ruta_db: str | Path | None = None, *, timeout_segundos: float = 5.
     def modificar_usuario(usuario_id: str, solicitud: ActualizacionUsuario,
                           _identidad=Depends(administrador)):
         asegurar_esquema()
-        if solicitud.rol is None and solicitud.activo is None:
+        if not solicitud.model_fields_set:
             raise ErrorUsuarios('entrada_invalida', 'Debe informar al menos un cambio.', 422)
+        cambios = {
+            campo: getattr(solicitud, campo)
+            for campo in solicitud.model_fields_set
+        }
         return actualizar_usuario(
-            auth_engine, usuario_id, rol=solicitud.rol, activo=solicitud.activo,
+            auth_engine, usuario_id, **cambios,
             actor_id=_identidad['usuario_id'])
 
     @app.get('/pacientes', response_model=RespuestaListaPacientes, responses={

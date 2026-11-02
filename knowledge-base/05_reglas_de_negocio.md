@@ -76,6 +76,17 @@ El alcance histórico de C-01 no incluye horarios ni estado. C-07 y C-09 amplía
 | Auditoría | Mutación efectiva y `turno.estado_actualizado` son atómicas; sólo actor, acción, recurso, ID opaco y resultado; sin referencias ni datos del horario |
 | Concurrencia | Transición comparte `BEGIN IMMEDIATE` SQLite o `AgendaMutex` PostgreSQL con las altas; C-01 standalone sin migrar conserva su contrato anterior |
 
+## Dominio: consultas y cuentas profesionales — C-08
+
+| Tema | Contrato aplicado en Apply |
+| --- | --- |
+| Consulta de agenda | `GET /turnos` exige `desde` y `hasta` con offset, rango `[desde,hasta)` de hasta 31 días, filtros opcionales y paginación estable de 1–100 |
+| Privacidad | Admin/Recepción ven campos operativos sin teléfono; Profesional sólo inicio, fin y nombre del paciente de su propio vínculo |
+| Cuenta Profesional | Administrador asigna un profesional activo a una única cuenta; Administrador/Recepción no llevan vínculo; rol/vínculo cambiado revoca sesión |
+| Disponibilidad consultiva | `GET /disponibilidad` propone inicios cada 15 minutos, ajustados por ventanas/excepciones, recurso activo, bloqueos y turnos ocupantes |
+| Sin escritura | Las opciones no crean reserva ni auditoría; `POST /turnos` conserva la validación autoritativa dentro de su transacción |
+| Compatibilidad | SQLite v7/PostgreSQL 0008 agregan vínculo; C-01 standalone mantiene su contrato no migrado |
+
 ## Excepciones globales y restricciones confirmadas
 
 - RN-EX-01: sólo datos ficticios, sin información clínica real.

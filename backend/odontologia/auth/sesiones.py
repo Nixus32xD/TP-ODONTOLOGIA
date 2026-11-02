@@ -14,7 +14,7 @@ from odontologia.auth.credenciales import (
     verificar_password,
 )
 from odontologia.auth.tokens import validar_secreto_jwt
-from odontologia.db.models import AgendaMutex, Sesion, Usuario
+from odontologia.db.models import AgendaMutex, Profesional, Sesion, Usuario
 from odontologia.audit import ErrorAuditoria
 
 
@@ -100,6 +100,10 @@ def autenticar(engine, identificador: str, password: str, secreto: str,
                 rechazado = True
             elif not verificar_password(password, usuario.password_hash) or not usuario.activo:
                 rechazado = True
+            elif usuario.rol == 'profesional' and (
+                    usuario.profesional_id is None
+                    or session.get(Profesional, usuario.profesional_id) is None):
+                rechazado = True
             if rechazado:
                 from odontologia.audit import registrar_evento_session
 
@@ -119,7 +123,9 @@ def autenticar(engine, identificador: str, password: str, secreto: str,
                     session, action='sesion.iniciada', resource_type='sesion',
                     actor_id=usuario.id, result='confirmado')
                 payload = {'iss': _EMISOR, 'sub': usuario.id, 'sid': sesion_id,
-                           'jti': jti, 'rol': usuario.rol, 'iat': instante, 'exp': expira}
+                           'jti': jti, 'rol': usuario.rol,
+                           'profesional_id': usuario.profesional_id,
+                           'iat': instante, 'exp': expira}
         if rechazado:
             raise ErrorSesiones(
                 'credenciales_invalidas', 'Identificador o contraseña inválidos.', 401)
@@ -145,10 +151,15 @@ def validar_sesion(engine, token: str, secreto: str, *, ahora: int | None = None
             if (registro is None or usuario is None or registro.revocada_en is not None
                     or registro.expira_en <= instante or registro.jti != payload['jti']
                     or registro.usuario_id != usuario.id or not usuario.activo
-                    or usuario.rol != payload['rol']):
+                    or usuario.rol != payload['rol']
+                    or usuario.profesional_id != payload.get('profesional_id')
+                    or (usuario.rol == 'profesional' and (
+                        usuario.profesional_id is None
+                        or session.get(Profesional, usuario.profesional_id) is None))):
                 raise ErrorSesiones('token_invalido', 'La sesión no es válida.', 401)
             return {'usuario_id': usuario.id, 'identificador': usuario.identificador,
                     'rol': usuario.rol, 'sesion_id': registro.id,
+                    'profesional_id': usuario.profesional_id,
                     'expira_en': registro.expira_en}
     except ErrorSesiones:
         raise

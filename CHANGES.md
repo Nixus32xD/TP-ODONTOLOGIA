@@ -1,7 +1,7 @@
 # CHANGES — Secuencia de Implementación
 
 > Índice canónico del proyecto **TP-ODONTOLOGIA**, actualizado el 2026-11-02.
-> **Plan del producto completo; C-01-C-07 y C-09 están implementados, validados y archivados localmente. C-08 y C-10-C-20 siguen planificados, con autorizaciones específicas de decisiones materiales según R-10.**
+> **Plan del producto completo; C-01-C-07 y C-09 están implementados, validados y archivados localmente. C-08 tiene propuesta aprobada y está en Apply; C-10-C-20 siguen planificados, con autorizaciones específicas de decisiones materiales según R-10.**
 > **Leer este archivo antes de ejecutar cualquier `/opsx:propose`.**
 
 ---
@@ -23,7 +23,7 @@ La aclaración del usuario del 2026-10-28 corrige el índice anterior: **hacer s
 - **Evolución del producto:** C-15 a C-20 agregan clínica, odontograma/plan de tratamiento, recordatorios, reserva del paciente, cobros y reportes. Se proponen para mostrar el alcance completo; su implementación requiere priorización y contratos propios.
 - **Opciones no comprometidas:** multisede/SaaS multitenant, IA, obras sociales y facturación electrónica ARCA no se vuelven obligatorias por aparecer en productos comparados. Si se eligen, se agregarán changes posteriores con investigación y aprobación específicas. C-19 no incluye emisión fiscal ni conexión con pagos reales.
 
-La KB y las instrucciones existentes documentan principalmente la porción académica C-01. Sus exclusiones siguen vigentes para esa implementación; las capacidades futuras del roadmap no amplían retroactivamente las US-001 a US-004. C-02 concreta la migración a PostgreSQL conservando la fuente SQLite, con un destino de pruebas aislado. C-03/C-04 concretaron autenticación, permisos y auditoría; C-05 agregó la ficha mínima de paciente, C-06 los catálogos y C-07 la disponibilidad. C-07 mantiene el change OpenSpec activo hasta Archive. C-08+ requieren contratos propios antes de Apply. Se mantienen datos ficticios y ninguna integración externa real.
+La KB y las instrucciones existentes documentan principalmente la porción académica C-01. Sus exclusiones siguen vigentes para esa implementación; las capacidades futuras del roadmap no amplían retroactivamente las US-001 a US-004. C-02 concreta la migración a PostgreSQL conservando la fuente SQLite; C-03/C-04 autenticación, permisos y auditoría; C-05 la ficha mínima; C-06 catálogos; C-07 disponibilidad; C-09 estados. C-08 ya está archivado localmente; el resto conserva contratos propios antes de su implementación. Se mantienen datos ficticios y ninguna integración externa real.
 
 **Stack definido por la cátedra (2026-10-29):** backend con Python, FastAPI, JWT, SQLAlchemy, PostgreSQL, Redis y Docker/Docker Compose; frontend con React, TypeScript y Vite ([DD-09](knowledge-base/09_decisiones_y_supuestos.md)). C-02 implementa PostgreSQL + SQLAlchemy; C-03 implementa JWT y permisos de personal. React/TS/Vite sigue en C-11, Docker Compose de despliegue en C-14 y Redis (cola de recordatorios) en C-17. La existencia de carpetas y servicios no acredita la implementación de esos changes.
 
@@ -71,7 +71,7 @@ C-11 + C-12
         └── C-20 consultar-reportes-operativos (también C-08, C-09)
 ```
 
-Los números son identificadores estables agrupados por capacidad, no un orden de ejecución por sí solos: C-09 precede a C-08 porque una consulta operativa debe conocer qué estados ocupan recursos. C-01 está archivado desde el 2026-10-28; C-02, C-03 y C-04 también están archivados.
+Los números son identificadores estables agrupados por capacidad, no un orden de ejecución por sí solos: C-09 precede a C-08 porque una consulta operativa debe conocer qué estados ocupan recursos. C-01 está archivado desde el 2026-10-28; C-02 a C-09 también están archivados.
 
 ### Paralelismo por fase
 
@@ -161,7 +161,7 @@ Secuencia compatible con dependencias, sin prometer una optimización temporal n
 
 ## FASE 2 — Fundamento evolutivo, acceso y trazabilidad
 
-> C-01–C-07 están archivados localmente y validados. C-08 a C-20 siguen planificados con desarrollo global autorizado. Los contratos de cada change se revisan con Propose y las decisiones materiales de governance CRÍTICO/ALTO requieren aprobación específica antes del código.
+> C-01–C-09 están archivados localmente y validados. C-10 a C-20 siguen planificados con desarrollo global autorizado. Las decisiones materiales de governance CRÍTICO/ALTO requieren aprobación específica antes del código.
 
 ### [C-02] `evolucionar-esquema-y-configuracion`
 
@@ -254,11 +254,12 @@ Secuencia compatible con dependencias, sin prometer una optimización temporal n
 
 ### [C-08] `consultar-agenda-y-disponibilidad`
 
-- **Estado**: [ ] planificado; no implementado ni propuesto en OpenSpec.
+- **Estado**: implementado, validado y archivado localmente el 2026-11-02. Ver [change archivado](openspec/changes/archive/2026-11-02-consultar-agenda-y-disponibilidad/) y [evidencia](docs/evidencia/implementacion-consultas-agenda.md). Sin push.
 - **Scope**:
-  - Proponer `GET /turnos` por rango, profesional, box y estado, con límites de rango/paginación; `GET /disponibilidad` devuelve opciones compatibles con horarios, bloqueos y estados que ocupan recursos.
-  - Reutilizar semántica temporal y reglas de exclusión en las consultas; filtrar por permisos de recepción/profesional y exponer sólo los datos necesarios. Una opción libre es orientativa: el alta debe revalidarla dentro de su transacción.
-  - Tests: agenda vacía, límites de rango, filtros combinados, recurso desconocido, cancelado que libera recursos y dos solicitantes que ven la misma opción libre antes de reservar.
+  - `GET /turnos`: rangos offset-aware semiabiertos de hasta 31 días, filtros por profesional/box/estado, paginación estable; Admin/Recepción ven datos operativos sin teléfono y Profesional sólo su propio horario y nombre de paciente.
+  - `GET /disponibilidad`: candidatos cada 15 minutos en `America/Argentina/Mendoza`; intersecta horario/excepción de ambos recursos, filtra inactivos, bloqueos y estados ocupantes C-09. Las opciones no reservan y `POST /turnos` revalida en su transacción.
+  - Cuenta Profesional con FK única al recurso, asignable sólo por Administrador; vínculo incorporado a JWT e identidad validada; cambio de rol/vínculo revoca sesiones. C-01 standalone conserva su compatibilidad.
+  - Migraciones: SQLite v7 y PostgreSQL Alembic 0008, preservando filas existentes. Los tests dirigidos de servicios/API están en verde; regresión completa ambos motores, evidencia final, validación OpenSpec y diff-check quedan pendientes.
 - **Dependencias**: C-05, C-07, C-09.
 - **Governance**: MEDIO — consulta con reglas de disponibilidad y acceso.
 - **Leer antes**:

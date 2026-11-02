@@ -18,6 +18,7 @@ El encabezado conserva la navegación inicial; estas entidades ya están represe
 | Horario semanal | horarios_semanales | Profesional o box (exactamente uno), día ISO y tramo local de minutos; SQLite v5+ / PostgreSQL 0006+ |
 | Excepción | excepciones_horario y tramos_excepcion | Fecha local por recurso; cabecera presente con cero tramos significa día cerrado |
 | Bloqueo | bloqueos_agenda | ID opaco, exactamente profesional o box, intervalo positivo en minutos UTC |
+| Cuenta Profesional | usuarios.profesional_id | FK única a profesionales; el rol Profesional requiere vínculo y Administrador/Recepción no lo admiten |
 
 Cada turno referencia exactamente un paciente, profesional y box; no contiene `prestacion_id`. FK activadas/verificadas por conexión; CHECK inicio anterior a fin. Los catálogos se consultan paginados y se actualizan sin borrar filas; sólo Administrador cambia su estado.
 
@@ -32,6 +33,12 @@ El bootstrap C-01 crea paciente-A/B, profesional-A/B y box-A/B sin turnos. Al mi
 En la API con SQLite v6 o PostgreSQL Alembic `20261102_0007_turn_status`, `turnos.estado` sólo admite `reservado`, `confirmado`, `atendido`, `ausente` o `cancelado`. Filas previas reciben `reservado` sin cambiar ID, referencias ni intervalo. `reservado` y `confirmado` ocupan profesional y box; los tres estados terminales permanecen como historial y liberan ambos recursos. Las transiciones permitidas son reservado→confirmado/cancelado y confirmado→atendido/ausente/cancelado. La cancelación repetida devuelve el estado actual sin mutar ni volver a auditar. La transición comparte la exclusión transaccional de las altas: `BEGIN IMMEDIATE` en SQLite y la fila `AgendaMutex` en PostgreSQL.
 
 La migración SQLite reconstruye `eventos_auditoria` para aceptar `turno.estado_actualizado` y copia las filas históricas conservando sus IDs, índice y protecciones append-only. PostgreSQL actualiza las constraints de acción y combinación en Alembic 0007. Cada transición efectiva registra sólo actor, acción, tipo `turno`, ID opaco y resultado; estado e historial se confirman juntos.
+
+## Consulta y vínculo de Profesional — C-08
+
+SQLite v7 y PostgreSQL Alembic `20261102_0008_professional_accounts` agregan `usuarios.profesional_id` como FK única con `ON DELETE RESTRICT` y CHECK rol/vínculo. El Administrador asigna una ficha activa al crear o actualizar una cuenta; cambiar el rol o vínculo revoca sesiones. JWT e identidad validada contienen el ID asociado y se comparan con el vínculo actual para fallar cerrado. Las filas existentes Administrador/Recepción migran sin vínculo.
+
+`GET /turnos` consulta intervalos semiabiertos `[desde,hasta)`, hasta 31 días, con filtros y paginación estable. La proyección operativa no contiene teléfono; Profesional sólo recibe inicio, fin y nombre del paciente de su propio vínculo. `GET /disponibilidad` propone inicios de 15 minutos dentro de horarios/excepciones locales y excluye recursos inactivos, bloqueos y turnos `reservado`/`confirmado`; es de sólo lectura y no sustituye la validación de `POST /turnos`. C-01 standalone continúa sin requerir el campo `estado` ni la migración de autenticación.
 
 ## Límites que afectan el modelo
 

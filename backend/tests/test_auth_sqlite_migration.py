@@ -6,6 +6,9 @@ import unittest
 
 from odontologia import inicializar_agenda
 from odontologia.auth.migraciones import migrar_sqlite
+from odontologia.auth.almacenamiento import (
+    crear_engine_autenticacion, validar_esquema_autenticacion,
+)
 from odontologia import crear_turno
 from datetime import datetime
 
@@ -29,7 +32,7 @@ class MigracionAutenticacionSQLiteTests(unittest.TestCase):
         with closing(sqlite3.connect(self.ruta)) as conexion:
             self.assertEqual(conexion.execute('SELECT COUNT(*) FROM pacientes').fetchone()[0], 2)
             self.assertEqual(conexion.execute('SELECT COUNT(*) FROM turnos').fetchone()[0], 0)
-            self.assertEqual(conexion.execute('SELECT version FROM auth_schema_version').fetchone()[0], 6)
+            self.assertEqual(conexion.execute('SELECT version FROM auth_schema_version').fetchone()[0], 7)
 
     def test_migracion_repetida_no_modifica_la_agenda(self):
         migrar_sqlite(self.ruta)
@@ -65,7 +68,7 @@ class MigracionAutenticacionSQLiteTests(unittest.TestCase):
                 conexion.execute('SELECT id, paciente_id FROM turnos').fetchone(),
                 (turno.id, 'paciente-A'))
             self.assertEqual(conexion.execute(
-                'SELECT version FROM auth_schema_version').fetchone(), (6,))
+                'SELECT version FROM auth_schema_version').fetchone(), (7,))
             with self.assertRaises(sqlite3.IntegrityError):
                 conexion.execute(
                     "INSERT INTO pacientes(id, nombre, telefono, activo) "
@@ -120,3 +123,73 @@ class MigracionAutenticacionSQLiteTests(unittest.TestCase):
             self.assertEqual(conexion.execute(
                 "SELECT COUNT(*) FROM eventos_auditoria WHERE action='cuenta.bootstrap'"
             ).fetchone(), (1,))
+
+    def test_upgrade_desde_v6_agrega_vinculo_profesional_y_preserva_dependencias(self):
+        migrar_sqlite(self.ruta)
+        with closing(sqlite3.connect(self.ruta)) as conexion:
+            conexion.execute(
+                "INSERT INTO usuarios(id, identificador, password_hash, rol, activo) "
+                "VALUES ('usuario-admin', 'admin.one', 'hash-ficticio', 'administrador', 1)")
+            conexion.execute(
+                "INSERT INTO sesiones(id, usuario_id, jti, expira_en, revocada_en, creado_en) "
+                "VALUES ('sesion-1', 'usuario-admin', 'jti-1', 5000, NULL, 1000)")
+            conexion.execute(
+                "INSERT INTO eventos_auditoria(created_at, actor_id, action, resource_type, "
+                "resource_id, result) VALUES ('2026-11-02T12:00:00+00:00', 'usuario-admin', "
+                "'cuenta.bootstrap', 'cuenta', 'usuario-admin', 'confirmado')")
+            conexion.commit()
+
+        migrar_sqlite(self.ruta)
+
+        with closing(sqlite3.connect(self.ruta)) as conexion:
+            conexion.execute('PRAGMA foreign_keys=ON')
+            columnas = {fila[1] for fila in conexion.execute('PRAGMA table_info(usuarios)')}
+            self.assertIn('profesional_id', columnas)
+            self.assertEqual(conexion.execute(
+                'SELECT version FROM auth_schema_version').fetchone(), (7,))
+            self.assertEqual(conexion.execute(
+                "SELECT id, rol, profesional_id FROM usuarios WHERE id='usuario-admin'"
+            ).fetchone(), ('usuario-admin', 'administrador', None))
+            self.assertEqual(conexion.execute(
+                "SELECT usuario_id FROM sesiones WHERE id='sesion-1'").fetchone(), ('usuario-admin',))
+            self.assertEqual(conexion.execute(
+                "SELECT actor_id FROM eventos_auditoria WHERE action='cuenta.bootstrap'"
+            ).fetchone(), ('usuario-admin',))
+            self.assertEqual(conexion.execute('PRAGMA foreign_key_check').fetchall(), [])
+            conexion.execute(
+                "INSERT INTO usuarios(id, identificador, password_hash, rol, activo, profesional_id) "
+                "VALUES ('usuario-prof', 'profesional.a', 'hash-ficticio', 'profesional', 1, "
+                "'profesional-A')")
+            with self.assertRaises(sqlite3.IntegrityError):
+                conexion.execute(
+                    "INSERT INTO usuarios(id, identificador, password_hash, rol, activo, profesional_id) "
+                    "VALUES ('usuario-prof-2', 'profesional.b', 'hash-ficticio', 'profesional', 1, "
+                    "'profesional-A')")
+            with self.assertRaises(sqlite3.IntegrityError):
+                conexion.execute(
+                    "INSERT INTO usuarios(id, identificador, password_hash, rol, activo) "
+                    "VALUES ('usuario-prof-invalid', 'profesional.c', 'hash-ficticio', 'profesional', 1)")
+            with self.assertRaises(sqlite3.IntegrityError):
+                conexion.execute(
+                    "INSERT INTO usuarios(id, identificador, password_hash, rol, activo, profesional_id) "
+                    "VALUES ('usuario-recep-invalid', 'recepcion.a', 'hash-ficticio', 'recepcion', 1, "
+                    "'profesional-B')")
+
+    def test_validador_v7_falla_cerrado_si_falta_columna_de_vinculo(self):
+        migrar_sqlite(self.ruta)
+        with closing(sqlite3.connect(self.ruta)) as conexion:
+            conexion.execute('DROP TABLE usuarios')
+            conexion.execute('''CREATE TABLE usuarios (
+                id TEXT PRIMARY KEY,
+                identificador TEXT NOT NULL UNIQUE,
+                password_hash TEXT NOT NULL,
+                rol TEXT NOT NULL CHECK (rol IN ('administrador', 'recepcion')),
+                activo INTEGER NOT NULL CHECK (activo IN (0, 1))
+            )''')
+            conexion.execute('UPDATE auth_schema_version SET version=7')
+            conexion.commit()
+        engine = crear_engine_autenticacion('sqlite', None, self.ruta)
+        self.addCleanup(engine.dispose)
+
+        with self.assertRaisesRegex(RuntimeError, 'vínculo profesional'):
+            validar_esquema_autenticacion(engine, 'sqlite', self.ruta)

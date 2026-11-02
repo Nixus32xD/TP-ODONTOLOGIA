@@ -20,7 +20,7 @@ El sistema SHALL permitir crear el primer Administrador sólo mediante una opera
 - **THEN** se rechaza sin modificar usuarios ni sesiones existentes
 
 ### Requirement: Administrar cuentas del personal
-El sistema SHALL permitir a un Administrador autenticado crear y consultar cuentas de Administrador y Recepción, y cambiar su rol o estado activo. Identificadores SHALL normalizarse con casefold y trim y cumplir el formato ASCII de 3–64 caracteres; contraseñas de 12–128 caracteres SHALL almacenarse sólo como derivación con sal. Respuestas SHALL omitir credenciales, hashes, secretos y tokens. Desactivar una cuenta o cambiar su rol SHALL revocar sus sesiones.
+El sistema SHALL permitir a un Administrador autenticado crear y consultar cuentas de Administrador, Recepción y Profesional, y cambiar su rol o estado activo.
 
 #### Scenario: Recepción no administra cuentas
 - **GIVEN** una sesión válida con rol Recepción
@@ -32,30 +32,55 @@ El sistema SHALL permitir a un Administrador autenticado crear y consultar cuent
 - **WHEN** crea una cuenta Administrador o Recepción con contraseña válida
 - **THEN** la cuenta queda persistida y la respuesta omite credenciales y secretos
 
-#### Scenario: Desactivación revoca sesiones
-- **GIVEN** una cuenta con sesiones activas
-- **WHEN** un Administrador la desactiva o cambia su rol
-- **THEN** sus sesiones previas dejan de autorizar peticiones
+### Requirement: Vincular cuentas Profesionales con recursos únicos
+Una cuenta Profesional SHALL vincularse a un único profesional activo; una ficha SHALL estar asignada como máximo a una cuenta. Las cuentas Administrador y Recepción SHALL carecer de vínculo profesional.
+
+#### Scenario: Alta de cuenta Profesional vinculada
+- **GIVEN** un Administrador autenticado y un profesional activo sin cuenta vinculada
+- **WHEN** crea una cuenta Profesional y asigna su ID
+- **THEN** queda asociada la ficha profesional solicitada
+
+#### Scenario: Asignación profesional inválida o duplicada
+- **GIVEN** un ID inexistente/inactivo, un rol incompatible o una ficha ya vinculada
+- **WHEN** se intenta crear o cambiar el vínculo
+- **THEN** se rechaza con 404/409/422 y no se cambia cuenta, vínculo ni auditoría
+
+### Requirement: Aplicar política de credenciales y respuestas de cuenta
+Identificadores SHALL ser únicos tras normalizarse con casefold y trim, y cumplir el formato ASCII de 3–64 caracteres. Contraseñas de 12–128 caracteres SHALL almacenarse sólo como derivación con sal. Respuestas SHALL omitir credenciales, hashes, secretos y tokens.
 
 #### Scenario: Identificador o contraseña fuera de política
 - **GIVEN** un identificador con formato inválido o una contraseña menor a 12 o mayor a 128 caracteres
 - **WHEN** un Administrador intenta crear una cuenta
 - **THEN** recibe 422 sin guardar la cuenta ni mostrar la contraseña
+
 #### Scenario: Identificador duplicado
 - **GIVEN** ya existe una cuenta con el identificador normalizado
 - **WHEN** se intenta crear otra con el mismo identificador
 - **THEN** se rechaza sin revelar datos de la cuenta existente
 
+#### Scenario: Alta de cuenta Profesional omite credenciales
+- **GIVEN** un Administrador autenticado y datos válidos de una cuenta Profesional
+- **WHEN** crea la cuenta con una ficha profesional activa
+- **THEN** la cuenta queda vinculada y la respuesta no contiene contraseña, hash, secreto ni token
+
+### Requirement: Revocar sesiones ante cambios de cuenta
+Desactivar una cuenta, cambiar su rol o cambiar su vínculo profesional SHALL revocar sus sesiones activas.
+
+#### Scenario: Desactivación revoca sesiones
+- **GIVEN** una cuenta con sesiones activas
+- **WHEN** un Administrador la desactiva, cambia su rol o reasigna su profesional
+- **THEN** sus sesiones previas dejan de autorizar peticiones
+
 ### Requirement: Iniciar sesiones sólo con credenciales válidas
-El sistema SHALL emitir una sesión firmada sólo para una cuenta activa Administrador o Recepción con credenciales válidas. Las respuestas de autenticación fallida SHALL ser genéricas y no distinguir entre cuenta inexistente, inactiva o contraseña incorrecta.
+El sistema SHALL emitir una sesión firmada sólo para una cuenta activa Administrador o Recepción o para una cuenta Profesional activa con vínculo válido a un profesional existente. Las respuestas de autenticación fallida SHALL ser genéricas y no distinguir entre cuenta inexistente, inactiva, vínculo faltante o contraseña incorrecta.
 
 #### Scenario: Inicio de sesión válido
-- **GIVEN** una cuenta activa con contraseña válida
+- **GIVEN** una cuenta activa habilitada con contraseña válida
 - **WHEN** se inicia sesión
 - **THEN** se devuelve un token bearer con expiración limitada y datos mínimos de cuenta, sin exponer la derivación de contraseña
 
 #### Scenario: Credenciales inválidas
-- **GIVEN** credenciales incorrectas, cuenta inexistente o inactiva
+- **GIVEN** credenciales incorrectas, cuenta inexistente o inactiva, o vínculo profesional inválido
 - **WHEN** se solicita una sesión
 - **THEN** se devuelve 401 con el mismo mensaje público y no se crea una sesión utilizable
 
@@ -78,7 +103,7 @@ El sistema SHALL permitir a una cuenta autenticada consultar su identidad y rol 
 - **THEN** recibe 401 y no se ejecuta la operación
 
 ### Requirement: Aplicar el menor privilegio aprobado
-El backend SHALL autorizar cada operación según el rol de la cuenta. El Administrador puede gestionar las operaciones disponibles y las cuentas; Recepción puede crear turnos pero no administrar cuentas; las cuentas de Profesional no se habilitan hasta un change posterior que defina su agenda propia.
+El backend SHALL autorizar cada operación según el rol actual de la cuenta. El Administrador puede gestionar las operaciones disponibles y las cuentas; Recepción puede operar la agenda y datos permitidos pero no administrar cuentas; Profesional sólo puede consultar turnos y opciones de disponibilidad de su propio profesional vinculado y no puede crear, cambiar, cancelar ni administrar datos.
 
 #### Scenario: Recepción crea un turno
 - **GIVEN** una sesión vigente de Recepción
@@ -86,9 +111,14 @@ El backend SHALL autorizar cada operación según el rol de la cuenta. El Admini
 - **THEN** la API ejecuta el contrato de alta C-01
 
 #### Scenario: Profesional sin alcance de agenda
-- **GIVEN** una identidad asociada a Profesional
-- **WHEN** intenta iniciar sesión o acceder a una operación del sistema
-- **THEN** no obtiene acceso hasta que otro change habilite explícitamente su agenda
+- **GIVEN** una sesión vigente de Profesional vinculada a profesional-A
+- **WHEN** consulta turnos u opciones de disponibilidad de profesional-A
+- **THEN** sólo se evalúa el profesional vinculado y no se expone información de otros calendarios
+
+#### Scenario: Profesional no realiza operaciones de escritura
+- **GIVEN** una sesión vigente de Profesional
+- **WHEN** intenta crear, cancelar, confirmar, marcar atención/ausencia o modificar turnos, catálogos o cuentas
+- **THEN** recibe 403 sin cambios ni eventos de mutación
 
 #### Scenario: Administrador tiene acceso autorizado
 - **GIVEN** una sesión vigente de Administrador
