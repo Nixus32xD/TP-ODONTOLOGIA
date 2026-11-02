@@ -73,7 +73,7 @@ class OdontogramaPostgreSQLIntegracionTests(unittest.TestCase):
         with self.engine.begin() as connection:
             revision = connection.execute(text(
                 'SELECT version_num FROM alembic_version')).scalar_one()
-            self.assertEqual(revision, '20261102_0012_appointment_reminders')
+            self.assertEqual(revision, '20261102_0013_patient_self_service')
 
             connection.execute(text(
                 "INSERT INTO versiones_odontograma"

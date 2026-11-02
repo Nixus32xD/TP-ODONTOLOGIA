@@ -12,7 +12,7 @@ from odontologia.auth.migraciones import migrar_sqlite
 from odontologia.auth.usuarios import (
     ErrorUsuarios, actualizar_usuario, crear_usuario, listar_usuarios,
 )
-from odontologia.db.models import Profesional, Sesion
+from odontologia.db.models import Paciente, Profesional, Sesion
 
 
 class UsuariosProfesionalTests(unittest.TestCase):
@@ -143,6 +143,53 @@ class UsuariosProfesionalTests(unittest.TestCase):
                          ('vinculo_profesional_invalido', 422))
         self.assertEqual(next(usuario['rol'] for usuario in listar_usuarios(self.engine)
                              if usuario['id'] == recepcion['id']), 'recepcion')
+
+    def test_crear_cuenta_paciente_activo_unica_y_no_exponer_credenciales(self):
+        with Session(self.engine) as session, session.begin():
+            session.add(Paciente(
+                id='paciente-vinculable', nombre='Paciente sintético', activo=True,
+                acepta_recordatorios=False))
+
+        creada = crear_usuario(
+            self.engine, 'paciente.sintetico', 'frase-larga-segura-2026', 'paciente',
+            paciente_id='paciente-vinculable')
+
+        self.assertEqual((creada['rol'], creada['paciente_id']),
+                         ('paciente', 'paciente-vinculable'))
+        self.assertIsNone(creada['profesional_id'])
+        self.assertNotIn('password_hash', creada)
+        self.assertNotIn('password', creada)
+        self.assertEqual(listar_usuarios(self.engine), [creada])
+        with self.assertRaises(ErrorUsuarios) as duplicada:
+            crear_usuario(
+                self.engine, 'paciente.duplicado', 'otra-frase-larga-segura-2026', 'paciente',
+                paciente_id='paciente-vinculable')
+        self.assertEqual((duplicada.exception.codigo, duplicada.exception.estado),
+                         ('paciente_vinculado', 409))
+
+    def test_vinculo_paciente_inexistente_inactivo_o_incompatible_se_rechaza(self):
+        with self.assertRaises(ErrorUsuarios) as inexistente:
+            crear_usuario(
+                self.engine, 'paciente.no-existe', 'frase-larga-segura-2026', 'paciente',
+                paciente_id='paciente-desconocido')
+        self.assertEqual((inexistente.exception.codigo, inexistente.exception.estado),
+                         ('paciente_desconocido', 404))
+        with Session(self.engine) as session, session.begin():
+            session.add(Paciente(
+                id='paciente-inactivo', nombre='Paciente sintético inactivo', activo=False,
+                acepta_recordatorios=False))
+        with self.assertRaises(ErrorUsuarios) as inactivo:
+            crear_usuario(
+                self.engine, 'paciente.inactivo', 'frase-larga-segura-2026', 'paciente',
+                paciente_id='paciente-inactivo')
+        self.assertEqual((inactivo.exception.codigo, inactivo.exception.estado),
+                         ('paciente_inactivo', 409))
+        with self.assertRaises(ErrorUsuarios) as incompatible:
+            crear_usuario(
+                self.engine, 'recepcion.con-paciente', 'frase-larga-segura-2026', 'recepcion',
+                paciente_id='paciente-A')
+        self.assertEqual((incompatible.exception.codigo, incompatible.exception.estado),
+                         ('vinculo_paciente_incompatible', 422))
 
 
 if __name__ == '__main__':

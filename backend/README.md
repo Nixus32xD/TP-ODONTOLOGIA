@@ -80,7 +80,7 @@ El bootstrap pide identificador y contraseña de forma interactiva y oculta; no 
 ..\.venv\Scripts\python.exe -m odontologia.auth.bootstrap_admin
 ```
 
-Alembic aplica las revisiones consecutivas hasta la revisión vigente (`20261102_0012_appointment_reminders`), incluida la ficha mínima, catálogos, auditoría, disponibilidad, estados, vínculo de cuenta Profesional, versión de turnos, historia clínica sintética, odontogramas, planes manuales y la estructura local del outbox simulado. Aplicar migraciones y bootstrap explícitamente desde el entorno local de Python cuando se necesiten para una prueba; no usar la API ni `GET /health` como comando de migración.
+Alembic aplica las revisiones consecutivas hasta la revisión vigente (`20261102_0013_patient_self_service`), incluida la ficha mínima, catálogos, auditoría, disponibilidad, estados, vínculos de cuenta Profesional/Paciente, versión de turnos, historia clínica sintética, odontogramas, planes manuales, outbox simulado y tabla idempotente del portal. Aplicar migraciones y bootstrap explícitamente desde el entorno local de Python cuando se necesiten para una prueba; no usar la API ni `GET /health` como comando de migración.
 
 `POST /sesiones` recibe `identificador` y `password`; su respuesta contiene `access_token`, `token_type` y `expires_in`. En Swagger, usar **Authorize** con `Bearer <token>`. `/sesiones/actual` permite consultar y cerrar la sesión propia. El Administrador puede consultar/crear usuarios y cambiar rol/estado; Recepción puede crear turnos y operar fichas mínimas de pacientes; sólo Administrador cambia el estado activo de pacientes. Desactivar una cuenta, cambiarle el rol o cerrar sesión revoca sus tokens persistidos. Los fallos de credenciales devuelven un mensaje genérico. Las fichas contienen sólo nombre y teléfono opcional ficticios; no usar datos reales ni añadir historia clínica. Los eventos guardan sólo actor/acción/recurso/resultado/fecha; no incluyen cuerpos, nombres, teléfonos, contraseñas, hashes, JWT, datos clínicos ni el identificador de un login rechazado. `GET /auditoria?limit=50&offset=0` es sólo Administrador, admite límite 1–100 y no ofrece edición, borrado ni purga automática. Si el evento falla, la mutación se revierte y la API no informa éxito. Sin secreto o esquema migrado, las operaciones protegidas fallan cerradas con 503 mientras `/health` continúa pública.
 
@@ -198,7 +198,7 @@ Si la variable no está definida, las pruebas PostgreSQL se omiten; esa ejecuci�
 
 ## Copias locales de agenda (C-12)
 
-El bundle de backup es un directorio nuevo con el payload completo (`agenda.sqlite3` o `agenda.dump`) y `manifest.json`. El manifiesto v1 incluye `created_at_utc` (ISO 8601 en UTC), `backend`, `application_version`, `schema_version`, `payload_name`, `payload_size_bytes`, `payload_sha256` (SHA-256 hexadecimal) y `table_counts` (nombre de cada tabla vigente y cantidad de filas como entero no negativo). Los conteos son agregados y no incluyen valores ni identificadores de filas. La versión del backend se define en `odontologia.version`; el esquema aceptado actualmente es SQLite `11` o PostgreSQL `20261102_0012_appointment_reminders`. Incluye el recuento de `recordatorios_outbox` junto con las tablas clínicas. El hash detecta corrupción/cambios accidentales del payload, no autentica el manifiesto si un atacante reemplaza ambos; los conteos no prometen confidencialidad. El manifiesto no guarda URL, ruta de origen, credenciales ni datos personales.
+El bundle de backup es un directorio nuevo con el payload completo (`agenda.sqlite3` o `agenda.dump`) y `manifest.json`. El manifiesto v1 incluye `created_at_utc` (ISO 8601 en UTC), `backend`, `application_version`, `schema_version`, `payload_name`, `payload_size_bytes`, `payload_sha256` (SHA-256 hexadecimal) y `table_counts` (nombre de cada tabla vigente y cantidad de filas como entero no negativo). Los conteos son agregados y no incluyen valores ni identificadores de filas. La versión del backend se define en `odontologia.version`; el esquema aceptado actualmente es SQLite `12` o PostgreSQL `20261102_0013_patient_self_service`. Incluye recuentos de `recordatorios_outbox` e `idempotencia_portal_paciente` junto con las tablas clínicas. El hash detecta corrupción/cambios accidentales del payload, no autentica el manifiesto si un atacante reemplaza ambos; los conteos no prometen confidencialidad. El manifiesto no guarda URL, ruta de origen, credenciales ni datos personales.
 
 Los comandos C-12 son manuales y locales; la API y el arranque no crean ni restauran copias. Los bundles contienen la base completa, incluidas fichas, cuentas/sesiones y auditoría, por lo que deben tratarse como datos sensibles. No contienen `.env` ni el secreto JWT. No se suben automáticamente, no tienen cifrado gestionado ni política de purga automática. Las pruebas usan bases temporales y datos ficticios; no demuestran recuperación humana ni preparación de producción.
 
@@ -256,7 +256,7 @@ $env:DATABASE_URL = 'postgresql+psycopg://usuario:clave@127.0.0.1:55432/odontolo
 ..\.venv\Scripts\python.exe -m odontologia.backup crear 'N:\copias\agenda-postgresql-2026-11-02'
 ```
 
-El proceso espera PostgreSQL en la revisión vigente `20261102_0012_appointment_reminders`, servidor/clientes de la misma major y un destino nuevo. La contraseña de ejemplo se reemplaza sólo en el entorno local; no guardarla en documentos ni en el manifiesto. Sin PostgreSQL local de prueba compatible, no ejecutar esta orden contra una agenda real.
+El proceso espera PostgreSQL en la revisión vigente `20261102_0013_patient_self_service`, servidor/clientes de la misma major y un destino nuevo. La contraseña de ejemplo se reemplaza sólo en el entorno local; no guardarla en documentos ni en el manifiesto. Sin PostgreSQL local de prueba compatible, no ejecutar esta orden contra una agenda real.
 
 La creación prepara y valida payload y manifiesto en un directorio privado del mismo volumen y publica el directorio completo con una operación atómica que no reemplaza destinos. En Windows usa `os.rename`; en Linux exige `renameat2(RENAME_NOREPLACE)` y falla cerrado si no está disponible. Una colisión que aparezca durante la publicación, incluso un directorio POSIX vacío, se conserva sin cambios; una excepción previa deja el destino final ausente y limpia sólo el staging propio. El staging, payload y manifiesto mantienen permisos POSIX `0700`/`0600`; Windows conserva ACL heredadas. La copia contiene datos sensibles y debe guardarse fuera del repositorio.
 
@@ -331,3 +331,51 @@ El alta devuelve etapas en el orden enviado y comienza en `propuesto`. Las únic
 
 
 El backup C-16 admite sólo SQLite v10 y PostgreSQL 0011. Incluye recuentos de snapshots, hallazgos, planes y etapas; el manifiesto no incluye observaciones, nombres ni valores de prestaciones. La prueba focal SQLite crea un bundle y restaura a un archivo nuevo, valida filas y recuentos y comprueba que origen/bundle no cambian. La integración PostgreSQL ejecuta pg_dump/pg_restore en la base sintética local, restaura a una base destino nueva terminada en _test y valida datos y todos los recuentos. El restore rechaza la base activa; no se hizo backup ni restore de datos reales.
+
+## C-18 — Portal de autoservicio del paciente sintético
+
+El esquema vigente es SQLite v12 o PostgreSQL Alembic `20261102_0013_patient_self_service`. La migración agrega `usuarios.paciente_id` único, las acciones metadata-only del portal y `idempotencia_portal_paciente`; el upgrade conserva sesiones, cuentas, turnos y eventos anteriores. La tabla de claves viaja en backup/restore y el manifiesto sólo informa conteos agregados.
+
+El alta de la cuenta es local y exclusiva de Administrador. No existe autorregistro, invitación, activación por email/SMS, proveedor externo ni canal de comunicación. En una base de demostración, crear primero una ficha sintética mediante `POST /pacientes` y luego vincularla con `POST /usuarios`:
+
+```json
+POST /pacientes
+{
+  "nombre": "Paciente de demostración",
+  "telefono": null,
+  "acepta_recordatorios": false
+}
+```
+
+Usar el `id` ficticio devuelto para `POST /usuarios`, autenticado como Administrador:
+
+```json
+{
+  "identificador": "paciente.demo",
+  "password": "una-frase-local-de-demostración",
+  "rol": "paciente",
+  "paciente_id": "<id-de-la-ficha-sintética>"
+}
+```
+
+La API no devuelve el hash ni vuelve a mostrar la contraseña. El token de sesión deriva `paciente_id` del vínculo vigente; ninguna reserva acepta ese identificador en el cuerpo. Recepción y Administrador no ven el contenido del portal.
+
+| Ruta | Uso |
+|---|---|
+| `GET /portal/disponibilidad?fecha=YYYY-MM-DD` | Franjas opacas de 30 minutos, sólo `inicio`/`fin`, hasta 31 días locales. |
+| `GET /mis-turnos` | Turnos propios con identificador, inicio/fin, estado y versión; sin ficha, clínica o agenda identificada. |
+| `POST /mis-turnos` | Reserva con `{ "inicio": "...ISO 8601 con offset..." }` y header `Idempotency-Key`. El servidor asigna recursos. |
+| `POST /mis-turnos/{turno_id}/cancelacion` | Cancela un turno propio `reservado`/`confirmado` con 24 horas o más de anticipación; requiere clave. |
+| `POST /mis-turnos/{turno_id}/reprogramacion` | Recibe sólo `{ "version": n, "inicio": "..." }` y clave; conserva paciente/estado/duración y revalida en transacción. |
+
+Las claves se guardan por paciente+operación; mismo payload devuelve el resultado original y payload diferente da 409. El replay confirmado se resuelve después de verificar sesión y titularidad y antes de volver a validar vigencia/horizonte (o versión vigente sólo necesaria para una operación nueva). Ante timeout ambiguo, el cliente conserva y reusa la misma clave para la misma operación, objetivo y payload; cambia payload/objetivo/operación, cambia la clave y la descarta sólo cuando la operación y actualización de vista concluyen con éxito. El paciente puede tener como máximo tres turnos futuros activos. Los horarios se interpretan en `America/Argentina/Mendoza`; la duración de 30 minutos es una regla limitada a esta demostración, no la duración general de prestaciones. Lecturas y mutaciones registran únicamente actor/acción/recurso opaco/resultado. Si falla la auditoría se niegan lecturas o se revierte la mutación.
+
+La UI muestra el portal sólo a `paciente`; el resto de roles conserva sus vistas. Use exclusivamente datos, identidades y credenciales ficticias. No es un sistema productivo ni está preparado para usar con pacientes reales.
+
+Las pruebas de dominio/API se ejecutan desde `backend/` con:
+
+```powershell
+..\.venv\Scripts\python.exe -m unittest tests.test_portal_paciente tests.test_api_portal_paciente -v
+```
+
+Las integraciones PostgreSQL C-18 usan únicamente un cluster local de pruebas en `127.0.0.1:55432`, base `*_test`, schema temporal y fixtures sintéticos. Para backup/restore real se necesita `pg_dump`/`pg_restore` de la misma major que el servidor. No usar la base del puerto 5432 ni datos reales. Las evidencias separan migración, pruebas, restore y límites del host.

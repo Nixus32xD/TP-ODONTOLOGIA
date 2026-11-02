@@ -235,7 +235,7 @@ class HistoriaClinicaPostgreSQLIntegracionTests(unittest.TestCase):
             bundle = Path(temporal) / 'bundle-c15'
             manifiesto = crear_bundle_postgresql(self.engine, bundle)
             self.assertEqual(
-                manifiesto['schema_version'], '20261102_0012_appointment_reminders')
+                manifiesto['schema_version'], '20261102_0013_patient_self_service')
             self.assertEqual(manifiesto['table_counts']['evoluciones_clinicas'], 1)
             self.assertNotIn('Nota clínica sintética de integración C-15.',
                              (bundle / 'manifest.json').read_text(encoding='utf-8'))

@@ -14,7 +14,7 @@ from odontologia.auth.credenciales import (
     verificar_password,
 )
 from odontologia.auth.tokens import validar_secreto_jwt
-from odontologia.db.models import AgendaMutex, Profesional, Sesion, Usuario
+from odontologia.db.models import AgendaMutex, Paciente, Profesional, Sesion, Usuario
 from odontologia.audit import ErrorAuditoria
 
 
@@ -121,6 +121,11 @@ def autenticar(engine, identificador: str, password: str, secreto: str,
                     usuario.profesional_id is None
                     or session.get(Profesional, usuario.profesional_id) is None):
                 rechazado = True
+            elif usuario.rol == 'paciente' and (
+                    usuario.paciente_id is None
+                    or (paciente := session.get(Paciente, usuario.paciente_id)) is None
+                    or not paciente.activo):
+                rechazado = True
             if rechazado:
                 from odontologia.audit import registrar_evento_session
 
@@ -142,6 +147,7 @@ def autenticar(engine, identificador: str, password: str, secreto: str,
                 payload = {'iss': _EMISOR, 'sub': usuario.id, 'sid': sesion_id,
                            'jti': jti, 'rol': usuario.rol,
                            'profesional_id': usuario.profesional_id,
+                           'paciente_id': usuario.paciente_id,
                            'iat': instante, 'exp': expira}
         if rechazado:
             if reserva is not None:
@@ -184,13 +190,19 @@ def validar_sesion(engine, token: str, secreto: str, *, ahora: int | None = None
                     or registro.usuario_id != usuario.id or not usuario.activo
                     or usuario.rol != payload['rol']
                     or usuario.profesional_id != payload.get('profesional_id')
+                    or usuario.paciente_id != payload.get('paciente_id')
                     or (usuario.rol == 'profesional' and (
                         usuario.profesional_id is None
-                        or session.get(Profesional, usuario.profesional_id) is None))):
+                        or session.get(Profesional, usuario.profesional_id) is None))
+                    or (usuario.rol == 'paciente' and (
+                        usuario.paciente_id is None
+                        or (paciente := session.get(Paciente, usuario.paciente_id)) is None
+                        or not paciente.activo))):
                 raise ErrorSesiones('token_invalido', 'La sesión no es válida.', 401)
             return {'usuario_id': usuario.id, 'identificador': usuario.identificador,
                     'rol': usuario.rol, 'sesion_id': registro.id,
                     'profesional_id': usuario.profesional_id,
+                    'paciente_id': usuario.paciente_id,
                     'expira_en': registro.expira_en}
     except ErrorSesiones:
         raise

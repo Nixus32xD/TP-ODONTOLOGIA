@@ -8,7 +8,7 @@ from sqlalchemy.dialects import postgresql
 from odontologia.db.models import (
     AgendaMutex, Base, BloqueoAgenda, EventoAuditoria, EvolucionClinica, ExcepcionHorario,
     HorarioSemanal, Paciente, Turno, TramoExcepcion,
-    RecordatorioOutbox,
+    RecordatorioOutbox, IdempotenciaPortalPaciente, Usuario,
 )
 from odontologia.db.postgresql import REVISION_ESQUEMA_ACTUAL
 
@@ -21,7 +21,8 @@ class EsquemaPostgreSQLTests(unittest.TestCase):
              'usuarios', 'sesiones', 'eventos_auditoria', 'horarios_semanales',
              'excepciones_horario', 'tramos_excepcion', 'bloqueos_agenda',
              'evoluciones_clinicas', 'versiones_odontograma', 'hallazgos_odontograma',
-             'planes_tratamiento', 'etapas_plan_tratamiento', 'recordatorios_outbox'},
+             'planes_tratamiento', 'etapas_plan_tratamiento', 'recordatorios_outbox',
+             'idempotencia_portal_paciente'},
         )
         self.assertEqual(
             set(Turno.__table__.columns.keys()),
@@ -45,6 +46,11 @@ class EsquemaPostgreSQLTests(unittest.TestCase):
         })
         self.assertIn('uq_recordatorios_turno_version_tipo_generation', {
             constraint.name for constraint in RecordatorioOutbox.__table__.constraints
+        })
+        self.assertIn('paciente_id', Usuario.__table__.columns)
+        self.assertIn('paciente_id', IdempotenciaPortalPaciente.__table__.columns)
+        self.assertIn('uq_idempotencia_portal_paciente_operacion_clave', {
+            constraint.name for constraint in IdempotenciaPortalPaciente.__table__.constraints
         })
         self.assertEqual(
             set(EventoAuditoria.__table__.columns.keys()),
@@ -87,7 +93,19 @@ class EsquemaPostgreSQLTests(unittest.TestCase):
         self.assertEqual(modulo.down_revision, '20261102_0009_turn_rescheduling')
         self.assertTrue(callable(modulo.upgrade))
         self.assertTrue(callable(modulo.downgrade))
-        self.assertEqual(REVISION_ESQUEMA_ACTUAL, '20261102_0012_appointment_reminders')
+        self.assertEqual(REVISION_ESQUEMA_ACTUAL, '20261102_0013_patient_self_service')
+
+    def test_migracion_c18_agrega_vinculo_paciente_y_tabla_idempotencia(self):
+        ruta = Path(__file__).parents[1] / 'alembic' / 'versions' / '20261102_0013_patient_self_service.py'
+        spec = importlib.util.spec_from_file_location('revision_patient_self_service', ruta)
+        modulo = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(modulo)
+
+        self.assertEqual(modulo.revision, '20261102_0013_patient_self_service')
+        self.assertEqual(modulo.down_revision, '20261102_0012_appointment_reminders')
+        self.assertTrue(callable(modulo.upgrade))
+        self.assertTrue(callable(modulo.downgrade))
+        self.assertEqual(REVISION_ESQUEMA_ACTUAL, '20261102_0013_patient_self_service')
 
 
 if __name__ == '__main__':

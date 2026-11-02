@@ -32,7 +32,7 @@ class MigracionAutenticacionSQLiteTests(unittest.TestCase):
         with closing(sqlite3.connect(self.ruta)) as conexion:
             self.assertEqual(conexion.execute('SELECT COUNT(*) FROM pacientes').fetchone()[0], 2)
             self.assertEqual(conexion.execute('SELECT COUNT(*) FROM turnos').fetchone()[0], 0)
-            self.assertEqual(conexion.execute('SELECT version FROM auth_schema_version').fetchone()[0], 11)
+            self.assertEqual(conexion.execute('SELECT version FROM auth_schema_version').fetchone()[0], 12)
 
     def test_migracion_repetida_no_modifica_la_agenda(self):
         migrar_sqlite(self.ruta)
@@ -68,7 +68,7 @@ class MigracionAutenticacionSQLiteTests(unittest.TestCase):
                 conexion.execute('SELECT id, paciente_id FROM turnos').fetchone(),
                 (turno.id, 'paciente-A'))
             self.assertEqual(conexion.execute(
-                'SELECT version FROM auth_schema_version').fetchone(), (11,))
+                'SELECT version FROM auth_schema_version').fetchone(), (12,))
             with self.assertRaises(sqlite3.IntegrityError):
                 conexion.execute(
                     "INSERT INTO pacientes(id, nombre, telefono, activo) "
@@ -148,7 +148,7 @@ class MigracionAutenticacionSQLiteTests(unittest.TestCase):
             columnas = {fila[1] for fila in conexion.execute('PRAGMA table_info(usuarios)')}
             self.assertIn('profesional_id', columnas)
             self.assertEqual(conexion.execute(
-                'SELECT version FROM auth_schema_version').fetchone(), (11,))
+                'SELECT version FROM auth_schema_version').fetchone(), (12,))
             self.assertEqual(conexion.execute(
                 "SELECT id, rol, profesional_id FROM usuarios WHERE id='usuario-admin'"
             ).fetchone(), ('usuario-admin', 'administrador', None))
@@ -177,6 +177,92 @@ class MigracionAutenticacionSQLiteTests(unittest.TestCase):
                     "VALUES ('usuario-recep-invalid', 'recepcion.a', 'hash-ficticio', 'recepcion', 1, "
                     "'profesional-B')")
 
+    def test_upgrade_v11_a_v12_agrega_vinculo_paciente_unico_y_tabla_idempotente(self):
+        turno = crear_turno(
+            self.ruta, paciente_id='paciente-A', profesional_id='profesional-A',
+            box_id='box-A', inicio=datetime.fromisoformat('2026-11-10T09:00:00-03:00'),
+            fin=datetime.fromisoformat('2026-11-10T09:30:00-03:00'))
+        migrar_sqlite(self.ruta)
+        with closing(sqlite3.connect(self.ruta)) as conexion:
+            conexion.execute('PRAGMA foreign_keys=ON')
+            conexion.execute(
+                "INSERT INTO usuarios(id, identificador, password_hash, rol, activo) "
+                "VALUES ('usuario-admin', 'admin.sintetico', 'hash-sintetico', 'administrador', 1)")
+            conexion.execute(
+                "INSERT INTO usuarios(id, identificador, password_hash, rol, activo, profesional_id) "
+                "VALUES ('usuario-prof', 'prof.sintetico', 'hash-sintetico', 'profesional', 1, "
+                "'profesional-A')")
+            conexion.execute(
+                "INSERT INTO sesiones(id, usuario_id, jti, expira_en, revocada_en, creado_en) "
+                "VALUES ('sesion-prof', 'usuario-prof', 'jti-prof', 5000, NULL, 1000)")
+            conexion.execute(
+                "INSERT INTO eventos_auditoria(created_at, actor_id, action, resource_type, "
+                "resource_id, result) VALUES ('2026-11-02T12:00:00+00:00', 'usuario-prof', "
+                "'cuenta.creada', 'cuenta', 'usuario-prof', 'confirmado')")
+            conexion.commit()
+            conexion.execute('PRAGMA foreign_keys=OFF')
+            conexion.execute('''CREATE TABLE usuarios_v11 (
+                id TEXT PRIMARY KEY,
+                identificador TEXT NOT NULL UNIQUE,
+                password_hash TEXT NOT NULL,
+                rol TEXT NOT NULL CHECK (rol IN ('administrador', 'recepcion', 'profesional')),
+                activo INTEGER NOT NULL CHECK (activo IN (0, 1)),
+                profesional_id TEXT UNIQUE REFERENCES profesionales(id) ON DELETE RESTRICT,
+                CHECK (
+                    (rol = 'profesional' AND profesional_id IS NOT NULL) OR
+                    (rol IN ('administrador', 'recepcion') AND profesional_id IS NULL)
+                )
+            )''')
+            conexion.execute('''INSERT INTO usuarios_v11
+                (id, identificador, password_hash, rol, activo, profesional_id)
+                SELECT id, identificador, password_hash, rol, activo, profesional_id FROM usuarios''')
+            conexion.execute('DROP TABLE usuarios')
+            conexion.execute('ALTER TABLE usuarios_v11 RENAME TO usuarios')
+            conexion.execute('DROP TABLE idempotencia_portal_paciente')
+            conexion.execute('UPDATE auth_schema_version SET version=11')
+            conexion.commit()
+
+        migrar_sqlite(self.ruta)
+
+        with closing(sqlite3.connect(self.ruta)) as conexion:
+            conexion.execute('PRAGMA foreign_keys=ON')
+            self.assertEqual(conexion.execute(
+                'SELECT version FROM auth_schema_version').fetchone(), (12,))
+            columnas = {fila[1] for fila in conexion.execute('PRAGMA table_info(usuarios)')}
+            self.assertIn('paciente_id', columnas)
+            self.assertEqual(conexion.execute(
+                "SELECT rol, profesional_id, paciente_id FROM usuarios "
+                "WHERE id='usuario-admin'").fetchone(), ('administrador', None, None))
+            self.assertEqual(conexion.execute(
+                "SELECT rol, profesional_id, paciente_id FROM usuarios "
+                "WHERE id='usuario-prof'").fetchone(), ('profesional', 'profesional-A', None))
+            self.assertEqual(conexion.execute(
+                "SELECT usuario_id FROM sesiones WHERE id='sesion-prof'").fetchone(),
+                ('usuario-prof',))
+            self.assertEqual(conexion.execute(
+                "SELECT actor_id FROM eventos_auditoria WHERE resource_id='usuario-prof'"
+            ).fetchone(), ('usuario-prof',))
+            self.assertEqual(conexion.execute(
+                'SELECT id, paciente_id FROM turnos').fetchone(), (turno.id, 'paciente-A'))
+            self.assertIn('idempotencia_portal_paciente', {
+                fila[0] for fila in conexion.execute(
+                    "SELECT name FROM sqlite_master WHERE type='table'")})
+            conexion.execute(
+                "INSERT INTO usuarios(id, identificador, password_hash, rol, activo, paciente_id) "
+                "VALUES ('usuario-paciente', 'paciente.sintetico', 'hash-sintetico', 'paciente', 1, "
+                "'paciente-A')")
+            with self.assertRaises(sqlite3.IntegrityError):
+                conexion.execute(
+                    "INSERT INTO usuarios(id, identificador, password_hash, rol, activo, paciente_id) "
+                    "VALUES ('usuario-paciente-2', 'paciente.dos', 'hash-sintetico', 'paciente', 1, "
+                    "'paciente-A')")
+            with self.assertRaises(sqlite3.IntegrityError):
+                conexion.execute(
+                    "INSERT INTO usuarios(id, identificador, password_hash, rol, activo, paciente_id) "
+                    "VALUES ('usuario-rol-invalido', 'admin.paciente', 'hash-sintetico', "
+                    "'administrador', 1, 'paciente-A')")
+            self.assertEqual(conexion.execute('PRAGMA foreign_key_check').fetchall(), [])
+
     def test_validador_v7_falla_cerrado_si_falta_columna_de_vinculo(self):
         migrar_sqlite(self.ruta)
         with closing(sqlite3.connect(self.ruta)) as conexion:
@@ -188,12 +274,12 @@ class MigracionAutenticacionSQLiteTests(unittest.TestCase):
                 rol TEXT NOT NULL CHECK (rol IN ('administrador', 'recepcion')),
                 activo INTEGER NOT NULL CHECK (activo IN (0, 1))
             )''')
-            conexion.execute('UPDATE auth_schema_version SET version=11')
+            conexion.execute('UPDATE auth_schema_version SET version=12')
             conexion.commit()
         engine = crear_engine_autenticacion('sqlite', None, self.ruta)
         self.addCleanup(engine.dispose)
 
-        with self.assertRaisesRegex(RuntimeError, 'vínculo profesional'):
+        with self.assertRaisesRegex(RuntimeError, 'vínculos de cuentas'):
             validar_esquema_autenticacion(engine, 'sqlite', self.ruta)
 
     def test_validador_falla_cerrado_si_falta_version_de_turno(self):

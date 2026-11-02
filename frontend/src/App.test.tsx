@@ -58,4 +58,26 @@ describe('aplicación por rol', () => {
     expect(api.mock.calls.some(([ruta]) => String(ruta).startsWith('/profesional/atenciones-atendidas')))
       .toBe(true)
   })
+
+  it('dirige a paciente a su portal y no consulta las vistas del personal', async () => {
+    api.mockResolvedValueOnce({ access_token: 'token-paciente', expires_in: 3600 })
+      .mockResolvedValueOnce({
+        usuario_id: 'usuario-paciente', identificador: 'paciente-demo',
+        rol: 'paciente', profesional_id: null, paciente_id: 'paciente-sintetico',
+        expira_en: 1_800_000_000,
+      })
+    api.mockImplementation(async (ruta) => {
+      if (String(ruta) === '/mis-turnos') return { items: [] } as never
+      if (String(ruta).startsWith('/portal/disponibilidad')) return { fecha: '2026-11-03', items: [] } as never
+      return { items: [], limit: 50, offset: 0 } as never
+    })
+    render(<App />)
+    fireEvent.change(screen.getByLabelText('Usuario'), { target: { value: 'paciente-demo' } })
+    fireEvent.change(screen.getByLabelText('Contraseña'), { target: { value: 'password-demo' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Iniciar sesión' }))
+
+    expect(await screen.findByRole('heading', { name: 'Mis turnos' })).toBeInTheDocument()
+    expect(api.mock.calls.some(([ruta]) => String(ruta).startsWith('/turnos'))).toBe(false)
+    expect(api.mock.calls.some(([ruta]) => String(ruta).includes('/pacientes/'))).toBe(false)
+  })
 })

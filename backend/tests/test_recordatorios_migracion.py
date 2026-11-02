@@ -58,7 +58,7 @@ class MigracionRecordatoriosSQLiteTests(unittest.TestCase):
                 'SELECT acepta_recordatorios FROM pacientes WHERE id=?',
                 ('paciente-A',)).fetchone(), (1,))
             self.assertEqual(conexion.execute(
-                'SELECT version FROM auth_schema_version').fetchone(), (11,))
+                'SELECT version FROM auth_schema_version').fetchone(), (12,))
             self.assertIn('recordatorios_outbox', {
                 fila[0] for fila in conexion.execute(
                     "SELECT name FROM sqlite_master WHERE type='table'")})
@@ -68,7 +68,7 @@ class MigracionRecordatoriosSQLiteTests(unittest.TestCase):
 
         with closing(sqlite3.connect(self.ruta)) as conexion:
             self.assertEqual(conexion.execute(
-                'SELECT version FROM auth_schema_version').fetchone(), (11,))
+                'SELECT version FROM auth_schema_version').fetchone(), (12,))
             columnas_paciente = {
                 fila[1]: fila for fila in conexion.execute('PRAGMA table_info(pacientes)')
             }

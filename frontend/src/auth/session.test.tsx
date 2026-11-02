@@ -68,6 +68,19 @@ describe('sesión en memoria', () => {
     },
   )
 
+  it('habilita una sesión de paciente sólo con vínculo de ficha', async () => {
+    api.mockResolvedValueOnce({ access_token: 'token-paciente', expires_in: 3600 })
+      .mockResolvedValueOnce({
+        usuario_id: 'usuario-paciente', identificador: 'paciente-demo',
+        rol: 'paciente', profesional_id: null, paciente_id: 'paciente-sintetico',
+        expira_en: 1_800_000_000,
+      })
+    render(<SessionProvider><Probe /></SessionProvider>)
+    fireEvent.click(screen.getByRole('button', { name: 'Entrar' }))
+    await waitFor(() => expect(screen.getByTestId('identidad')).toHaveTextContent('paciente'))
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument()
+  })
+
   it('elimina la sesión en memoria cuando cualquier request informa 401', async () => {
     api.mockResolvedValueOnce({ access_token: 'token-temporal', expires_in: 3600 })
       .mockResolvedValueOnce(identidad)

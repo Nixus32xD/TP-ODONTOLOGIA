@@ -318,12 +318,15 @@ class BloqueoAgenda(Base):
 class Usuario(Base):
     __tablename__ = 'usuarios'
     __table_args__ = (
-        CheckConstraint("rol IN ('administrador', 'recepcion', 'profesional')", name='ck_usuarios_rol'),
+        CheckConstraint("rol IN ('administrador', 'recepcion', 'profesional', 'paciente')", name='ck_usuarios_rol'),
         CheckConstraint(
-            "(rol = 'profesional' AND profesional_id IS NOT NULL) OR "
-            "(rol IN ('administrador', 'recepcion') AND profesional_id IS NULL)",
+            "(rol = 'profesional' AND profesional_id IS NOT NULL AND paciente_id IS NULL) OR "
+            "(rol = 'paciente' AND profesional_id IS NULL AND paciente_id IS NOT NULL) OR "
+            "(rol IN ('administrador', 'recepcion') AND profesional_id IS NULL "
+            "AND paciente_id IS NULL)",
             name='ck_usuarios_vinculo_profesional'),
         UniqueConstraint('profesional_id', name='uq_usuarios_profesional_id'),
+        UniqueConstraint('paciente_id', name='uq_usuarios_paciente_id'),
     )
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True)
@@ -333,6 +336,35 @@ class Usuario(Base):
     activo: Mapped[bool] = mapped_column(default=True, nullable=False)
     profesional_id: Mapped[str | None] = mapped_column(
         String(64), ForeignKey('profesionales.id', ondelete='RESTRICT'), nullable=True)
+    paciente_id: Mapped[str | None] = mapped_column(
+        String(64), ForeignKey('pacientes.id', ondelete='RESTRICT'), nullable=True)
+
+
+class IdempotenciaPortalPaciente(Base):
+    __tablename__ = 'idempotencia_portal_paciente'
+    __table_args__ = (
+        CheckConstraint(
+            "operacion IN ('reserva', 'cancelacion', 'reprogramacion')",
+            name='ck_idempotencia_portal_paciente_operacion'),
+        CheckConstraint('length(clave) BETWEEN 1 AND 128',
+                        name='ck_idempotencia_portal_paciente_clave'),
+        CheckConstraint('length(fingerprint) = 64',
+                        name='ck_idempotencia_portal_paciente_fingerprint'),
+        UniqueConstraint(
+            'paciente_id', 'operacion', 'clave',
+            name='uq_idempotencia_portal_paciente_operacion_clave'),
+    )
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    paciente_id: Mapped[str] = mapped_column(
+        String(64), ForeignKey('pacientes.id', ondelete='RESTRICT'), nullable=False)
+    operacion: Mapped[str] = mapped_column(String(20), nullable=False)
+    clave: Mapped[str] = mapped_column(String(128), nullable=False)
+    fingerprint: Mapped[str] = mapped_column(String(64), nullable=False)
+    turno_id: Mapped[int] = mapped_column(
+        BigInteger, ForeignKey('turnos.id', ondelete='RESTRICT'), nullable=False)
+    respuesta_json: Mapped[str] = mapped_column(Text, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
 
 
 class Sesion(Base):
@@ -361,18 +393,24 @@ class EventoAuditoria(Base):
             "'profesional.actualizado', 'profesional.desactivado', 'profesional.reactivado', "
             "'box.creado', 'box.actualizado', 'box.desactivado', 'box.reactivado', "
             "'prestacion.creada', 'prestacion.actualizada', 'prestacion.desactivada', "
-            "'prestacion.reactivada', 'cuenta.bootstrap', 'cuenta.creada', "
+            "'prestacion.reactivada', 'horario.actualizado', 'excepcion.creada', "
+            "'excepcion.actualizada', 'excepcion.eliminada', 'bloqueo.creado', "
+            "'bloqueo.eliminado', 'cuenta.bootstrap', 'cuenta.creada', "
             "'cuenta.actualizada', 'sesion.iniciada', 'sesion.cerrada', 'sesion.rechazada', "
             "'historia.consultada', 'historia.denegada', 'historia.atenciones_listadas', "
             "'evolucion.creada', 'evolucion.corregida', "
             "'odontograma.consultada', 'odontograma.denegada', 'odontograma.version_creada', "
             "'plan.consultado', 'plan.denegado', 'plan.creado', 'plan.estado_actualizado', "
             "'recordatorio.programado', 'recordatorio.invalidado', "
-            "'recordatorio.procesado', 'recordatorio.fallo')",
+            "'recordatorio.procesado', 'recordatorio.fallo', "
+            "'portal.disponibilidad.consultada', 'portal.turnos.consultados', "
+            "'portal.turno.reservado', 'portal.turno.cancelado', "
+            "'portal.turno.reprogramado', 'portal.acceso.denegado')",
             name='ck_eventos_auditoria_action'),
         CheckConstraint(
             "resource_type IN ('turno', 'paciente', 'profesional', 'box', 'prestacion', "
-            "'cuenta', 'sesion', 'historia', 'evolucion', 'odontograma', 'plan', 'recordatorio')",
+            "'horario', 'excepcion', 'bloqueo', 'cuenta', 'sesion', 'historia', 'evolucion', "
+            "'odontograma', 'plan', 'recordatorio', 'portal')",
             name='ck_eventos_auditoria_resource_type'),
         CheckConstraint(
             "result IN ('confirmado', 'rechazado')",
@@ -397,6 +435,12 @@ class EventoAuditoria(Base):
             "(action = 'prestacion.actualizada' AND resource_type = 'prestacion' AND result = 'confirmado') OR "
             "(action = 'prestacion.desactivada' AND resource_type = 'prestacion' AND result = 'confirmado') OR "
             "(action = 'prestacion.reactivada' AND resource_type = 'prestacion' AND result = 'confirmado') OR "
+            "(action = 'horario.actualizado' AND resource_type = 'horario' AND result = 'confirmado') OR "
+            "(action = 'excepcion.creada' AND resource_type = 'excepcion' AND result = 'confirmado') OR "
+            "(action = 'excepcion.actualizada' AND resource_type = 'excepcion' AND result = 'confirmado') OR "
+            "(action = 'excepcion.eliminada' AND resource_type = 'excepcion' AND result = 'confirmado') OR "
+            "(action = 'bloqueo.creado' AND resource_type = 'bloqueo' AND result = 'confirmado') OR "
+            "(action = 'bloqueo.eliminado' AND resource_type = 'bloqueo' AND result = 'confirmado') OR "
             "(action = 'cuenta.bootstrap' AND resource_type = 'cuenta' AND result = 'confirmado') OR "
             "(action = 'cuenta.creada' AND resource_type = 'cuenta' AND result = 'confirmado') OR "
             "(action = 'cuenta.actualizada' AND resource_type = 'cuenta' AND result = 'confirmado') OR "
@@ -418,7 +462,13 @@ class EventoAuditoria(Base):
             "(action = 'recordatorio.programado' AND resource_type = 'recordatorio' AND result = 'confirmado') OR "
             "(action = 'recordatorio.invalidado' AND resource_type = 'recordatorio' AND result = 'confirmado') OR "
             "(action = 'recordatorio.procesado' AND resource_type = 'recordatorio' AND result = 'confirmado') OR "
-            "(action = 'recordatorio.fallo' AND resource_type = 'recordatorio' AND result = 'rechazado')",
+            "(action = 'recordatorio.fallo' AND resource_type = 'recordatorio' AND result = 'rechazado') OR "
+            "(action = 'portal.disponibilidad.consultada' AND resource_type = 'portal' AND result = 'confirmado') OR "
+            "(action = 'portal.turnos.consultados' AND resource_type = 'portal' AND result = 'confirmado') OR "
+            "(action = 'portal.turno.reservado' AND resource_type = 'turno' AND result = 'confirmado') OR "
+            "(action = 'portal.turno.cancelado' AND resource_type = 'turno' AND result = 'confirmado') OR "
+            "(action = 'portal.turno.reprogramado' AND resource_type = 'turno' AND result = 'confirmado') OR "
+            "(action = 'portal.acceso.denegado' AND resource_type = 'portal' AND result = 'rechazado')",
             name='ck_eventos_auditoria_combinacion'),
         CheckConstraint(
             "resource_type != 'sesion' OR resource_id IS NULL",

@@ -1,7 +1,7 @@
 # CHANGES — Secuencia de Implementación
 
 > Índice canónico del proyecto **TP-ODONTOLOGIA**, actualizado el 2026-11-02.
-> **Plan del producto completo; C-01-C-13 y C-15-C-17 están implementados, validados y archivados localmente. C-14 es opcional y queda fuera de la entrega; C-18-C-20 siguen planificados.**
+> **Plan del producto completo; C-01-C-13 y C-15-C-18 están implementados, validados y archivados localmente. C-14 es opcional y queda fuera de la entrega; C-19-C-20 siguen planificados.**
 > **Leer este archivo antes de ejecutar cualquier `/opsx:propose`.**
 
 ---
@@ -20,7 +20,7 @@ La aclaración del usuario del 2026-10-28 corrige el índice anterior: **hacer s
 
 - **Entrega académica archivada:** C-01 `crear-turno-sin-solapamientos`, con 18/18 tareas completas y Archive confirmado el 2026-10-28; la spec principal es [alta-turnos](openspec/specs/alta-turnos/spec.md). No se cambia su nombre, su spec, su código ni su contrato. C-02, C-03 y C-04 también están implementados, validados y archivados localmente.
 - **MVP académico demostrable:** C-03 a C-13 completan una agenda de recepción administrable, con cambios revisables, pruebas y demostración local. C-02 ya aporta el backend PostgreSQL optativo y está archivado; la seguridad, auditoría y recuperación usan datos ficticios. No se requiere desplegar el sistema ni levantar contenedores.
-- **Evolución del producto:** C-15 a C-20 agregan clínica, odontograma/plan de tratamiento, recordatorios, reserva del paciente, cobros y reportes. C-15 a C-17 quedaron implementados, validados y archivados; C-18 a C-20 siguen planificados, con contratos propios.
+- **Evolución del producto:** C-15 a C-20 agregan clínica, odontograma/plan de tratamiento, recordatorios, reserva del paciente, cobros y reportes. C-15 a C-18 quedaron implementados, validados y archivados; C-19 y C-20 siguen planificados, con contratos propios.
 - **Opciones no comprometidas:** multisede/SaaS multitenant, IA, obras sociales y facturación electrónica ARCA no se vuelven obligatorias por aparecer en productos comparados. Si se eligen, se agregarán changes posteriores con investigación y aprobación específicas. C-19 no incluye emisión fiscal ni conexión con pagos reales.
 
 La KB y las instrucciones existentes documentan principalmente la porción académica C-01. Sus exclusiones siguen vigentes para esa implementación; las capacidades futuras del roadmap no amplían retroactivamente las US-001 a US-004. C-02 concreta la migración a PostgreSQL conservando la fuente SQLite; C-03/C-04 autenticación, permisos y auditoría; C-05 la ficha mínima; C-06 catálogos; C-07 disponibilidad; C-08 consultas de agenda; C-09 estados; y C-10 reprogramación atómica. C-01 standalone conserva compatibilidad. Se mantienen datos ficticios y ninguna integración externa real.
@@ -410,11 +410,12 @@ Secuencia compatible con dependencias, sin prometer una optimización temporal n
 
 ### [C-18] `habilitar-reserva-del-paciente`
 
-- **Estado**: `[ ]` planificado; autoservicio posterior al flujo interno.
+- **Estado**: implementado, validado y archivado localmente el 2026-11-02; ver [change archivado](openspec/changes/archive/2026-11-02-habilitar-reserva-del-paciente/) y [evidencia C-18](backend/evidence/C-18-verificacion.md). Sin push.
 - **Scope**:
-  - Definir identidad/vinculación del paciente y permisos propios, evitando publicar el catálogo o la agenda identificada del consultorio; ofrecer sólo opciones de disponibilidad y datos mínimos.
-  - Proponer rutas y vista de autoservicio para reservar y consultar/cancelar/reprogramar únicamente turnos propios, con política de anticipación acordada, límites de solicitudes y deduplicación explícita; reutilizar exclusión transaccional del backend.
-  - Tests E2E ficticios: reserva válida, dos pacientes compitiendo por el mismo horario, intento de acceder a turno ajeno, cancelación fuera de política y repetición tras respuesta interrumpida; no confiar en IDs difíciles de adivinar como autorización.
+  - SQLite v12/Alembic `20261102_0013_patient_self_service`: vínculo único cuenta-ficha para rol `paciente`, administrado internamente por Administrador; sin auto-registro ni verificación externa.
+  - Portal autenticado con slots genéricos sintéticos de 30 minutos; sólo turnos propios, máximo tres futuros activos, idempotencia persistida y errores 404 uniformes para IDs ajenos/inexistentes.
+  - Reserva, cancelación y reprogramación bajo exclusión transaccional; cancelar/reprogramar sólo turnos reservado/confirmado con 24 h de anticipación en Mendoza. Reintentos confirmados devuelven el resultado original sin duplicar operaciones.
+  - UI separada del panel interno; respuestas sin pacientes/agenda identificada, teléfono ni clínica. Backup/restore conserva vínculo e idempotencia sin exponerlos en el manifiesto. Validación final: backend 544 OK/3 skips, frontend 66 OK, build y OpenSpec strict 19/19; ver evidencia C-18.
 - **Dependencias**: C-08, C-10, C-13.
 - **Governance**: CRITICO — identidad y autorización del paciente.
 - **Leer antes**:

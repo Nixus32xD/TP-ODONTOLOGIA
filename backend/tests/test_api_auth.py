@@ -148,6 +148,49 @@ class ApiAutenticacionTests(unittest.TestCase):
         self.assertEqual(login_baja.status_code, 401)
         self.assertEqual(login_baja.json()['codigo'], 'credenciales_invalidas')
 
+    def test_administrador_provisiona_cuenta_paciente_vinculada_y_sin_autoregistro(self):
+        ficha = self.client.post('/pacientes', headers=self.admin, json={
+            'nombre': 'Paciente sintético de portal',
+        })
+        self.assertEqual(ficha.status_code, 201, ficha.text)
+        paciente_id = ficha.json()['id']
+
+        alta = self.client.post('/usuarios', headers=self.admin, json={
+            'identificador': 'paciente.portal',
+            'password': 'frase-larga-segura-paciente-2026',
+            'rol': 'paciente', 'paciente_id': paciente_id,
+        })
+        self.assertEqual(alta.status_code, 201, alta.text)
+        self.assertEqual((alta.json()['rol'], alta.json()['paciente_id']),
+                         ('paciente', paciente_id))
+        self.assertNotIn('password_hash', alta.json())
+
+        paciente = self.login('paciente.portal', 'frase-larga-segura-paciente-2026')
+        actual = self.client.get('/sesiones/actual', headers=paciente)
+        self.assertEqual(actual.status_code, 200, actual.text)
+        self.assertEqual((actual.json()['rol'], actual.json()['paciente_id']),
+                         ('paciente', paciente_id))
+
+        sin_auth = self.client.post('/usuarios', json={
+            'identificador': 'paciente.autoregistro',
+            'password': 'frase-larga-segura-paciente-2026',
+            'rol': 'paciente', 'paciente_id': paciente_id,
+        })
+        self.assertEqual(sin_auth.status_code, 401)
+
+        recepcion_creada = self.client.post('/usuarios', headers=self.admin, json={
+            'identificador': 'recepcion.portal',
+            'password': 'otra-frase-larga-segura-2026', 'rol': 'recepcion',
+        })
+        self.assertEqual(recepcion_creada.status_code, 201, recepcion_creada.text)
+        recepcion_alta = self.client.post('/usuarios', headers=self.login(
+            'recepcion.portal', 'otra-frase-larga-segura-2026'), json={
+                'identificador': 'paciente.prohibido',
+                'password': 'frase-larga-segura-paciente-2026',
+                'rol': 'paciente', 'paciente_id': paciente_id,
+            })
+        self.assertEqual(recepcion_alta.status_code, 403)
+
     def test_administrador_asigna_vinculo_profesional_al_crear_y_actualizar_cuenta(self):
         alta = self.client.post('/usuarios', headers=self.admin, json={
             'identificador': 'profesional.a',

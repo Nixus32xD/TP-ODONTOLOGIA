@@ -48,7 +48,7 @@ def validar_esquema_autenticacion(engine, persistencia: str,
             raise RuntimeError('Ruta SQLite requerida.')
         validar_ruta_sqlite_existente(ruta_sqlite)
         consulta = text('SELECT version FROM auth_schema_version')
-        version_esperada = 11
+        version_esperada = 12
         validar_version = lambda version: version == version_esperada
         consulta_tablas = text(
             "SELECT name FROM sqlite_master WHERE type='table' "
@@ -56,12 +56,12 @@ def validar_esquema_autenticacion(engine, persistencia: str,
             '\'tramos_excepcion\', \'bloqueos_agenda\', \'evoluciones_clinicas\', '
             '\'versiones_odontograma\', \'hallazgos_odontograma\', '
             '\'planes_tratamiento\', \'etapas_plan_tratamiento\', '
-            '\'recordatorios_outbox\')')
+            '\'recordatorios_outbox\', \'idempotencia_portal_paciente\')')
         consulta_estado_turno = text('PRAGMA table_info(turnos)')
         consulta_vinculo_profesional = text('PRAGMA table_info(usuarios)')
     elif persistencia == 'postgresql':
         consulta = text('SELECT version_num FROM alembic_version')
-        version_esperada = '20261102_0012_appointment_reminders'
+        version_esperada = '20261102_0013_patient_self_service'
         validar_version = lambda version: version == version_esperada
         consulta_tablas = text(
             'SELECT table_name FROM information_schema.tables '
@@ -69,7 +69,7 @@ def validar_esquema_autenticacion(engine, persistencia: str,
             "('horarios_semanales', 'excepciones_horario', 'tramos_excepcion', "
             "'bloqueos_agenda', 'evoluciones_clinicas', 'versiones_odontograma', "
             "'hallazgos_odontograma', 'planes_tratamiento', 'etapas_plan_tratamiento', "
-            "'recordatorios_outbox')")
+            "'recordatorios_outbox', 'idempotencia_portal_paciente')")
         consulta_estado_turno = text(
             'SELECT column_name FROM information_schema.columns '
             "WHERE table_schema = current_schema() AND table_name = 'turnos' "
@@ -77,7 +77,7 @@ def validar_esquema_autenticacion(engine, persistencia: str,
         consulta_vinculo_profesional = text(
             'SELECT column_name FROM information_schema.columns '
             "WHERE table_schema = current_schema() AND table_name = 'usuarios' "
-            "AND column_name = 'profesional_id'")
+            "AND column_name IN ('profesional_id', 'paciente_id')")
     else:
         raise RuntimeError('Backend de autenticación desconocido.')
     try:
@@ -99,13 +99,13 @@ def validar_esquema_autenticacion(engine, persistencia: str,
             raise RuntimeError('El esquema de disponibilidad no está preparado.')
         if not {'versiones_odontograma', 'hallazgos_odontograma',
                 'planes_tratamiento', 'etapas_plan_tratamiento',
-                'recordatorios_outbox'} <= tablas:
+                'recordatorios_outbox', 'idempotencia_portal_paciente'} <= tablas:
             raise RuntimeError('El esquema de odontograma y planes no está preparado.')
         if 'estado' not in columnas_turnos:
             raise RuntimeError('La columna de estado de turnos no está preparada.')
         if 'version' not in columnas_turnos:
             raise RuntimeError('La columna de versión de turnos no está preparada.')
-        if 'profesional_id' not in columnas_usuarios:
-            raise RuntimeError('La columna de vínculo profesional no está preparada.')
+        if not {'profesional_id', 'paciente_id'} <= columnas_usuarios:
+            raise RuntimeError('Los vínculos de cuentas no están preparados.')
     except SQLAlchemyError as exc:
         raise RuntimeError('El esquema de autenticación no está preparado.') from exc

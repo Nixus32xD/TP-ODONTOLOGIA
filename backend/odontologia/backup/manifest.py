@@ -12,8 +12,8 @@ from odontologia.version import __version__
 
 VERSION_FORMATO = 1
 ESQUEMAS_SOPORTADOS = {
-    'sqlite': '11',
-    'postgresql': '20261102_0012_appointment_reminders',
+    'sqlite': '12',
+    'postgresql': '20261102_0013_patient_self_service',
 }
 TABLAS_ESQUEMA_ACTUAL = {
     'sqlite': {
@@ -21,6 +21,7 @@ TABLAS_ESQUEMA_ACTUAL = {
         'evoluciones_clinicas', 'versiones_odontograma', 'hallazgos_odontograma',
         'planes_tratamiento', 'etapas_plan_tratamiento',
         'recordatorios_outbox',
+        'idempotencia_portal_paciente',
         'excepciones_horario', 'horarios_semanales', 'pacientes', 'prestaciones',
         'profesionales', 'sesiones', 'tramos_excepcion', 'turnos', 'usuarios',
     },
@@ -29,6 +30,7 @@ TABLAS_ESQUEMA_ACTUAL = {
         'eventos_auditoria', 'evoluciones_clinicas', 'versiones_odontograma',
         'hallazgos_odontograma', 'planes_tratamiento', 'etapas_plan_tratamiento',
         'recordatorios_outbox',
+        'idempotencia_portal_paciente',
         'excepciones_horario', 'horarios_semanales',
         'pacientes', 'prestaciones', 'profesionales', 'sesiones',
         'tramos_excepcion', 'turnos', 'usuarios',

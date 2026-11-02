@@ -11,11 +11,11 @@ from odontologia.auth.credenciales import (
     normalizar_identificador,
     validar_password,
 )
-from odontologia.db.models import AgendaMutex, Profesional, Sesion, Usuario
+from odontologia.db.models import AgendaMutex, Paciente, Profesional, Sesion, Usuario
 from odontologia.audit import ErrorAuditoria
 
 
-ROLES_HABILITADOS = {'administrador', 'recepcion', 'profesional'}
+ROLES_HABILITADOS = {'administrador', 'recepcion', 'profesional', 'paciente'}
 _SIN_CAMBIO = object()
 
 
@@ -47,6 +47,7 @@ def _publico(usuario: Usuario) -> dict[str, object]:
         'rol': usuario.rol,
         'activo': usuario.activo,
         'profesional_id': usuario.profesional_id,
+        'paciente_id': usuario.paciente_id,
     }
 
 
@@ -80,6 +81,32 @@ def _validar_vinculo_profesional(session: Session, rol: str,
         raise ErrorUsuarios(
             'profesional_vinculado', 'El profesional ya tiene una cuenta vinculada.', 409)
     return profesional_id
+
+
+def _validar_vinculo_paciente(session: Session, rol: str, paciente_id: object,
+                              *, excluir_usuario_id: str | None = None) -> str | None:
+    if rol != 'paciente':
+        if paciente_id is not None:
+            raise ErrorUsuarios(
+                'vinculo_paciente_incompatible',
+                'Sólo una cuenta Paciente puede tener vínculo de ficha.', 422)
+        return None
+    if (not isinstance(paciente_id, str) or not paciente_id
+            or len(paciente_id) > 64 or paciente_id.strip() != paciente_id):
+        raise ErrorUsuarios(
+            'vinculo_paciente_invalido',
+            'La cuenta Paciente requiere un identificador de ficha válido.', 422)
+    paciente = session.get(Paciente, paciente_id)
+    if paciente is None:
+        raise ErrorUsuarios('paciente_desconocido', 'La ficha no existe.', 404)
+    if not paciente.activo:
+        raise ErrorUsuarios('paciente_inactivo', 'La ficha no está activa.', 409)
+    consulta_vinculo = select(Usuario.id).where(Usuario.paciente_id == paciente_id)
+    if excluir_usuario_id is not None:
+        consulta_vinculo = consulta_vinculo.where(Usuario.id != excluir_usuario_id)
+    if session.scalar(consulta_vinculo.limit(1)) is not None:
+        raise ErrorUsuarios('paciente_vinculado', 'La ficha ya tiene una cuenta vinculada.', 409)
+    return paciente_id
 
 
 def crear_primer_administrador(engine, identificador: str, password: str) -> dict[str, object]:
@@ -120,6 +147,7 @@ def crear_primer_administrador(engine, identificador: str, password: str) -> dic
 
 def crear_usuario(engine, identificador: str, password: str, rol: str,
                   *, profesional_id: str | None = None,
+                  paciente_id: str | None = None,
                   actor_id: str | None = None) -> dict[str, object]:
     normalizado = normalizar_identificador(identificador)
     validar_password(password)
@@ -134,6 +162,8 @@ def crear_usuario(engine, identificador: str, password: str, rol: str,
             _iniciar_escritura(session)
             usuario.profesional_id = _validar_vinculo_profesional(
                 session, rol, profesional_id)
+            usuario.paciente_id = _validar_vinculo_paciente(
+                session, rol, paciente_id)
             session.add(usuario)
             session.flush()
             if actor_id is not None:
@@ -147,10 +177,14 @@ def crear_usuario(engine, identificador: str, password: str, rol: str,
     except ErrorAuditoria as exc:
         raise ErrorUsuarios('almacenamiento_error', 'No se pudo guardar la cuenta.', 503) from exc
     except IntegrityError as exc:
-        if 'profesional_id' in str(getattr(exc, 'orig', exc)):
+        detalle = str(getattr(exc, 'orig', exc))
+        if 'profesional_id' in detalle:
             raise ErrorUsuarios(
                 'profesional_vinculado', 'El profesional ya tiene una cuenta vinculada.', 409
             ) from exc
+        if 'paciente_id' in detalle or 'usuarios.paciente_id' in detalle:
+            raise ErrorUsuarios(
+                'paciente_vinculado', 'La ficha ya tiene una cuenta vinculada.', 409) from exc
         raise ErrorUsuarios('identificador_duplicado', 'El identificador ya existe.', 409) from exc
     except SQLAlchemyError as exc:
         raise ErrorUsuarios('almacenamiento_error', 'No se pudo guardar la cuenta.', 503) from exc
@@ -167,6 +201,7 @@ def listar_usuarios(engine) -> list[dict[str, object]]:
 
 def actualizar_usuario(engine, usuario_id: str, *, rol: str | None = None,
                        profesional_id: str | None | object = _SIN_CAMBIO,
+                       paciente_id: str | None | object = _SIN_CAMBIO,
                        activo: bool | None = None, ahora: int | None = None,
                        actor_id: str | None = None) -> dict[str, object]:
     if rol is not None and (not isinstance(rol, str) or rol not in ROLES_HABILITADOS):
@@ -204,12 +239,24 @@ def actualizar_usuario(engine, usuario_id: str, *, rol: str | None = None,
                 if profesional_id is not _SIN_CAMBIO and profesional_id is not None:
                     _validar_vinculo_profesional(session, nuevo_rol, profesional_id)
                 nuevo_profesional_id = None
+            if nuevo_rol == 'paciente':
+                solicitado_paciente = (usuario.paciente_id if paciente_id is _SIN_CAMBIO
+                                       else paciente_id)
+                nuevo_paciente_id = _validar_vinculo_paciente(
+                    session, nuevo_rol, solicitado_paciente,
+                    excluir_usuario_id=usuario_id)
+            else:
+                if paciente_id is not _SIN_CAMBIO and paciente_id is not None:
+                    _validar_vinculo_paciente(session, nuevo_rol, paciente_id)
+                nuevo_paciente_id = None
             cambio_vinculo = nuevo_profesional_id != usuario.profesional_id
+            cambio_vinculo = cambio_vinculo or nuevo_paciente_id != usuario.paciente_id
             cambio_rol = nuevo_rol != usuario.rol
             cambio = cambio_rol or cambio_vinculo or (
                 activo is not None and activo != usuario.activo)
             usuario.rol = nuevo_rol
             usuario.profesional_id = nuevo_profesional_id
+            usuario.paciente_id = nuevo_paciente_id
             if activo is not None:
                 usuario.activo = activo
             if cambio:
@@ -233,10 +280,14 @@ def actualizar_usuario(engine, usuario_id: str, *, rol: str | None = None,
     except ErrorAuditoria as exc:
         raise ErrorUsuarios('almacenamiento_error', 'No se pudo actualizar la cuenta.', 503) from exc
     except IntegrityError as exc:
-        if 'profesional_id' in str(getattr(exc, 'orig', exc)):
+        detalle = str(getattr(exc, 'orig', exc))
+        if 'profesional_id' in detalle:
             raise ErrorUsuarios(
                 'profesional_vinculado', 'El profesional ya tiene una cuenta vinculada.', 409
             ) from exc
+        if 'paciente_id' in detalle or 'usuarios.paciente_id' in detalle:
+            raise ErrorUsuarios(
+                'paciente_vinculado', 'La ficha ya tiene una cuenta vinculada.', 409) from exc
         raise ErrorUsuarios('almacenamiento_error', 'No se pudo actualizar la cuenta.', 503) from exc
     except SQLAlchemyError as exc:
         raise ErrorUsuarios('almacenamiento_error', 'No se pudo actualizar la cuenta.', 503) from exc

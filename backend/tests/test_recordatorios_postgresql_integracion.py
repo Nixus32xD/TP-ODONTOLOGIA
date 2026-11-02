@@ -64,7 +64,7 @@ class RecordatoriosPostgreSQLIntegracionTests(unittest.TestCase):
         with self.engine.begin() as connection:
             self.assertEqual(connection.execute(text(
                 'SELECT version_num FROM alembic_version')).scalar_one(),
-                '20261102_0012_appointment_reminders')
+                '20261102_0013_patient_self_service')
             connection.execute(text(
                 "INSERT INTO pacientes(id, nombre, activo) "
                 "VALUES ('paciente-c17', 'Paciente ficticio C17', true)"))

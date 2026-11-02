@@ -56,6 +56,12 @@ _MATRIZ_EVENTOS = {
     'recordatorio.invalidado': ('recordatorio', 'confirmado'),
     'recordatorio.procesado': ('recordatorio', 'confirmado'),
     'recordatorio.fallo': ('recordatorio', 'rechazado'),
+    'portal.disponibilidad.consultada': ('portal', 'confirmado'),
+    'portal.turnos.consultados': ('portal', 'confirmado'),
+    'portal.turno.reservado': ('turno', 'confirmado'),
+    'portal.turno.cancelado': ('turno', 'confirmado'),
+    'portal.turno.reprogramado': ('turno', 'confirmado'),
+    'portal.acceso.denegado': ('portal', 'rechazado'),
 }
 
 

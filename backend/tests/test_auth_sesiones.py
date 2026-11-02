@@ -21,7 +21,7 @@ from odontologia.auth.sesiones import (
     cerrar_sesion,
     validar_sesion,
 )
-from odontologia.db.models import Usuario
+from odontologia.db.models import Paciente, Usuario
 
 
 class ServicioSesionesTests(unittest.TestCase):
@@ -108,6 +108,36 @@ class ServicioSesionesTests(unittest.TestCase):
         self.assertEqual((error.exception.codigo, error.exception.estado),
                          ('credenciales_invalidas', 401))
 
+    def test_sesion_paciente_incluye_vinculo_actual_y_falla_cerrado_si_cambia(self):
+        from sqlalchemy.orm import Session
+
+        with Session(self.engine) as session, session.begin():
+            session.add(Paciente(
+                id='paciente-cuenta', nombre='Paciente sintético', activo=True,
+                acepta_recordatorios=False))
+        paciente = crear_usuario(
+            self.engine, 'paciente.cuenta', 'otra-frase-segura-2026', 'paciente',
+            paciente_id='paciente-cuenta')
+
+        token = autenticar(
+            self.engine, 'paciente.cuenta', 'otra-frase-segura-2026', self.secreto,
+            ahora=1_800_000_000)
+        claims = jwt.decode(token, self.secreto, algorithms=['HS256'],
+                            options={'verify_exp': False, 'verify_iat': False})
+        self.assertEqual(claims['paciente_id'], 'paciente-cuenta')
+        identidad = validar_sesion(
+            self.engine, token, self.secreto, ahora=1_800_000_001)
+        self.assertEqual((identidad['rol'], identidad['paciente_id']),
+                         ('paciente', 'paciente-cuenta'))
+
+        with Session(self.engine) as session, session.begin():
+            session.execute(update(Usuario).where(
+                Usuario.id == paciente['id']).values(paciente_id='paciente-A'))
+        with self.assertRaises(ErrorSesiones) as cambiado:
+            validar_sesion(self.engine, token, self.secreto, ahora=1_800_000_002)
+        self.assertEqual((cambiado.exception.codigo, cambiado.exception.estado),
+                         ('token_invalido', 401))
+
     def test_seis_logins_concurrentes_solo_verifican_cinco_credenciales(self):
         from types import SimpleNamespace
 
@@ -128,7 +158,8 @@ class ServicioSesionesTests(unittest.TestCase):
             def scalar(self, _consulta):
                 return SimpleNamespace(
                     id='usuario-ficticio', password_hash='hash-ficticio',
-                    activo=True, rol='administrador', profesional_id=None)
+                    activo=True, rol='administrador', profesional_id=None,
+                    paciente_id=None)
 
             def add(self, _objeto):
                 pass
@@ -227,7 +258,8 @@ class ServicioSesionesTests(unittest.TestCase):
             def scalar(self, _consulta):
                 return SimpleNamespace(
                     id='usuario-ficticio', password_hash='hash-ficticio',
-                    activo=True, rol='administrador', profesional_id=None)
+                    activo=True, rol='administrador', profesional_id=None,
+                    paciente_id=None)
 
             def add(self, _objeto):
                 pass

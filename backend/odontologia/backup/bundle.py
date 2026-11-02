@@ -101,7 +101,7 @@ def _validar_sqlite(ruta: Path) -> None:
                 raise ErrorBackup('esquema_incompatible')
             revision = conexion.execute(
                 'SELECT version FROM auth_schema_version').fetchone()
-            if revision != (11,):
+            if revision != (12,):
                 raise ErrorBackup('esquema_incompatible')
             columnas_turnos = {fila[1] for fila in conexion.execute(
                 'PRAGMA table_info(turnos)')}

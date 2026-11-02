@@ -1559,7 +1559,7 @@ class IntegracionPostgreSQLTests(unittest.TestCase):
                     'ALTER TABLE usuarios DROP CONSTRAINT fk_usuarios_profesional_id_profesionales'))
                 conexion.execute(text(
                     'ALTER TABLE usuarios DROP COLUMN profesional_id'))
-            with self.assertRaisesRegex(RuntimeError, 'vínculo profesional'):
+            with self.assertRaisesRegex(RuntimeError, 'vínculos de cuentas'):
                 validar_esquema_autenticacion(engine, 'postgresql')
         finally:
             if engine is not None:

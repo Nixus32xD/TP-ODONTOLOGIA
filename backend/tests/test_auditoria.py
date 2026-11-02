@@ -34,7 +34,7 @@ class AuditoriaEsquemaSQLiteTests(unittest.TestCase):
             self.assertEqual(columnas, {
                 'id', 'created_at', 'actor_id', 'action', 'resource_type', 'resource_id', 'result'})
             self.assertEqual(
-                    conexion.execute('SELECT version FROM auth_schema_version').fetchone(), (11,))
+                    conexion.execute('SELECT version FROM auth_schema_version').fetchone(), (12,))
 
     def test_auditoria_no_guarda_payload_ni_identificador_intentado(self):
         from odontologia.audit import registrar_evento_sqlite
@@ -66,6 +66,12 @@ class AuditoriaEsquemaSQLiteTests(unittest.TestCase):
 
         eventos_validos = (
             ('turno.creado', 'turno', 'confirmado'),
+            ('portal.disponibilidad.consultada', 'portal', 'confirmado'),
+            ('portal.turnos.consultados', 'portal', 'confirmado'),
+            ('portal.turno.reservado', 'turno', 'confirmado'),
+            ('portal.turno.cancelado', 'turno', 'confirmado'),
+            ('portal.turno.reprogramado', 'turno', 'confirmado'),
+            ('portal.acceso.denegado', 'portal', 'rechazado'),
             ('paciente.creado', 'paciente', 'confirmado'),
             ('paciente.actualizado', 'paciente', 'confirmado'),
             ('paciente.desactivado', 'paciente', 'confirmado'),
@@ -195,7 +201,7 @@ class AuditoriaEsquemaSQLiteTests(unittest.TestCase):
             self.assertEqual(conexion.execute(
                 'SELECT COUNT(*) FROM usuarios').fetchone()[0], 1)
             self.assertEqual(conexion.execute(
-                'SELECT version FROM auth_schema_version').fetchone()[0], 11)
+                'SELECT version FROM auth_schema_version').fetchone()[0], 12)
             self.assertEqual(conexion.execute(
                 "SELECT COUNT(*) FROM sqlite_master WHERE type='table' "
                 "AND name='eventos_auditoria'").fetchone()[0], 1)

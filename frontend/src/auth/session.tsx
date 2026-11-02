@@ -3,13 +3,14 @@ import { apiRequest, ApiError, EVENTO_SESION_INVALIDA } from '../api/cliente'
 
 export { EVENTO_SESION_INVALIDA }
 
-export type Rol = 'administrador' | 'recepcion' | 'profesional'
+export type Rol = 'administrador' | 'recepcion' | 'profesional' | 'paciente'
 
 export type Identidad = {
   usuario_id: string
   identificador: string
   rol: Rol
   profesional_id: string | null
+  paciente_id?: string | null
   expira_en: number
 }
 
@@ -63,7 +64,8 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
       const actual = await apiRequest<Identidad>('/sesiones/actual', {
         token: respuesta.access_token,
       })
-      if (!['administrador', 'recepcion', 'profesional'].includes(actual.rol)) {
+      if (!['administrador', 'recepcion', 'profesional', 'paciente'].includes(actual.rol)
+        || (actual.rol === 'paciente' && !actual.paciente_id)) {
         throw new Error('El rol de la cuenta no está habilitado para esta interfaz.')
       }
       setToken(respuesta.access_token)

@@ -4,7 +4,7 @@ from datetime import date, datetime
 from pathlib import Path
 import os
 
-from fastapi import Depends, FastAPI, Query, Request
+from fastapi import Depends, FastAPI, Header, Query, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
@@ -56,6 +56,14 @@ from odontologia.odontograma import (
     listar_atenciones_atendidas,
 )
 from odontologia.turnos import transicionar_estado_turno
+from odontologia.portal_paciente import (
+    ErrorPortalPaciente,
+    cancelar_turno_portal,
+    consultar_disponibilidad_portal,
+    listar_turnos_portal,
+    reprogramar_turno_portal,
+    reservar_turno_paciente,
+)
 
 
 class SolicitudTurno(BaseModel):
@@ -149,6 +157,39 @@ class RespuestaListaTurnos(BaseModel):
     offset: int
 
 
+class SolicitudReservaPortal(BaseModel):
+    model_config = ConfigDict(extra='forbid')
+    inicio: StrictStr
+
+
+class SolicitudReprogramacionPortal(BaseModel):
+    model_config = ConfigDict(extra='forbid')
+    version: StrictInt = Field(gt=0)
+    inicio: StrictStr
+
+
+class RespuestaTurnoPortal(BaseModel):
+    turno_id: StrictInt
+    inicio: datetime
+    fin: datetime
+    estado: StrictStr
+    version: StrictInt
+
+
+class RespuestaListaTurnosPortal(BaseModel):
+    items: list[RespuestaTurnoPortal]
+
+
+class FranjaPortal(BaseModel):
+    inicio: datetime
+    fin: datetime
+
+
+class RespuestaDisponibilidadPortal(BaseModel):
+    fecha: StrictStr
+    items: list[FranjaPortal]
+
+
 class RespuestaListaDisponibilidad(BaseModel):
     fecha: str
     items: list[dict[str, datetime]]
@@ -172,6 +213,7 @@ class SolicitudUsuario(BaseModel):
     password: StrictStr
     rol: StrictStr
     profesional_id: StrictStr | None = None
+    paciente_id: StrictStr | None = None
 
 
 class ActualizacionUsuario(BaseModel):
@@ -179,6 +221,7 @@ class ActualizacionUsuario(BaseModel):
     rol: StrictStr | None = None
     activo: StrictBool | None = None
     profesional_id: StrictStr | None = None
+    paciente_id: StrictStr | None = None
 
 
 class SolicitudPaciente(BaseModel):
@@ -541,6 +584,11 @@ def crear_app(ruta_db: str | Path | None = None, *, timeout_segundos: float = 5.
         return JSONResponse(status_code=exc.estado, content={
             'codigo': exc.codigo, 'campo': None, 'mensaje': str(exc)})
 
+    @app.exception_handler(ErrorPortalPaciente)
+    async def error_portal_paciente(request: Request, exc: ErrorPortalPaciente):
+        return JSONResponse(status_code=exc.estado, content={
+            'codigo': exc.codigo, 'campo': None, 'mensaje': str(exc)})
+
     def verificar_configuracion():
         try:
             return validar_secreto_jwt(secreto_jwt, algoritmo_jwt)
@@ -573,11 +621,87 @@ def crear_app(ruta_db: str | Path | None = None, *, timeout_segundos: float = 5.
             raise ErrorSesiones('permiso_denegado', 'No tiene permiso para esta operación.', 403)
         return identidad
 
+    def paciente_portal(identidad=Depends(identidad_actual)):
+        if identidad['rol'] != 'paciente' or not identidad.get('paciente_id'):
+            try:
+                from sqlalchemy.orm import Session
+
+                from odontologia.audit import registrar_evento_session
+
+                with Session(auth_engine) as session, session.begin():
+                    registrar_evento_session(
+                        session, action='portal.acceso.denegado', resource_type='portal',
+                        actor_id=identidad['usuario_id'], result='rechazado')
+            except Exception as exc:
+                raise ErrorPortalPaciente(
+                    'almacenamiento_error', 'No se pudo registrar el acceso.', 503) from exc
+            raise ErrorSesiones('permiso_denegado', 'No tiene permiso para esta operación.', 403)
+        return identidad
+
     respuestas_auth = {
         401: {'model': ErrorHTTP, 'description': 'Autenticación requerida o sesión inválida.'},
         403: {'model': ErrorHTTP, 'description': 'Permiso insuficiente.'},
         503: {'model': ErrorHTTP, 'description': 'Autenticación o almacenamiento no disponible.'},
     }
+
+    @app.get('/portal/disponibilidad', response_model=RespuestaDisponibilidadPortal,
+             responses={401: respuestas_auth[401], 403: respuestas_auth[403],
+                        422: {'model': ErrorHTTP}, 503: respuestas_auth[503]})
+    def disponibilidad_portal(fecha: str = Query(..., description='Fecha local dentro de los próximos 31 días.'),
+                              identidad=Depends(paciente_portal)):
+        asegurar_esquema()
+        return consultar_disponibilidad_portal(
+            auth_engine, paciente_id=identidad['paciente_id'],
+            actor_id=identidad['usuario_id'], fecha=fecha)
+
+    @app.get('/mis-turnos', response_model=RespuestaListaTurnosPortal,
+             responses={401: respuestas_auth[401], 403: respuestas_auth[403],
+                        503: respuestas_auth[503]})
+    def turnos_portal(identidad=Depends(paciente_portal)):
+        asegurar_esquema()
+        return listar_turnos_portal(
+            auth_engine, paciente_id=identidad['paciente_id'],
+            actor_id=identidad['usuario_id'])
+
+    @app.post('/mis-turnos', status_code=201, response_model=RespuestaTurnoPortal,
+              responses={401: respuestas_auth[401], 403: respuestas_auth[403],
+                         409: {'model': ErrorHTTP}, 422: {'model': ErrorHTTP},
+                         503: respuestas_auth[503]})
+    def reservar_portal(
+            solicitud: SolicitudReservaPortal,
+            clave: str = Header(..., alias='Idempotency-Key', min_length=1, max_length=128),
+            identidad=Depends(paciente_portal)):
+        asegurar_esquema()
+        return reservar_turno_paciente(
+            auth_engine, paciente_id=identidad['paciente_id'],
+            actor_id=identidad['usuario_id'], inicio=solicitud.inicio, clave=clave)
+
+    @app.post('/mis-turnos/{turno_id}/cancelacion', response_model=RespuestaTurnoPortal,
+              responses={401: respuestas_auth[401], 403: respuestas_auth[403],
+                         404: {'model': ErrorHTTP}, 409: {'model': ErrorHTTP},
+                         422: {'model': ErrorHTTP}, 503: respuestas_auth[503]})
+    def cancelar_portal(
+            turno_id: int,
+            clave: str = Header(..., alias='Idempotency-Key', min_length=1, max_length=128),
+            identidad=Depends(paciente_portal)):
+        asegurar_esquema()
+        return cancelar_turno_portal(
+            auth_engine, paciente_id=identidad['paciente_id'],
+            actor_id=identidad['usuario_id'], turno_id=turno_id, clave=clave)
+
+    @app.post('/mis-turnos/{turno_id}/reprogramacion', response_model=RespuestaTurnoPortal,
+              responses={401: respuestas_auth[401], 403: respuestas_auth[403],
+                         404: {'model': ErrorHTTP}, 409: {'model': ErrorHTTP},
+                         422: {'model': ErrorHTTP}, 503: respuestas_auth[503]})
+    def reprogramar_portal(
+            turno_id: int, solicitud: SolicitudReprogramacionPortal,
+            clave: str = Header(..., alias='Idempotency-Key', min_length=1, max_length=128),
+            identidad=Depends(paciente_portal)):
+        asegurar_esquema()
+        return reprogramar_turno_portal(
+            auth_engine, paciente_id=identidad['paciente_id'],
+            actor_id=identidad['usuario_id'], turno_id=turno_id,
+            version=solicitud.version, inicio=solicitud.inicio, clave=clave)
 
     @app.get('/turnos', response_model=RespuestaListaTurnos, responses={
         401: respuestas_auth[401], 403: respuestas_auth[403], 404: {'model': ErrorHTTP},
@@ -715,6 +839,7 @@ def crear_app(ruta_db: str | Path | None = None, *, timeout_segundos: float = 5.
             return crear_usuario(
                 auth_engine, solicitud.identificador, solicitud.password, solicitud.rol,
                 profesional_id=solicitud.profesional_id,
+                paciente_id=solicitud.paciente_id,
                 actor_id=_identidad['usuario_id'])
         except ValueError as exc:
             raise ErrorUsuarios('entrada_invalida', 'Los datos de la cuenta no son válidos.', 422) from exc

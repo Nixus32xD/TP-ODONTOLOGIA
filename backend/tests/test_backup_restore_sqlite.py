@@ -138,7 +138,7 @@ class RestauracionSQLiteTests(unittest.TestCase):
         resultado = restaurar_bundle_sqlite(
             self.bundle, destino, origen_activo=self.origen)
         self.assertTrue(resultado['restored'])
-        self.assertEqual(resultado['schema_version'], '11')
+        self.assertEqual(resultado['schema_version'], '12')
         manifiesto = leer_manifiesto(self.bundle / 'manifest.json')
         self.assertEqual(manifiesto['table_counts']['evoluciones_clinicas'], 1)
         self.assertEqual({tabla: manifiesto['table_counts'][tabla] for tabla in (

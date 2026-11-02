@@ -4,12 +4,28 @@ import Agenda from './agenda/Agenda'
 import Catalogos from './pages/Catalogos'
 import Disponibilidad from './pages/Disponibilidad'
 import AtencionesClinicas from './pages/AtencionesClinicas'
+import PortalPaciente from './pages/PortalPaciente'
 
 function InicioSesionActiva() {
   const { identidad, cerrar, token } = useSession()
   if (!identidad || !token) return null
 
   const esProfesional = identidad.rol === 'profesional'
+
+  if (identidad.rol === 'paciente') {
+    return (
+      <main className="aplicacion">
+        <header>
+          <div>
+            <h1>Agenda odontológica</h1>
+            <p>Portal del paciente · demostración sintética</p>
+          </div>
+          <button type="button" onClick={() => void cerrar()}>Cerrar sesión</button>
+        </header>
+        <PortalPaciente token={token} />
+      </main>
+    )
+  }
 
   return (
     <main className="aplicacion">
