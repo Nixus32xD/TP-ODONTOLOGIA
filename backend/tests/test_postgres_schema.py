@@ -5,7 +5,10 @@ import unittest
 from sqlalchemy import select
 from sqlalchemy.dialects import postgresql
 
-from odontologia.db.models import AgendaMutex, Base, EventoAuditoria, Paciente, Turno
+from odontologia.db.models import (
+    AgendaMutex, Base, BloqueoAgenda, EventoAuditoria, ExcepcionHorario,
+    HorarioSemanal, Paciente, Turno, TramoExcepcion,
+)
 
 
 class EsquemaPostgreSQLTests(unittest.TestCase):
@@ -13,7 +16,8 @@ class EsquemaPostgreSQLTests(unittest.TestCase):
         self.assertEqual(
             set(Base.metadata.tables),
             {'pacientes', 'profesionales', 'boxes', 'prestaciones', 'turnos', 'agenda_mutex',
-             'usuarios', 'sesiones', 'eventos_auditoria'},
+             'usuarios', 'sesiones', 'eventos_auditoria', 'horarios_semanales',
+             'excepciones_horario', 'tramos_excepcion', 'bloqueos_agenda'},
         )
         self.assertEqual(
             set(Turno.__table__.columns.keys()),
@@ -25,6 +29,10 @@ class EsquemaPostgreSQLTests(unittest.TestCase):
         })
         self.assertIsNotNone(Turno.__table__.c.id.identity)
         self.assertEqual(AgendaMutex.__table__.primary_key.columns.keys(), ['id'])
+        self.assertIn('profesional_id', HorarioSemanal.__table__.columns)
+        self.assertIn('fecha_local', ExcepcionHorario.__table__.columns)
+        self.assertIn('excepcion_id', TramoExcepcion.__table__.columns)
+        self.assertIn('box_id', BloqueoAgenda.__table__.columns)
         self.assertEqual(
             set(EventoAuditoria.__table__.columns.keys()),
             {'id', 'created_at', 'actor_id', 'action', 'resource_type', 'resource_id', 'result'},

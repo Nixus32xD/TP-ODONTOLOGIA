@@ -3,7 +3,7 @@ from pathlib import Path
 import sqlite3
 
 
-VERSION_ESQUEMA_AUTENTICACION = 4
+VERSION_ESQUEMA_AUTENTICACION = 5
 
 
 def _migrar_auditoria(conexion: sqlite3.Connection) -> None:
@@ -20,11 +20,14 @@ def _migrar_auditoria(conexion: sqlite3.Connection) -> None:
                 'box.creado', 'box.actualizado', 'box.desactivado', 'box.reactivado',
                 'prestacion.creada', 'prestacion.actualizada',
                 'prestacion.desactivada', 'prestacion.reactivada',
+                'horario.actualizado', 'excepcion.creada', 'excepcion.actualizada',
+                'excepcion.eliminada', 'bloqueo.creado', 'bloqueo.eliminado',
                 'cuenta.bootstrap', 'cuenta.creada',
                 'cuenta.actualizada', 'sesion.iniciada', 'sesion.cerrada',
                 'sesion.rechazada')),
             resource_type TEXT NOT NULL CHECK (resource_type IN (
-                'turno', 'paciente', 'profesional', 'box', 'prestacion', 'cuenta', 'sesion')),
+                'turno', 'paciente', 'profesional', 'box', 'prestacion',
+                'horario', 'excepcion', 'bloqueo', 'cuenta', 'sesion')),
             resource_id TEXT,
             result TEXT NOT NULL CHECK (result IN ('confirmado', 'rechazado')),
             CHECK (
@@ -45,6 +48,12 @@ def _migrar_auditoria(conexion: sqlite3.Connection) -> None:
                 (action = 'prestacion.actualizada' AND resource_type = 'prestacion' AND result = 'confirmado') OR
                 (action = 'prestacion.desactivada' AND resource_type = 'prestacion' AND result = 'confirmado') OR
                 (action = 'prestacion.reactivada' AND resource_type = 'prestacion' AND result = 'confirmado') OR
+                (action = 'horario.actualizado' AND resource_type = 'horario' AND result = 'confirmado') OR
+                (action = 'excepcion.creada' AND resource_type = 'excepcion' AND result = 'confirmado') OR
+                (action = 'excepcion.actualizada' AND resource_type = 'excepcion' AND result = 'confirmado') OR
+                (action = 'excepcion.eliminada' AND resource_type = 'excepcion' AND result = 'confirmado') OR
+                (action = 'bloqueo.creado' AND resource_type = 'bloqueo' AND result = 'confirmado') OR
+                (action = 'bloqueo.eliminado' AND resource_type = 'bloqueo' AND result = 'confirmado') OR
                 (action = 'cuenta.bootstrap' AND resource_type = 'cuenta' AND result = 'confirmado') OR
                 (action = 'cuenta.creada' AND resource_type = 'cuenta' AND result = 'confirmado') OR
                 (action = 'cuenta.actualizada' AND resource_type = 'cuenta' AND result = 'confirmado') OR
@@ -150,6 +159,80 @@ def _migrar_catalogos(conexion: sqlite3.Connection) -> None:
     ''')
 
 
+def _migrar_disponibilidad(conexion: sqlite3.Connection) -> None:
+    conexion.execute('''
+        CREATE TABLE IF NOT EXISTS horarios_semanales (
+            id TEXT PRIMARY KEY,
+            profesional_id TEXT REFERENCES profesionales(id) ON DELETE RESTRICT,
+            box_id TEXT REFERENCES boxes(id) ON DELETE RESTRICT,
+            dia_iso INTEGER NOT NULL CHECK (typeof(dia_iso) = 'integer' AND dia_iso BETWEEN 1 AND 7),
+            inicio_minuto_local INTEGER NOT NULL CHECK (
+                typeof(inicio_minuto_local) = 'integer' AND
+                inicio_minuto_local >= 0 AND inicio_minuto_local < 1440),
+            fin_minuto_local INTEGER NOT NULL CHECK (
+                typeof(fin_minuto_local) = 'integer' AND
+                fin_minuto_local > 0 AND fin_minuto_local <= 1440),
+            CHECK ((profesional_id IS NOT NULL AND box_id IS NULL) OR
+                   (profesional_id IS NULL AND box_id IS NOT NULL)),
+            CHECK (inicio_minuto_local < fin_minuto_local)
+        )
+    ''')
+    conexion.execute('''
+        CREATE TABLE IF NOT EXISTS excepciones_horario (
+            id TEXT PRIMARY KEY,
+            profesional_id TEXT REFERENCES profesionales(id) ON DELETE RESTRICT,
+            box_id TEXT REFERENCES boxes(id) ON DELETE RESTRICT,
+            fecha_local TEXT NOT NULL CHECK (
+                length(fecha_local) = 10 AND fecha_local GLOB
+                '[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]'),
+            CHECK ((profesional_id IS NOT NULL AND box_id IS NULL) OR
+                   (profesional_id IS NULL AND box_id IS NOT NULL)),
+            UNIQUE (profesional_id, fecha_local),
+            UNIQUE (box_id, fecha_local)
+        )
+    ''')
+    conexion.execute('''
+        CREATE TABLE IF NOT EXISTS tramos_excepcion (
+            id TEXT PRIMARY KEY,
+            excepcion_id TEXT NOT NULL REFERENCES excepciones_horario(id) ON DELETE CASCADE,
+            inicio_minuto_local INTEGER NOT NULL CHECK (
+                typeof(inicio_minuto_local) = 'integer' AND
+                inicio_minuto_local >= 0 AND inicio_minuto_local < 1440),
+            fin_minuto_local INTEGER NOT NULL CHECK (
+                typeof(fin_minuto_local) = 'integer' AND
+                fin_minuto_local > 0 AND fin_minuto_local <= 1440),
+            CHECK (inicio_minuto_local < fin_minuto_local)
+        )
+    ''')
+    conexion.execute('''
+        CREATE TABLE IF NOT EXISTS bloqueos_agenda (
+            id TEXT PRIMARY KEY,
+            profesional_id TEXT REFERENCES profesionales(id) ON DELETE RESTRICT,
+            box_id TEXT REFERENCES boxes(id) ON DELETE RESTRICT,
+            inicio_minuto INTEGER NOT NULL CHECK (typeof(inicio_minuto) = 'integer'),
+            fin_minuto INTEGER NOT NULL CHECK (typeof(fin_minuto) = 'integer'),
+            CHECK ((profesional_id IS NOT NULL AND box_id IS NULL) OR
+                   (profesional_id IS NULL AND box_id IS NOT NULL)),
+            CHECK (inicio_minuto < fin_minuto)
+        )
+    ''')
+    conexion.execute(
+        'CREATE INDEX IF NOT EXISTS ix_horarios_profesional_dia '
+        'ON horarios_semanales(profesional_id, dia_iso)')
+    conexion.execute(
+        'CREATE INDEX IF NOT EXISTS ix_horarios_box_dia '
+        'ON horarios_semanales(box_id, dia_iso)')
+    conexion.execute(
+        'CREATE INDEX IF NOT EXISTS ix_tramos_excepcion_excepcion '
+        'ON tramos_excepcion(excepcion_id)')
+    conexion.execute(
+        'CREATE INDEX IF NOT EXISTS ix_bloqueos_profesional_intervalo '
+        'ON bloqueos_agenda(profesional_id, inicio_minuto, fin_minuto)')
+    conexion.execute(
+        'CREATE INDEX IF NOT EXISTS ix_bloqueos_box_intervalo '
+        'ON bloqueos_agenda(box_id, inicio_minuto, fin_minuto)')
+
+
 def _actualizar_auditoria_catalogos(conexion: sqlite3.Connection) -> None:
     triggers = {'eventos_auditoria_no_update', 'eventos_auditoria_no_delete'}
     existentes = {fila[0] for fila in conexion.execute(
@@ -166,6 +249,24 @@ def _actualizar_auditoria_catalogos(conexion: sqlite3.Connection) -> None:
         FROM eventos_auditoria_v3
     ''')
     conexion.execute('DROP TABLE eventos_auditoria_v3')
+
+
+def _actualizar_auditoria_disponibilidad(conexion: sqlite3.Connection) -> None:
+    triggers = {'eventos_auditoria_no_update', 'eventos_auditoria_no_delete'}
+    existentes = {fila[0] for fila in conexion.execute(
+        "SELECT name FROM sqlite_master WHERE type='trigger'")}
+    for trigger in triggers & existentes:
+        conexion.execute(f'DROP TRIGGER {trigger}')
+    conexion.execute('DROP INDEX IF EXISTS ix_eventos_auditoria_fecha_id')
+    conexion.execute('ALTER TABLE eventos_auditoria RENAME TO eventos_auditoria_v4')
+    _migrar_auditoria(conexion)
+    conexion.execute('''
+        INSERT INTO eventos_auditoria
+            (id, created_at, actor_id, action, resource_type, resource_id, result)
+        SELECT id, created_at, actor_id, action, resource_type, resource_id, result
+        FROM eventos_auditoria_v4
+    ''')
+    conexion.execute('DROP TABLE eventos_auditoria_v4')
 
 
 class MigracionAutenticacionError(RuntimeError):
@@ -210,7 +311,7 @@ def migrar_sqlite(ruta_db: str | Path) -> None:
                 conexion.execute('UPDATE auth_schema_version SET version=2')
                 tablas.add('eventos_auditoria')
                 version = (2,)
-            if version not in ((2,), (3,), (VERSION_ESQUEMA_AUTENTICACION,)):
+            if version not in ((2,), (3,), (4,), (VERSION_ESQUEMA_AUTENTICACION,)):
                 raise MigracionAutenticacionError('La versión de autenticación no es compatible.')
             if not {'usuarios', 'sesiones', 'eventos_auditoria'} <= tablas:
                 raise MigracionAutenticacionError('El esquema de autenticación está incompleto.')
@@ -223,8 +324,15 @@ def migrar_sqlite(ruta_db: str | Path) -> None:
                 _migrar_catalogos(conexion)
                 _actualizar_auditoria_catalogos(conexion)
                 conexion.execute('UPDATE auth_schema_version SET version=4')
-            else:
+                version = (4,)
+            elif version in ((4,), (VERSION_ESQUEMA_AUTENTICACION,)):
                 _migrar_catalogos(conexion)
+            if version == (4,):
+                _migrar_disponibilidad(conexion)
+                _actualizar_auditoria_disponibilidad(conexion)
+                conexion.execute('UPDATE auth_schema_version SET version=5')
+            else:
+                _migrar_disponibilidad(conexion)
             conexion.execute('COMMIT')
             return
 
@@ -257,7 +365,7 @@ def migrar_sqlite(ruta_db: str | Path) -> None:
         _migrar_auditoria(conexion)
         _migrar_fichas_pacientes(conexion)
         _migrar_catalogos(conexion)
-        conexion.execute('UPDATE auth_schema_version SET version=4')
+        _migrar_disponibilidad(conexion)
         conexion.execute('COMMIT')
     except MigracionAutenticacionError:
         if conexion.in_transaction:

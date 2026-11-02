@@ -1,7 +1,7 @@
 # CHANGES — Secuencia de Implementación
 
 > Índice canónico del proyecto **TP-ODONTOLOGIA**, actualizado el 2026-11-02.
-> **Plan del producto completo; C-01–C-06 están implementados, validados y archivados. C-07–C-20 son cambios futuros planificados dentro de la autorización global del roadmap, sujetos a aprobaciones específicas de decisiones materiales según R-10.**
+> **Plan del producto completo; C-01–C-07 están implementados, validados y archivados localmente. C-08–C-20 son futuros, con autorizaciones específicas de decisiones materiales según R-10.**
 > **Leer este archivo antes de ejecutar cualquier `/opsx:propose`.**
 
 ---
@@ -23,7 +23,7 @@ La aclaración del usuario del 2026-10-28 corrige el índice anterior: **hacer s
 - **Evolución del producto:** C-15 a C-20 agregan clínica, odontograma/plan de tratamiento, recordatorios, reserva del paciente, cobros y reportes. Se proponen para mostrar el alcance completo; su implementación requiere priorización y contratos propios.
 - **Opciones no comprometidas:** multisede/SaaS multitenant, IA, obras sociales y facturación electrónica ARCA no se vuelven obligatorias por aparecer en productos comparados. Si se eligen, se agregarán changes posteriores con investigación y aprobación específicas. C-19 no incluye emisión fiscal ni conexión con pagos reales.
 
-La KB y las instrucciones existentes documentan principalmente la porción académica C-01. Sus exclusiones siguen vigentes para esa implementación; las capacidades futuras del roadmap no amplían retroactivamente las US-001 a US-004. C-02 concreta la migración a PostgreSQL conservando la fuente SQLite, con un destino de pruebas aislado. C-03/C-04 concretaron autenticación, permisos y auditoría; C-05 agregó la ficha mínima de paciente, todos en changes archivados. Para C-06+ faltan criterios específicos que se desarrollan en la KB y Propose de cada change. Se mantienen datos ficticios y ninguna integración externa real.
+La KB y las instrucciones existentes documentan principalmente la porción académica C-01. Sus exclusiones siguen vigentes para esa implementación; las capacidades futuras del roadmap no amplían retroactivamente las US-001 a US-004. C-02 concreta la migración a PostgreSQL conservando la fuente SQLite, con un destino de pruebas aislado. C-03/C-04 concretaron autenticación, permisos y auditoría; C-05 agregó la ficha mínima de paciente, C-06 los catálogos y C-07 la disponibilidad. C-07 mantiene el change OpenSpec activo hasta Archive. C-08+ requieren contratos propios antes de Apply. Se mantienen datos ficticios y ninguna integración externa real.
 
 **Stack definido por la cátedra (2026-10-29):** backend con Python, FastAPI, JWT, SQLAlchemy, PostgreSQL, Redis y Docker/Docker Compose; frontend con React, TypeScript y Vite ([DD-09](knowledge-base/09_decisiones_y_supuestos.md)). C-02 implementa PostgreSQL + SQLAlchemy; C-03 implementa JWT y permisos de personal. React/TS/Vite sigue en C-11, Docker Compose de despliegue en C-14 y Redis (cola de recordatorios) en C-17. La existencia de carpetas y servicios no acredita la implementación de esos changes.
 
@@ -35,7 +35,7 @@ La KB y las instrucciones existentes documentan principalmente la porción acad�
 | --- | --- | --- |
 | Versionado de esquema y migración a PostgreSQL con SQLAlchemy (stack de la cátedra) | C-02 | Implementado, validado con PostgreSQL aislado y archivado; copia unidireccional, fuente SQLite preservada. |
 | Identidades, permisos, sesiones y auditoría | C-03/C-04 | C-03 y C-04 implementados, validados y archivados. |
-| Datos mínimos, prestaciones y disponibilidad | C-05/C-06/C-07 | C-05 y C-06 implementan datos mínimos y catálogos; horarios y disponibilidad siguen planificados en C-07 |
+| Datos mínimos, prestaciones y disponibilidad | C-05/C-06/C-07 | C-05–C-07 implementados y archivados localmente; C-07 aplica disponibilidad con SQLite v5/Alembic 0006 |
 | Estados, cancelación y reprogramación | C-09/C-10 | Transiciones y concurrencia especificadas; exclusión del paciente explícitamente decidida |
 | UI y operación desplegada | C-11/C-12/C-13/C-14 | Interfaz en React + TypeScript + Vite (fijada por la cátedra), despliegue con Docker Compose, recuperación y seguridad probadas |
 | Datos clínicos, comunicaciones y dinero | C-15 a C-20 | Revisión de permisos, privacidad, reglas clínicas/monetarias y proveedor cuando corresponda; sólo simulación en este ejercicio |
@@ -75,7 +75,7 @@ Los números son identificadores estables agrupados por capacidad, no un orden d
 
 ### Paralelismo por fase
 
-Los GATES expresan dependencias del plan futuro. C-01–C-06 están archivados. El símbolo `✓` significa «una vez verificado y cerrado». No imponen fases rígidas a OPSX.
+Los GATES expresan dependencias del plan futuro. C-01–C-07 están archivados localmente. El símbolo `✓` significa «una vez verificado y cerrado». No imponen fases rígidas a OPSX.
 
 ```text
 GATE 0: C-01 ✓ → C-02 ✓ → C-03 ✓ → C-04 ✓
@@ -161,7 +161,7 @@ Secuencia compatible con dependencias, sin prometer una optimización temporal n
 
 ## FASE 2 — Fundamento evolutivo, acceso y trazabilidad
 
-> C-01–C-06 están archivados. C-07 a C-20 siguen planificados con desarrollo global autorizado. Los contratos de cada change se revisan con Propose y las decisiones materiales de governance CRÍTICO/ALTO requieren aprobación específica antes del código.
+> C-01–C-07 están archivados localmente y validados. C-08 a C-20 siguen planificados con desarrollo global autorizado. Los contratos de cada change se revisan con Propose y las decisiones materiales de governance CRÍTICO/ALTO requieren aprobación específica antes del código.
 
 ### [C-02] `evolucionar-esquema-y-configuracion`
 
@@ -237,16 +237,19 @@ Secuencia compatible con dependencias, sin prometer una optimización temporal n
 
 ### [C-07] `configurar-horarios-y-bloqueos`
 
-- **Estado**: [ ] planificado; no implementado ni propuesto en OpenSpec.
+- **Estado**: Implementado, validado y archivado localmente; commit `fd21a9a` (sin push).
 - **Scope**:
-  - Añadir `HorarioAtencion`, `ExcepcionHorario` y `BloqueoAgenda` por profesional/box; acordar zona horaria del consultorio, descansos, cruce de día y qué ocurre si un bloqueo afecta turnos existentes.
-  - Proponer `GET/PUT /horarios`, `POST /bloqueos` y `DELETE /bloqueos/{id}`; validar nuevas altas dentro de disponibilidad sin aceptar excepciones silenciosas ni cancelar turnos por crear un bloqueo.
-  - Tests: franja disponible, fuera de horario, feriado/bloqueo, límites adyacentes y conflicto concurrente entre bloqueo y alta; preservar reglas de profesional/box de C-01.
-- **Dependencias**: C-06.
+  - SQLite v5 y Alembic `20261102_0006_agenda_availability`; `America/Argentina/Mendoza`, con `tzdata` fijado para Windows.
+  - `GET/PUT /horarios`, gestión de excepciones fechadas y `GET/POST/DELETE /bloqueos`, para Administrador y Recepción. Excepción reemplaza la semana del recurso/día; lista vacía cierra; bloqueo pertenece a exactamente un profesional o box.
+  - Nuevas reservas deben caber en un tramo del profesional y del box, sin cruce de medianoche ni solapamiento con bloqueos. Los cambios incompatibles con turnos pasados o futuros devuelven 409 y se revierten sin evento.
+  - La API valida versión y tablas C-07 y falla cerrada; el servicio standalone C-01 en SQLite no migrado preserva su contrato. Auditoría metadata-only y atómica.
+  - Evidencia: [implementacion-disponibilidad.md](docs/evidencia/implementacion-disponibilidad.md).
+- **Dependencias**: C-05, C-06.
 - **Governance**: MEDIO.
 - **Leer antes**:
-  - [05_reglas_de_negocio.md](knowledge-base/05_reglas_de_negocio.md) §Dominio: políticas de esta porción.
-  - [07_flujos_principales.md](knowledge-base/07_flujos_principales.md) §Flujo 4: entrada inválida y bordes.
+  - [04_modelo_de_datos.md](knowledge-base/04_modelo_de_datos.md) §límites que afectan el modelo.
+  - [05_reglas_de_negocio.md](knowledge-base/05_reglas_de_negocio.md) §Dominio: horarios y disponibilidad — C-07.
+  - [07_flujos_principales.md](knowledge-base/07_flujos_principales.md) §Flujo 7: reserva con disponibilidad C-07.
   - [10_preguntas_abiertas.md](knowledge-base/10_preguntas_abiertas.md) §Preguntas abiertas priorizadas.
 
 ### [C-08] `consultar-agenda-y-disponibilidad`

@@ -1,6 +1,6 @@
 # Flujos principales
 
-Flujos implementados de C-01, con datos ficticios y fechas con offset explícito. [Spec](../openspec/changes/archive/2026-10-28-crear-turno-sin-solapamientos/specs/alta-turnos/spec.md) y [evidencia](../docs/evidencia/implementacion-turnos.md).
+Flujos implementados de C-01 y C-07, con datos ficticios y fechas con offset explícito. [Spec de C-01](../openspec/changes/archive/2026-10-28-crear-turno-sin-solapamientos/specs/alta-turnos/spec.md), [change C-07](../openspec/changes/configurar-horarios-y-bloqueos/) y [evidencia](../docs/evidencia/implementacion-turnos.md).
 
 ## Flujo 1: alta válida
 
@@ -29,3 +29,9 @@ Fallo controlado anterior al commit produce almacenamiento_error; rollback y cie
 ## Autenticación y funciones posteriores
 
 Sin login, reserva pública, WhatsApp, pagos o historia clínica. Recepción es actor conceptual, no identidad autenticada de producción.
+
+## Flujo 7: reserva con disponibilidad C-07
+
+La API valida SQLite v5 o PostgreSQL Alembic 0006 y falla con 503 si la versión o alguna tabla C-07 falta. Bajo el mismo lock de escritura que protege la reserva, convierte inicio/fin UTC a `America/Argentina/Mendoza`; rechaza el cruce de fecha local, busca la excepción del día y, si no existe, usa la semana. El intervalo completo debe caber en un solo tramo del profesional y del box y no solaparse con bloqueos. Un horario ausente o un día vacío quedan cerrados. Las validaciones de recursos y solapamientos C-01 siguen vigentes.
+
+Administrador o Recepción puede reemplazar el horario semanal completo, guardar o borrar una excepción y crear/listar/borrar bloqueos. Cada mutación y su evento metadata-only comparten transacción; si auditoría falla, ambas se revierten. Antes de confirmar un cambio se revisan sin filtrar por pasado/futuro los turnos del recurso modificado; una incompatibilidad retorna 409 `turnos_afectados` y no registra evento. Esta validación por recurso permite configurar primero profesional y luego box después de migrar turnos C-01; nuevas reservas siguen exigiendo ambos. El servicio standalone de C-01 sobre una base sin migración conserva su comportamiento original hasta que se migre a v5.

@@ -24,7 +24,7 @@ Estas dudas se registran para continuar sin inventar decisiones. No constituyen 
 | Q02 / Resuelto para C-01 | Python 3.12+, FastAPI, Pydantic, Uvicorn; unittest y HTTPX/TestClient para pruebas. Dependencias locales fijadas. | No bloquea Apply | Contrato publicado y continuación autorizada; no acredita revisión personal |
 | Q03 / Resuelto para C-01 | SQLite local, BEGIN IMMEDIATE y pruebas spawn sobre mismo archivo; sin infraestructura externa. | No bloquea Apply | Contrato publicado y continuación autorizada; no acredita revisión personal |
 | Q04 / Resuelto para C-01 | [inicio, fin), adyacencia, inicio anterior a fin, offset explícito, UTC/minuto exacto. | No bloquea Apply | Contrato publicado y continuación autorizada; no acredita revisión personal |
-| Q05 / Resuelto para C-01 | Duración positiva libre y cruce de día; horarios/descansos/disponibilidad excluidos. | No bloquea Apply | Contrato publicado y continuación autorizada; no acredita revisión personal |
+| Q05 / Resuelto para C-01 | Duración positiva libre y cruce de día en el alcance inicial; horarios/descansos/disponibilidad excluidos de C-01. C-07 define por separado disponibilidad de nuevas reservas tras la migración. | No bloquea Apply | Contratos y decisiones posteriores registrados; no acredita revisión personal |
 | Q06 / Resuelto para C-01 | Sin estados/cancelación; todas las filas confirmadas ocupan recursos. | No bloquea Apply | Contrato publicado y continuación autorizada; no acredita revisión personal |
 | Q07 / Resuelto para C-01 | IDs ficticios paciente-A/B y referencias conocidas; paciente simultáneo permitido con recursos diferentes. | No bloquea Apply | Contrato publicado y continuación autorizada; no acredita revisión personal |
 | Q08 / Resuelto para C-01 | Box exclusivo; sin compatibilidad adicional, sobreturnos o idempotencia; prioridad de profesional. | No bloquea Apply | Contrato publicado y continuación autorizada; no acredita revisión personal |
@@ -49,4 +49,4 @@ Las URLs y fechas originales permanecen en cada ficha y en el [informe](../docs/
 
 ## Próxima decisión de implementación
 
-Q01–Q08 están implementadas conforme al contrato de C-01. Ante un cambio de comportamiento se actualiza Propose antes de modificar código. Q09 quedó resuelta por confirmación personal; Q10 y otras evidencias humanas siguen pendientes; generación de documentación, memoria o tests no las reemplazan.
+Q01–Q08 están implementadas conforme al contrato inicial de C-01; la disponibilidad operativa corresponde a C-07 y su contrato separado. Ante otro cambio de comportamiento se actualiza Propose antes de modificar código. Q09 quedó resuelta por confirmación personal; Q10 y otras evidencias humanas siguen pendientes; generación de documentación, memoria o tests no las reemplazan.

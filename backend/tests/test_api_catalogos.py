@@ -11,6 +11,7 @@ from odontologia.api import crear_app
 from odontologia.auth.almacenamiento import crear_engine_autenticacion
 from odontologia.auth.migraciones import migrar_sqlite
 from odontologia.auth.usuarios import crear_primer_administrador, crear_usuario
+from odontologia.disponibilidad import guardar_horario
 
 
 class ApiCatalogosTests(unittest.TestCase):
@@ -24,6 +25,11 @@ class ApiCatalogosTests(unittest.TestCase):
         self.addCleanup(self.engine.dispose)
         crear_primer_administrador(self.engine, 'admin.one', 'frase-larga-segura-2026')
         crear_usuario(self.engine, 'recepcion.a', 'otra-frase-larga-segura-2026', 'recepcion')
+        abierto = {str(dia): [{'inicio': '00:00', 'fin': '24:00'}] for dia in range(1, 8)}
+        for tipo, recursos in (('profesional', ('profesional-A', 'profesional-B')),
+                               ('box', ('box-A', 'box-B'))):
+            for recurso in recursos:
+                guardar_horario(self.engine, tipo, recurso, abierto)
         self.secreto = 'secreto-local-catalogos-test-no-reutilizar-2026'
         with patch.dict(os.environ, {'JWT_SECRETO': self.secreto}, clear=True):
             self.client = TestClient(crear_app(self.ruta))

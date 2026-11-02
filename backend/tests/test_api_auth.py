@@ -12,6 +12,7 @@ from odontologia.api import crear_app
 from odontologia.auth.migraciones import migrar_sqlite
 from odontologia.auth.almacenamiento import crear_engine_autenticacion
 from odontologia.auth.usuarios import crear_primer_administrador
+from odontologia.disponibilidad import guardar_horario
 
 
 class ApiAutenticacionTests(unittest.TestCase):
@@ -24,6 +25,11 @@ class ApiAutenticacionTests(unittest.TestCase):
         migrar_sqlite(self.ruta)
         engine = crear_engine_autenticacion('sqlite', None, self.ruta)
         crear_primer_administrador(engine, 'admin.one', 'frase-larga-segura-2026')
+        abierto = {str(dia): [{'inicio': '00:00', 'fin': '24:00'}] for dia in range(1, 8)}
+        for tipo, recursos in (('profesional', ('profesional-A', 'profesional-B')),
+                               ('box', ('box-A', 'box-B'))):
+            for recurso in recursos:
+                guardar_horario(engine, tipo, recurso, abierto)
         engine.dispose()
         with patch.dict('os.environ', {'JWT_SECRETO': self.secreto}, clear=True):
             self.client = TestClient(crear_app(self.ruta))

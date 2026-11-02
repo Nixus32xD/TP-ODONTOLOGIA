@@ -13,6 +13,7 @@ from odontologia.api import crear_app
 from odontologia.auth.almacenamiento import crear_engine_autenticacion
 from odontologia.auth.migraciones import migrar_sqlite
 from odontologia.auth.usuarios import crear_primer_administrador
+from odontologia.disponibilidad import guardar_horario
 
 
 class ApiTests(unittest.TestCase):
@@ -24,6 +25,12 @@ class ApiTests(unittest.TestCase):
         migrar_sqlite(self.ruta)
         engine = crear_engine_autenticacion('sqlite', None, self.ruta)
         crear_primer_administrador(engine, 'admin.one', 'frase-larga-segura-2026')
+        for tipo, recursos in (('profesional', ('profesional-A', 'profesional-B')),
+                               ('box', ('box-A', 'box-B'))):
+            for recurso in recursos:
+                guardar_horario(engine, tipo, recurso, {
+                    str(dia): [{'inicio': '00:00', 'fin': '24:00'}]
+                    for dia in range(1, 8)})
         engine.dispose()
         self.secreto = 'secreto-local-de-prueba-no-reutilizar-2026'
         with patch.dict(os.environ, {'JWT_SECRETO': self.secreto}, clear=True):
@@ -143,7 +150,10 @@ class ApiTests(unittest.TestCase):
             '/turnos', '/health', '/sesiones', '/sesiones/actual', '/usuarios',
             '/usuarios/{usuario_id}', '/auditoria', '/pacientes', '/pacientes/{paciente_id}',
             '/profesionales', '/profesionales/{profesional_id}', '/boxes', '/boxes/{box_id}',
-            '/prestaciones', '/prestaciones/{prestacion_id}'})
+            '/prestaciones', '/prestaciones/{prestacion_id}',
+            '/horarios/{tipo_recurso}/{recurso_id}',
+            '/horarios/{tipo_recurso}/{recurso_id}/excepciones/{fecha}',
+            '/bloqueos', '/bloqueos/{bloqueo_id}'})
         self.assertEqual(set(rutas['/turnos']), {'post'})
         self.assertEqual(set(rutas['/turnos']['post']['responses']),
                          {'201', '401', '403', '422', '404', '409', '503', '500'})

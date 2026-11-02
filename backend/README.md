@@ -14,6 +14,7 @@ API del sistema odontológico. Stack definido por la cátedra (corrección del 2
 | Auditoría append-only y `GET /auditoria` | Implementado, validado y archivado; sólo Administrador | C-04 |
 | Fichas mínimas y baja lógica de pacientes | Implementado en SQLite/PostgreSQL; Administrador y Recepción gestionan datos; sólo Admin cambia estado | C-05 |
 | Catálogos de profesionales, boxes y prestaciones | Implementado en SQLite/PostgreSQL; lectura paginada; baja lógica sólo Administrador | C-06 |
+| Horarios semanales, excepciones y bloqueos | Implementado, validado y archivado localmente; v5 / Alembic 0006 | C-07 |
 | Cola de recordatorios en Redis (`odontologia/workers/`) | Estructura preparada, sin implementar | C-17 |
 | Imagen Docker y servicios en Docker Compose | Preparados | C-02 / C-14 |
 
@@ -77,13 +78,43 @@ El bootstrap pide identificador y contraseña de forma interactiva y oculta; no 
 ..\.venv\Scripts\python.exe -m odontologia.auth.bootstrap_admin
 ```
 
-Alembic aplica las revisiones consecutivas de C-01 a C-06, incluida la ficha mínima, los catálogos y la tabla append-only de auditoría. En Docker Compose, migrar el servicio backend con `docker compose exec backend python -m alembic upgrade head` y ejecutar el bootstrap interactivo con `docker compose exec backend python -m odontologia.auth.bootstrap_admin` después de configurar `.env`. No usar la API ni `GET /health` como comando de migración.
+Alembic aplica las revisiones consecutivas de C-01 a C-07, incluida la ficha mínima, los catálogos, auditoría y disponibilidad. En Docker Compose, migrar el servicio backend con `docker compose exec backend python -m alembic upgrade head` y ejecutar el bootstrap interactivo con `docker compose exec backend python -m odontologia.auth.bootstrap_admin` después de configurar `.env`. No usar la API ni `GET /health` como comando de migración.
 
 `POST /sesiones` recibe `identificador` y `password`; su respuesta contiene `access_token`, `token_type` y `expires_in`. En Swagger, usar **Authorize** con `Bearer <token>`. `/sesiones/actual` permite consultar y cerrar la sesión propia. El Administrador puede consultar/crear usuarios y cambiar rol/estado; Recepción puede crear turnos y operar fichas mínimas de pacientes; sólo Administrador cambia el estado activo de pacientes. Desactivar una cuenta, cambiarle el rol o cerrar sesión revoca sus tokens persistidos. Los fallos de credenciales devuelven un mensaje genérico. Las fichas contienen sólo nombre y teléfono opcional ficticios; no usar datos reales ni añadir historia clínica. Los eventos guardan sólo actor/acción/recurso/resultado/fecha; no incluyen cuerpos, nombres, teléfonos, contraseñas, hashes, JWT, datos clínicos ni el identificador de un login rechazado. `GET /auditoria?limit=50&offset=0` es sólo Administrador, admite límite 1–100 y no ofrece edición, borrado ni purga automática. Si el evento falla, la mutación se revierte y la API no informa éxito. Sin secreto o esquema migrado, las operaciones protegidas fallan cerradas con 503 mientras `/health` continúa pública.
 
 `POST /pacientes` acepta `nombre` y `telefono` opcional; `GET /pacientes?limit=50&offset=0`, `GET/PATCH /pacientes/{paciente_id}` y `DELETE /pacientes/{paciente_id}` requieren sesión de Administrador o Recepción, salvo que DELETE y el cambio de `activo` en PATCH quedan sólo para Administrador. La baja es lógica; los turnos históricos permanecen y un paciente inactivo no admite nuevas altas. Los nombres repetidos se permiten; la ficha no se deduplica automáticamente.
 
 `/profesionales`, `/boxes` y `/prestaciones` exponen `POST`, `GET` paginado, `GET/{id}` y `PATCH/{id}`. Administrador y Recepción crean, leen y editan datos descriptivos; sólo Administrador cambia `activo`. Los catálogos incluyen inactivos en la lectura; la baja conserva filas e historial. Cada nombre ocupa de 1 a 120 caracteres después de normalizar espacios. Las prestaciones exigen duración entera positiva en minutos, limitada al máximo de `INTEGER` PostgreSQL. C-01 no agrega `prestacion_id` al turno ni calcula su duración; no hay reglas de compatibilidad.
+
+## C-07 — Disponibilidad local
+
+La agenda usa la zona IANA `America/Argentina/Mendoza`. Python convierte los instantes UTC de los turnos y los bloqueos a fecha y día local con `zoneinfo`; se fija `tzdata==2026.6` en `requirements.txt` y `requirements-lock.txt` para que Windows tenga una base IANA portable. Se puede comprobar la instalación desde `backend/` con:
+
+```powershell
+..\.venv\Scripts\python.exe -c "from zoneinfo import ZoneInfo; print(ZoneInfo('America/Argentina/Mendoza'))"
+```
+
+SQLite sube explícitamente a esquema v5 y PostgreSQL a Alembic `20261102_0006_agenda_availability`, encadenada tras `20261102_0005_resource_catalogs`. La migración conserva los datos existentes y no inventa horarios. Todo recurso comienza sin tramos configurados; se considera cerrado hasta que Administrador o Recepción guarden su disponibilidad. Los cambios de horario, excepción o bloqueo son locales y no consultan un calendario de feriados externo.
+
+La API requiere esa versión y las cuatro tablas de disponibilidad; si la versión figura vigente pero falta alguna tabla, responde 503 antes de aceptar operaciones protegidas. El módulo standalone de C-01 mantiene compatibilidad con una base antigua que aún no tiene `auth_schema_version`; al migrarla explícitamente a v5, una agenda sin configuración queda cerrada. Tras migrar turnos C-01, Administrador o Recepción puede configurar profesional y box de forma secuencial: cada cambio conserva los turnos del recurso que modifica; las nuevas reservas sólo se habilitan cuando ambos recursos tienen un tramo vigente.
+
+Los contratos de gestión son `GET/PUT /horarios/{tipo_recurso}/{recurso_id}`, `GET/PUT/DELETE /horarios/{tipo_recurso}/{recurso_id}/excepciones/{fecha}` y `GET/POST /bloqueos` más `DELETE /bloqueos/{bloqueo_id}`. El tipo de recurso es `profesional` o `box`. El horario semanal reemplaza el conjunto completo de tramos por día ISO (`1` lunes a `7` domingo), cada tramo usa `inicio`/`fin` locales `HH:MM` y admite `24:00` sólo como fin. Se aceptan varios tramos adyacentes, no solapados ni nocturnos. La respuesta devuelve los siete días; un día ausente o vacío está cerrado.
+
+Para probar en Swagger, iniciar sesión con `POST /sesiones`, usar **Authorize** con `Bearer <access_token>` y abrir `/docs`. El contrato descargable está en `/openapi.json`. OpenAPI incluye ejemplos de los cuerpos de escritura. Por ejemplo, para reemplazar el horario del lunes y miércoles de un profesional:
+
+```http
+PUT /horarios/profesional/profesional-A
+Content-Type: application/json
+Authorization: Bearer <access_token>
+
+{"dias":{"1":[{"inicio":"09:00","fin":"12:00"},{"inicio":"13:00","fin":"17:00"}],"3":[{"inicio":"09:00","fin":"12:00"}]}}
+```
+
+Para consultar esa configuración: `GET /horarios/profesional/profesional-A`. Una excepción del martes reemplaza la semana de ese día; enviar `{"tramos":[]}` lo cierra. Un bloqueo de una hora sobre un box se envía con `POST /bloqueos` y `tipo_recurso`, `recurso_id`, `inicio` y `fin`; las dos fechas deben tener offset explícito, por ejemplo `2026-11-02T12:00:00-03:00` y `2026-11-02T13:00:00-03:00`. `GET /bloqueos?limit=50&offset=0` lista y pagina; eliminar usa `DELETE /bloqueos/{bloqueo_id}`.
+
+Las respuestas de error siguen el objeto `{codigo, campo, mensaje}`: `401` requiere una sesión válida; `403` indica rol insuficiente en rutas restringidas; `409` rechaza una reserva fuera de disponibilidad o un cambio que afectaría turnos existentes; `422` indica un cuerpo, hora o paginación inválidos. OpenAPI documenta además `404` para recursos desconocidos y `503` para fallos transaccionales.
+
+Una excepción identifica un recurso y fecha local `YYYY-MM-DD`; reemplaza todos sus tramos semanales de ese día. Una excepción con `tramos: []` cierra el día; eliminarla hace que vuelva a regir la semana. Como supuesto explícito del modelo, cada bloqueo pertenece exactamente a un profesional o a un box, nunca a ambos ni a toda la clínica; la solicitud usa `tipo_recurso`, `recurso_id`, `inicio` y `fin` ISO 8601 con offset. Los bloqueos se comparan como instantes UTC y el listado usa `limit` 1–100 y `offset` no negativo. Las consultas no generan eventos de auditoría.
 
 ## Preparar PostgreSQL y migrar una agenda existente
 

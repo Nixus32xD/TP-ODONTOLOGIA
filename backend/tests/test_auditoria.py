@@ -12,6 +12,7 @@ from odontologia.api import crear_app
 from odontologia.auth.almacenamiento import crear_engine_autenticacion
 from odontologia.auth.migraciones import migrar_sqlite
 from odontologia.auth.usuarios import ErrorUsuarios, crear_primer_administrador, crear_usuario
+from odontologia.disponibilidad import guardar_horario
 from fastapi.testclient import TestClient
 
 
@@ -33,7 +34,7 @@ class AuditoriaEsquemaSQLiteTests(unittest.TestCase):
             self.assertEqual(columnas, {
                 'id', 'created_at', 'actor_id', 'action', 'resource_type', 'resource_id', 'result'})
             self.assertEqual(
-                conexion.execute('SELECT version FROM auth_schema_version').fetchone(), (4,))
+                conexion.execute('SELECT version FROM auth_schema_version').fetchone(), (5,))
 
     def test_auditoria_no_guarda_payload_ni_identificador_intentado(self):
         from odontologia.audit import registrar_evento_sqlite
@@ -81,6 +82,12 @@ class AuditoriaEsquemaSQLiteTests(unittest.TestCase):
             ('prestacion.actualizada', 'prestacion', 'confirmado'),
             ('prestacion.desactivada', 'prestacion', 'confirmado'),
             ('prestacion.reactivada', 'prestacion', 'confirmado'),
+            ('horario.actualizado', 'horario', 'confirmado'),
+            ('excepcion.creada', 'excepcion', 'confirmado'),
+            ('excepcion.actualizada', 'excepcion', 'confirmado'),
+            ('excepcion.eliminada', 'excepcion', 'confirmado'),
+            ('bloqueo.creado', 'bloqueo', 'confirmado'),
+            ('bloqueo.eliminado', 'bloqueo', 'confirmado'),
             ('cuenta.bootstrap', 'cuenta', 'confirmado'),
             ('cuenta.creada', 'cuenta', 'confirmado'),
             ('cuenta.actualizada', 'cuenta', 'confirmado'),
@@ -181,7 +188,7 @@ class AuditoriaEsquemaSQLiteTests(unittest.TestCase):
             self.assertEqual(conexion.execute(
                 'SELECT COUNT(*) FROM usuarios').fetchone()[0], 1)
             self.assertEqual(conexion.execute(
-                'SELECT version FROM auth_schema_version').fetchone()[0], 4)
+                'SELECT version FROM auth_schema_version').fetchone()[0], 5)
             self.assertEqual(conexion.execute(
                 "SELECT COUNT(*) FROM sqlite_master WHERE type='table' "
                 "AND name='eventos_auditoria'").fetchone()[0], 1)
@@ -198,6 +205,11 @@ class AuditoriaApiTests(unittest.TestCase):
         self.addCleanup(self.engine.dispose)
         self.admin = crear_primer_administrador(
             self.engine, 'admin.one', 'frase-larga-segura-2026')
+        abierto = {str(dia): [{'inicio': '00:00', 'fin': '24:00'}] for dia in range(1, 8)}
+        for tipo, recursos in (('profesional', ('profesional-A', 'profesional-B')),
+                               ('box', ('box-A', 'box-B'))):
+            for recurso in recursos:
+                guardar_horario(self.engine, tipo, recurso, abierto)
         self.secreto = 'secreto-local-auditoria-pruebas-2026'
         with patch.dict(os.environ, {'JWT_SECRETO': self.secreto}, clear=True):
             self.client = TestClient(crear_app(self.ruta))

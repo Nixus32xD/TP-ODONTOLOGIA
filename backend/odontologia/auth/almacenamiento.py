@@ -48,18 +48,29 @@ def validar_esquema_autenticacion(engine, persistencia: str,
             raise RuntimeError('Ruta SQLite requerida.')
         validar_ruta_sqlite_existente(ruta_sqlite)
         consulta = text('SELECT version FROM auth_schema_version')
-        version_esperada = 4
+        version_esperada = 5
         validar_version = lambda version: version == version_esperada
+        consulta_tablas = text(
+            "SELECT name FROM sqlite_master WHERE type='table' "
+            'AND name IN (\'horarios_semanales\', \'excepciones_horario\', '
+            '\'tramos_excepcion\', \'bloqueos_agenda\')')
     elif persistencia == 'postgresql':
         consulta = text('SELECT version_num FROM alembic_version')
-        version_esperada = '20261102_0005_resource_catalogs'
+        version_esperada = '20261102_0006_agenda_availability'
         validar_version = lambda version: version == version_esperada
+        consulta_tablas = text(
+            'SELECT table_name FROM information_schema.tables '
+            'WHERE table_schema = current_schema() AND table_name IN '
+            "('horarios_semanales', 'excepciones_horario', 'tramos_excepcion', 'bloqueos_agenda')")
     else:
         raise RuntimeError('Backend de autenticación desconocido.')
     try:
         with engine.connect() as conexion:
             version = conexion.execute(consulta).scalar_one_or_none()
+            tablas = set(conexion.execute(consulta_tablas).scalars())
         if not validar_version(version):
             raise RuntimeError('La versión del esquema de autenticación no está migrada.')
+        if len(tablas) != 4:
+            raise RuntimeError('El esquema de disponibilidad no está preparado.')
     except SQLAlchemyError as exc:
         raise RuntimeError('El esquema de autenticación no está preparado.') from exc

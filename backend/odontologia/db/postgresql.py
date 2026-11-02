@@ -16,7 +16,7 @@ from odontologia.agenda import (
 from odontologia.db.models import AgendaMutex, Box, Paciente, Profesional, Turno
 
 
-REVISION_ESQUEMA_ACTUAL = '20261102_0005_resource_catalogs'
+REVISION_ESQUEMA_ACTUAL = '20261102_0006_agenda_availability'
 
 
 def crear_engine(database_url: str) -> Engine:
@@ -97,6 +97,13 @@ def crear_turno_postgresql(engine: Engine, *, paciente_id: str, profesional_id: 
             for campo, recurso in catalogos:
                 if not recurso.activo:
                     raise ErrorAgenda('recurso_inactivo', campo)
+
+            from odontologia.disponibilidad import validar_disponibilidad_session
+
+            validar_disponibilidad_session(
+                session, solicitud.inicio, solicitud.fin,
+                solicitud.inicio_minuto, solicitud.fin_minuto,
+                solicitud.profesional_id, solicitud.box_id)
 
             for campo, columna, identificador in (
                     ('profesional', 'profesional_id', solicitud.profesional_id),

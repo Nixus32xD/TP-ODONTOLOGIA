@@ -21,7 +21,7 @@ RN-TU-01/02 provienen del Discovery confirmado. RN-TU-03 a RN-TU-07 se propusier
 
 Solapamiento: existente.inicio < solicitado.fin y existente.fin > solicitado.inicio. Ante ambos conflictos, profesional tiene prioridad. Orden de validación: forma de IDs paciente/profesional/box, fechas/intervalo/timeout, referencias paciente/profesional/box, conflictos y registro.
 
-## Dominio: políticas de esta porción
+## Dominio: políticas del contrato inicial C-01
 
 | Tema | Contrato / exclusión |
 | --- | --- |
@@ -36,6 +36,8 @@ Solapamiento: existente.inicio < solicitado.fin y existente.fin > solicitado.ini
 | Concurrencia | BEGIN IMMEDIATE antes de consultar; mismo archivo local vía módulo |
 | Timeout | 5s por defecto; número finito positivo; no deadline global |
 
+El alcance histórico de C-01 no incluye horarios. C-07 lo amplía sólo en la API con el esquema migrado a SQLite v5 o PostgreSQL 0006; esa capa rechaza cruces de medianoche y turnos fuera de horario según las reglas de disponibilidad indicadas abajo.
+
 ## Dominio: catálogos — C-06
 
 | Tema | Contrato aplicado |
@@ -49,6 +51,19 @@ Solapamiento: existente.inicio < solicitado.fin y existente.fin > solicitado.ini
 | Prestación en C-01 | No se agrega `prestacion_id`, no se calcula la duración del turno ni se crean compatibilidades |
 | Auditoría | Sólo metadatos permitidos y transacción conjunta; si falla el evento, se revierte el cambio |
 
+## Dominio: horarios y disponibilidad — C-07
+
+| Tema | Contrato aplicado |
+| --- | --- |
+| Zona y ventanas | `America/Argentina/Mendoza`; día ISO 1–7, múltiples tramos locales `HH:MM`, sin solaparse ni cruzar medianoche; adyacencia permitida |
+| Recursos | Administrador y Recepción administran horario semanal, excepción fechada y bloqueos de un profesional o box |
+| Excepciones | Reemplazan el horario semanal para ese recurso y fecha local; lista vacía cierra y borrar restaura la recurrencia |
+| Reservas | En SQLite v5 y PostgreSQL 0006 el turno debe caber entero dentro de un tramo de ambos recursos; un recurso sin configuración está cerrado |
+| Bloqueos | Intervalo ISO 8601 con offset, comparación UTC; un solapamiento impide nuevas reservas |
+| Cambios de configuración | Si el cambio invalida algún turno del recurso objetivo, incluso pasado, responder `turnos_afectados`/409 y no alterar configuración ni auditoría; permite configurar profesional y box progresivamente tras migrar turnos anteriores |
+| Compatibilidad | API falla cerrada si faltan la versión o tablas C-07; servicio standalone C-01 sin `auth_schema_version` conserva el contrato histórico hasta migración explícita |
+| Auditoría | Mutaciones confirmadas guardan actor, acción, tipo, ID opaco y resultado; no fecha, horas, tramos ni cuerpo; fallo revierte la transacción |
+
 ## Excepciones globales y restricciones confirmadas
 
 - RN-EX-01: sólo datos ficticios, sin información clínica real.
@@ -56,7 +71,7 @@ Solapamiento: existente.inicio < solicitado.fin y existente.fin > solicitado.ini
 - RN-EX-03: validación explícita, errores claros y ninguna corrección silenciosa.
 - RN-EX-04: pruebas por comportamiento y suite verde antes de finalizar/archivar.
 
-Códigos: entrada_invalida, recurso_desconocido, conflicto_profesional, conflicto_box, agenda_ocupada, almacenamiento_error y agenda_existente. Sin SQL/rutas internas en mensaje público.
+Códigos: entrada_invalida, recurso_desconocido, conflicto_profesional, conflicto_box, fuera_de_disponibilidad, turnos_afectados, agenda_ocupada, almacenamiento_error y agenda_existente. Sin SQL/rutas internas en mensaje público.
 
 ## Relación con otras fuentes
 

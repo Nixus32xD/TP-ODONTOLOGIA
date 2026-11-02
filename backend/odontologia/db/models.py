@@ -1,8 +1,8 @@
 """Modelo PostgreSQL del contrato de agenda C-01."""
 
-from datetime import datetime
+from datetime import date, datetime
 
-from sqlalchemy import BigInteger, CheckConstraint, DateTime, ForeignKey, Identity, Index, Integer, SmallInteger, String
+from sqlalchemy import BigInteger, CheckConstraint, Date, DateTime, ForeignKey, Identity, Index, Integer, SmallInteger, String, UniqueConstraint
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
 
@@ -84,6 +84,88 @@ class AgendaMutex(Base):
     __table_args__ = (CheckConstraint('id = 1', name='ck_agenda_mutex_singleton'),)
 
     id: Mapped[int] = mapped_column(SmallInteger, primary_key=True)
+
+
+class HorarioSemanal(Base):
+    __tablename__ = 'horarios_semanales'
+    __table_args__ = (
+        CheckConstraint(
+            '(profesional_id IS NOT NULL AND box_id IS NULL) OR '
+            '(profesional_id IS NULL AND box_id IS NOT NULL)',
+            name='ck_horarios_semanales_un_recurso'),
+        CheckConstraint('dia_iso BETWEEN 1 AND 7', name='ck_horarios_semanales_dia'),
+        CheckConstraint(
+            'inicio_minuto_local >= 0 AND inicio_minuto_local < 1440 AND '
+            'fin_minuto_local > 0 AND fin_minuto_local <= 1440 AND '
+            'inicio_minuto_local < fin_minuto_local',
+            name='ck_horarios_semanales_intervalo'),
+    )
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    profesional_id: Mapped[str | None] = mapped_column(
+        String(64), ForeignKey('profesionales.id', ondelete='RESTRICT'), nullable=True)
+    box_id: Mapped[str | None] = mapped_column(
+        String(64), ForeignKey('boxes.id', ondelete='RESTRICT'), nullable=True)
+    dia_iso: Mapped[int] = mapped_column(SmallInteger, nullable=False)
+    inicio_minuto_local: Mapped[int] = mapped_column(SmallInteger, nullable=False)
+    fin_minuto_local: Mapped[int] = mapped_column(SmallInteger, nullable=False)
+
+
+class ExcepcionHorario(Base):
+    __tablename__ = 'excepciones_horario'
+    __table_args__ = (
+        CheckConstraint(
+            '(profesional_id IS NOT NULL AND box_id IS NULL) OR '
+            '(profesional_id IS NULL AND box_id IS NOT NULL)',
+            name='ck_excepciones_horario_un_recurso'),
+        UniqueConstraint('profesional_id', 'fecha_local', name='uq_excepciones_horario_profesional_fecha'),
+        UniqueConstraint('box_id', 'fecha_local', name='uq_excepciones_horario_box_fecha'),
+    )
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    profesional_id: Mapped[str | None] = mapped_column(
+        String(64), ForeignKey('profesionales.id', ondelete='RESTRICT'), nullable=True)
+    box_id: Mapped[str | None] = mapped_column(
+        String(64), ForeignKey('boxes.id', ondelete='RESTRICT'), nullable=True)
+    fecha_local: Mapped[date] = mapped_column(Date, nullable=False)
+
+
+class TramoExcepcion(Base):
+    __tablename__ = 'tramos_excepcion'
+    __table_args__ = (
+        CheckConstraint(
+            'inicio_minuto_local >= 0 AND inicio_minuto_local < 1440 AND '
+            'fin_minuto_local > 0 AND fin_minuto_local <= 1440 AND '
+            'inicio_minuto_local < fin_minuto_local',
+            name='ck_tramos_excepcion_intervalo'),
+    )
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    excepcion_id: Mapped[str] = mapped_column(
+        String(36), ForeignKey('excepciones_horario.id', ondelete='CASCADE'), nullable=False)
+    inicio_minuto_local: Mapped[int] = mapped_column(SmallInteger, nullable=False)
+    fin_minuto_local: Mapped[int] = mapped_column(SmallInteger, nullable=False)
+
+
+class BloqueoAgenda(Base):
+    __tablename__ = 'bloqueos_agenda'
+    __table_args__ = (
+        CheckConstraint(
+            '(profesional_id IS NOT NULL AND box_id IS NULL) OR '
+            '(profesional_id IS NULL AND box_id IS NOT NULL)',
+            name='ck_bloqueos_agenda_un_recurso'),
+        CheckConstraint('inicio_minuto < fin_minuto', name='ck_bloqueos_agenda_intervalo'),
+        Index('ix_bloqueos_profesional_intervalo', 'profesional_id', 'inicio_minuto', 'fin_minuto'),
+        Index('ix_bloqueos_box_intervalo', 'box_id', 'inicio_minuto', 'fin_minuto'),
+    )
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    profesional_id: Mapped[str | None] = mapped_column(
+        String(64), ForeignKey('profesionales.id', ondelete='RESTRICT'), nullable=True)
+    box_id: Mapped[str | None] = mapped_column(
+        String(64), ForeignKey('boxes.id', ondelete='RESTRICT'), nullable=True)
+    inicio_minuto: Mapped[int] = mapped_column(BigInteger, nullable=False)
+    fin_minuto: Mapped[int] = mapped_column(BigInteger, nullable=False)
 
 class Usuario(Base):
     __tablename__ = 'usuarios'

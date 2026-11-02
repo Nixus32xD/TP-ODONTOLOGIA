@@ -1,6 +1,6 @@
 """Adaptador HTTP local de C-01; el dominio conserva reglas y transacciones."""
 from contextlib import asynccontextmanager
-from datetime import datetime
+from datetime import date, datetime
 from pathlib import Path
 import os
 
@@ -21,6 +21,17 @@ from odontologia.auth.usuarios import (
 from odontologia.audit import listar_eventos
 from odontologia.catalogos import (
     ErrorCatalogos, actualizar_recurso, crear_recurso, listar_recursos, obtener_recurso,
+)
+from odontologia.disponibilidad import (
+    ErrorDisponibilidad,
+    crear_bloqueo,
+    eliminar_bloqueo,
+    eliminar_excepcion,
+    guardar_excepcion,
+    guardar_horario,
+    listar_bloqueos,
+    obtener_excepcion,
+    obtener_horario,
 )
 from odontologia.pacientes import ErrorPacientes, actualizar_paciente, crear_paciente, listar_pacientes, obtener_paciente
 
@@ -146,8 +157,78 @@ class RespuestaListaPrestaciones(BaseModel):
     offset: int
 
 
+class TramoHorario(BaseModel):
+    model_config = ConfigDict(extra='forbid')
+    inicio: StrictStr
+    fin: StrictStr
+
+
+class SolicitudHorario(BaseModel):
+    model_config = ConfigDict(extra='forbid', json_schema_extra={
+        'examples': [{'dias': {'1': [
+            {'inicio': '09:00', 'fin': '12:00'},
+            {'inicio': '13:00', 'fin': '17:00'},
+        ]}}],
+    })
+    dias: dict[str, list[TramoHorario]]
+
+
+class RespuestaHorario(SolicitudHorario):
+    tipo_recurso: StrictStr
+    recurso_id: StrictStr
+
+
+class SolicitudExcepcion(BaseModel):
+    model_config = ConfigDict(extra='forbid', json_schema_extra={
+        'examples': [{'tramos': [{'inicio': '09:00', 'fin': '12:00'}]}],
+    })
+    tramos: list[TramoHorario]
+
+
+class RespuestaExcepcion(SolicitudExcepcion):
+    id: StrictStr
+    tipo_recurso: StrictStr
+    recurso_id: StrictStr
+    fecha: date
+
+
+class SolicitudBloqueo(BaseModel):
+    model_config = ConfigDict(extra='forbid', json_schema_extra={
+        'examples': [{
+            'tipo_recurso': 'profesional', 'recurso_id': 'profesional-A',
+            'inicio': '2026-11-02T12:00:00Z', 'fin': '2026-11-02T13:00:00Z',
+        }],
+    })
+    tipo_recurso: StrictStr
+    recurso_id: StrictStr
+    inicio: datetime
+    fin: datetime
+
+    @field_validator('inicio', 'fin', mode='before')
+    @classmethod
+    def fecha_iso_con_offset(cls, valor):
+        if not isinstance(valor, str) or 'T' not in valor:
+            raise ValueError('Se requiere fecha-hora ISO con T y offset explícito.')
+        return valor
+
+
+class RespuestaBloqueo(BaseModel):
+    id: StrictStr
+    tipo_recurso: StrictStr
+    recurso_id: StrictStr
+    inicio: datetime
+    fin: datetime
+
+
+class RespuestaListaBloqueos(BaseModel):
+    items: list[RespuestaBloqueo]
+    limit: int
+    offset: int
+
+
 ESTADOS_ERROR = {'entrada_invalida': 422, 'recurso_desconocido': 404,
                  'recurso_inactivo': 409,
+                 'fuera_de_disponibilidad': 409, 'turnos_afectados': 409,
                  'conflicto_profesional': 409, 'conflicto_box': 409,
                  'agenda_ocupada': 503, 'almacenamiento_error': 500}
 
@@ -216,6 +297,11 @@ def crear_app(ruta_db: str | Path | None = None, *, timeout_segundos: float = 5.
 
     @app.exception_handler(ErrorCatalogos)
     async def error_catalogo(request: Request, exc: ErrorCatalogos):
+        return JSONResponse(status_code=exc.estado, content={
+            'codigo': exc.codigo, 'campo': None, 'mensaje': str(exc)})
+
+    @app.exception_handler(ErrorDisponibilidad)
+    async def error_disponibilidad(request: Request, exc: ErrorDisponibilidad):
         return JSONResponse(status_code=exc.estado, content={
             'codigo': exc.codigo, 'campo': None, 'mensaje': str(exc)})
 
@@ -516,6 +602,104 @@ def crear_app(ruta_db: str | Path | None = None, *, timeout_segundos: float = 5.
         return actualizar_recurso(
             auth_engine, 'prestaciones', prestacion_id, cambios,
             actor_id=_identidad['usuario_id'])
+
+    @app.get('/horarios/{tipo_recurso}/{recurso_id}', response_model=RespuestaHorario,
+             responses={401: respuestas_auth[401], 403: respuestas_auth[403],
+                        404: {'model': ErrorHTTP}, 422: {'model': ErrorHTTP},
+                        503: respuestas_auth[503]})
+    def consulta_horario(tipo_recurso: str, recurso_id: str,
+                         _identidad=Depends(personal_operativo)):
+        asegurar_esquema()
+        return obtener_horario(auth_engine, tipo_recurso, recurso_id)
+
+    @app.put('/horarios/{tipo_recurso}/{recurso_id}', response_model=RespuestaHorario,
+             responses={401: respuestas_auth[401], 403: respuestas_auth[403],
+                        404: {'model': ErrorHTTP}, 409: {'model': ErrorHTTP},
+                        422: {'model': ErrorHTTP}, 503: respuestas_auth[503]})
+    def reemplazar_horario(tipo_recurso: str, recurso_id: str, solicitud: SolicitudHorario,
+                           _identidad=Depends(personal_operativo)):
+        asegurar_esquema()
+        dias = {dia: [tramo.model_dump() for tramo in tramos]
+                for dia, tramos in solicitud.dias.items()}
+        return guardar_horario(
+            auth_engine, tipo_recurso, recurso_id, dias,
+            actor_id=_identidad['usuario_id'])
+
+    @app.get(
+        '/horarios/{tipo_recurso}/{recurso_id}/excepciones/{fecha}',
+        response_model=RespuestaExcepcion,
+        responses={401: respuestas_auth[401], 403: respuestas_auth[403],
+                   404: {'model': ErrorHTTP}, 422: {'model': ErrorHTTP},
+                   503: respuestas_auth[503]},
+    )
+    def consulta_excepcion(tipo_recurso: str, recurso_id: str, fecha: str,
+                           _identidad=Depends(personal_operativo)):
+        asegurar_esquema()
+        resultado = obtener_excepcion(auth_engine, tipo_recurso, recurso_id, fecha)
+        if resultado is None:
+            raise ErrorDisponibilidad('recurso_desconocido', 'La excepción no existe.', 404)
+        return resultado
+
+    @app.put(
+        '/horarios/{tipo_recurso}/{recurso_id}/excepciones/{fecha}',
+        response_model=RespuestaExcepcion,
+        responses={401: respuestas_auth[401], 403: respuestas_auth[403],
+                   404: {'model': ErrorHTTP}, 409: {'model': ErrorHTTP},
+                   422: {'model': ErrorHTTP}, 503: respuestas_auth[503]},
+    )
+    def reemplazar_excepcion(tipo_recurso: str, recurso_id: str, fecha: str,
+                             solicitud: SolicitudExcepcion,
+                             _identidad=Depends(personal_operativo)):
+        asegurar_esquema()
+        tramos = [tramo.model_dump() for tramo in solicitud.tramos]
+        return guardar_excepcion(
+            auth_engine, tipo_recurso, recurso_id, fecha, tramos,
+            actor_id=_identidad['usuario_id'])
+
+    @app.delete(
+        '/horarios/{tipo_recurso}/{recurso_id}/excepciones/{fecha}', status_code=204,
+        responses={401: respuestas_auth[401], 403: respuestas_auth[403],
+                   404: {'model': ErrorHTTP}, 409: {'model': ErrorHTTP},
+                   422: {'model': ErrorHTTP}, 503: respuestas_auth[503]},
+    )
+    def borrar_excepcion(tipo_recurso: str, recurso_id: str, fecha: str,
+                         _identidad=Depends(personal_operativo)):
+        asegurar_esquema()
+        eliminar_excepcion(
+            auth_engine, tipo_recurso, recurso_id, fecha,
+            actor_id=_identidad['usuario_id'])
+        return None
+
+    @app.get('/bloqueos', response_model=RespuestaListaBloqueos, responses={
+        401: respuestas_auth[401], 403: respuestas_auth[403],
+        422: {'model': ErrorHTTP}, 503: respuestas_auth[503],
+    })
+    def consulta_bloqueos(limit: int = Query(default=50, ge=1, le=100),
+                          offset: int = Query(default=0, ge=0),
+                          _identidad=Depends(personal_operativo)):
+        asegurar_esquema()
+        return {'items': listar_bloqueos(auth_engine, limit=limit, offset=offset),
+                'limit': limit, 'offset': offset}
+
+    @app.post('/bloqueos', status_code=201, response_model=RespuestaBloqueo, responses={
+        401: respuestas_auth[401], 403: respuestas_auth[403], 404: {'model': ErrorHTTP},
+        409: {'model': ErrorHTTP}, 422: {'model': ErrorHTTP}, 503: respuestas_auth[503],
+    })
+    def alta_bloqueo(solicitud: SolicitudBloqueo,
+                     _identidad=Depends(personal_operativo)):
+        asegurar_esquema()
+        return crear_bloqueo(
+            auth_engine, solicitud.tipo_recurso, solicitud.recurso_id,
+            solicitud.inicio, solicitud.fin, actor_id=_identidad['usuario_id'])
+
+    @app.delete('/bloqueos/{bloqueo_id}', status_code=204, responses={
+        401: respuestas_auth[401], 403: respuestas_auth[403], 404: {'model': ErrorHTTP},
+        409: {'model': ErrorHTTP}, 422: {'model': ErrorHTTP}, 503: respuestas_auth[503],
+    })
+    def baja_bloqueo(bloqueo_id: str, _identidad=Depends(personal_operativo)):
+        asegurar_esquema()
+        eliminar_bloqueo(auth_engine, bloqueo_id, actor_id=_identidad['usuario_id'])
+        return None
 
     @app.get('/auditoria', responses={
         401: respuestas_auth[401], 403: respuestas_auth[403],

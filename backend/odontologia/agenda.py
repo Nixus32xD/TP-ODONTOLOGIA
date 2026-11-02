@@ -17,6 +17,7 @@ class ErrorAgenda(Exception):
             'entrada_invalida': 'La entrada no cumple el contrato.',
             'recurso_desconocido': 'El recurso no está registrado en la agenda ficticia.',
             'recurso_inactivo': 'El recurso está inactivo y no admite turnos nuevos.',
+            'fuera_de_disponibilidad': 'El turno está fuera de la disponibilidad configurada.',
             'conflicto_profesional': 'El profesional ya está ocupado en ese intervalo.',
             'conflicto_box': 'El box ya está ocupado en ese intervalo.',
             'agenda_ocupada': 'La agenda está ocupada por otro escritor.',
@@ -193,6 +194,19 @@ def crear_turno(ruta_db: str | Path, *, paciente_id: str, profesional_id: str,
                     'AND inicio_minuto < ? AND fin_minuto > ? LIMIT 1',
                     (identificador, fin_minuto, inicio_minuto)).fetchone() is not None:
                 raise ErrorAgenda(f'conflicto_{campo}', campo)
+        version_auth = conexion.execute(
+            "SELECT 1 FROM sqlite_master WHERE type='table' AND name='auth_schema_version'"
+        ).fetchone()
+        if version_auth is not None:
+            version = conexion.execute(
+                'SELECT version FROM auth_schema_version').fetchone()
+            if version is not None and version[0] >= 5:
+                from odontologia.disponibilidad import validar_disponibilidad_sqlite
+
+                validar_disponibilidad_sqlite(
+                    conexion, solicitud.inicio, solicitud.fin,
+                    solicitud.inicio_minuto, solicitud.fin_minuto,
+                    solicitud.profesional_id, solicitud.box_id)
         cursor = conexion.execute(
             'INSERT INTO turnos(paciente_id, profesional_id, box_id, inicio_minuto, fin_minuto) '
             'VALUES (?, ?, ?, ?, ?)',
