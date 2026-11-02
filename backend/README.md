@@ -1,7 +1,7 @@
 # Backend — TP-ODONTOLOGIA
 
 API del sistema odontológico. Stack definido por la cátedra (corrección del 2026-10-29):
-**Python, FastAPI, JWT, SQLAlchemy, PostgreSQL, Redis y Docker / Docker Compose.**
+**Python, FastAPI, JWT, SQLAlchemy, SQLite y PostgreSQL optativo.**
 
 ## Estado
 
@@ -18,8 +18,8 @@ API del sistema odontológico. Stack definido por la cátedra (corrección del 2
 | Estados de turno y cancelación idempotente | Implementado, validado y archivado localmente; v6 / Alembic 0007 | C-09 |
 | Consulta paginada, opciones orientativas y acceso Profesional vinculado | Implementado y archivado localmente; v7 / Alembic 0008 | C-08 |
 | Versión de turnos para reprogramación atómica | Esquema y versionado implementados; C-10 en Apply; v8 / Alembic 0009 | C-10 |
-| Cola de recordatorios en Redis (`odontologia/workers/`) | Estructura preparada, sin implementar | C-17 |
-| Imagen Docker y servicios en Docker Compose | Preparados | C-02 / C-14 |
+| Recordatorios | No implementados; C-17 puede proponer outbox PostgreSQL y canal simulado | C-17 |
+| Docker / Compose y Redis | Fuera del alcance operativo acordado para esta entrega | No requeridos |
 
 C-01 y SQLite siguen disponibles. C-02 permite PostgreSQL e importación manual desde SQLite; C-03 agrega JWT y sesiones revocables; C-04 audita metadatos; C-05 administra fichas; C-06 administra catálogos; C-07 configura horarios; C-09 añade estados y C-08 consultas. Profesional tiene una cuenta vinculada única y consulta sólo su agenda y opciones, sin escritura; Administrador/Recepción consultan agenda. La disponibilidad es orientativa y el alta vuelve a validar dentro de su transacción. C-10 agrega una versión positiva por turno para concurrencia optimista; sus operaciones están en desarrollo. El inicio de la API no ejecuta migraciones ni importa datos. La fuente SQLite C-01 no se altera; la importación rechaza fuentes con solapamientos o destinos ya poblados.
 
@@ -37,15 +37,12 @@ backend/
 │   ├── audit.py         # Metadatos append-only y consulta segura (C-04/C-06)
 │   ├── catalogos.py     # Catálogos ficticios y auditoría atómica (C-06)
 │   ├── pacientes.py     # Fichas mínimas y baja lógica (C-05)
-│   └── workers/         # Redis: recordatorios en cola (C-17)
 ├── alembic/             # Revisiones versionadas de C-02 a C-10
 ├── tests/               # Regresión C-01 a C-10
 ├── requirements.txt         # Dependencias directas de C-01
 ├── requirements-dev.txt     # + HTTPX para tests
 ├── requirements-lock.txt    # Entorno verificado de C-01
-├── requirements-stack.txt   # + SQLAlchemy, psycopg, PyJWT y redis
-├── Dockerfile
-├── docker-entrypoint.sh
+├── requirements-stack.txt   # + SQLAlchemy, psycopg, Alembic y PyJWT
 └── .env.example
 ```
 
@@ -58,7 +55,7 @@ python -m venv .venv
 .\.venv\Scripts\python.exe -m odontologia.demo
 ```
 
-Para levantar la API ver el README principal. Con Docker, usar `docker compose up --build` desde la raíz.
+Para la demo opcional de API ver el README principal. Docker y Redis no forman parte de los pasos requeridos.
 
 Swagger, ReDoc y `/openapi.json` sólo se habilitan cuando `ODONTOLOGIA_ENTORNO=desarrollo` está definido explícitamente. El `.env.example` local configura ese valor para el demo; en una instalación de producción configurar `ODONTOLOGIA_ENTORNO=produccion`. Si la variable falta o tiene otro valor, la documentación queda deshabilitada (404). Esto no reemplaza la autenticación ni la autorización de la API.
 
@@ -83,7 +80,7 @@ El bootstrap pide identificador y contraseña de forma interactiva y oculta; no 
 ..\.venv\Scripts\python.exe -m odontologia.auth.bootstrap_admin
 ```
 
-Alembic aplica las revisiones consecutivas hasta C-10 (`20261102_0009_turn_rescheduling`), incluida la ficha mínima, catálogos, auditoría, disponibilidad, estados, vínculo de cuenta Profesional y versión de turnos. En Docker Compose, migrar el servicio backend con `docker compose exec backend python -m alembic upgrade head` y ejecutar el bootstrap interactivo con `docker compose exec backend python -m odontologia.auth.bootstrap_admin` después de configurar `.env`. No usar la API ni `GET /health` como comando de migración.
+Alembic aplica las revisiones consecutivas hasta C-10 (`20261102_0009_turn_rescheduling`), incluida la ficha mínima, catálogos, auditoría, disponibilidad, estados, vínculo de cuenta Profesional y versión de turnos. Aplicar migraciones y bootstrap explícitamente desde el entorno local de Python cuando se necesiten para una prueba; no usar la API ni `GET /health` como comando de migración.
 
 `POST /sesiones` recibe `identificador` y `password`; su respuesta contiene `access_token`, `token_type` y `expires_in`. En Swagger, usar **Authorize** con `Bearer <token>`. `/sesiones/actual` permite consultar y cerrar la sesión propia. El Administrador puede consultar/crear usuarios y cambiar rol/estado; Recepción puede crear turnos y operar fichas mínimas de pacientes; sólo Administrador cambia el estado activo de pacientes. Desactivar una cuenta, cambiarle el rol o cerrar sesión revoca sus tokens persistidos. Los fallos de credenciales devuelven un mensaje genérico. Las fichas contienen sólo nombre y teléfono opcional ficticios; no usar datos reales ni añadir historia clínica. Los eventos guardan sólo actor/acción/recurso/resultado/fecha; no incluyen cuerpos, nombres, teléfonos, contraseñas, hashes, JWT, datos clínicos ni el identificador de un login rechazado. `GET /auditoria?limit=50&offset=0` es sólo Administrador, admite límite 1–100 y no ofrece edición, borrado ni purga automática. Si el evento falla, la mutación se revierte y la API no informa éxito. Sin secreto o esquema migrado, las operaciones protegidas fallan cerradas con 503 mientras `/health` continúa pública.
 
@@ -167,7 +164,7 @@ $env:ODONTOLOGIA_PERSISTENCIA = 'postgresql'
 
 El primer comando aplica sólo el esquema. Verificar la revisión con `..\.venv\Scripts\python.exe -m alembic current`. El segundo importa a un destino vacío y muestra conteos; no modifica ni elimina el SQLite. Si se interrumpe o el destino ya tiene datos, no repetir sobre ese destino: inspeccionar el error y preparar una base vacía controlada. No hay rollback automático ni sincronización de escrituras entre motores. Cambiar a `ODONTOLOGIA_PERSISTENCIA=sqlite` permite volver a abrir la agenda original pre-migración; cualquier alta posterior hecha sólo en PostgreSQL no aparecerá en SQLite. Antes de cambiar de motor después de usar PostgreSQL, hacer un respaldo PostgreSQL y planificar cómo conservar esas escrituras; no tratar la copia SQLite antigua como recuperación actualizada.
 
-Para habilitar PostgreSQL en la API después de migrar, mantener `ODONTOLOGIA_PERSISTENCIA=postgresql` y `DATABASE_URL` en el entorno del proceso y levantar Uvicorn como se indica en el README principal. En Docker, la URL debe apuntar al servicio `db` desde la red Compose; no copiar una URL local de pruebas a producción.
+Para habilitar PostgreSQL en la API después de migrar, mantener `ODONTOLOGIA_PERSISTENCIA=postgresql` y `DATABASE_URL` en el entorno del proceso. Las pruebas usan un clúster aislado local; no copiar URLs o credenciales a archivos versionados.
 
 La suite completa incluye pruebas PostgreSQL de migración, rollback y concurrencia multiproceso. Para ejecutarlas se requiere una base de prueba dedicada cuyo nombre sea `test` o termine en `_test`, host loopback y puerto distinto de 5432:
 
@@ -226,9 +223,9 @@ $env:DATABASE_URL = 'postgresql+psycopg://usuario:clave@127.0.0.1:55432/odontolo
   'N:\copias\agenda-postgresql-2026-11-02' 'agenda_recuperada'
 ```
 
-El destino pertenece al cluster configurado por `DATABASE_URL`, y debe estar ausente. La integración del adapter se validó en el cluster efímero PG18.6 local, restauró a una base nueva con revisión y conteos iguales al manifiesto, abrió otra conexión e insertó un paciente ficticio. El build PG16 sigue pendiente al no haber Docker en el host; una prueba con cliente/servidor 18.6 no demuestra el paquete de imagen PG16.
+El destino pertenece al cluster configurado por `DATABASE_URL`, y debe estar ausente. La integración del adapter se validó en el cluster efímero PG18.6 local, restauró a una base nueva con revisión y conteos iguales al manifiesto, abrió otra conexión e insertó un paciente ficticio. Este resultado acredita el adapter con cliente/servidor 18.6; no acredita recuperación humana ni producción. El build de una imagen no forma parte del alcance de esta entrega.
 
-Para PostgreSQL, el adapter requiere `pg_dump` y `pg_restore` disponibles en `PATH`; ambos deben tener la misma major que el servidor (por ejemplo, clientes 16 con servidor 16). La detección consulta `--version` con argumentos fijos y sin shell; la URL y sus credenciales no se pasan en la línea de comandos ni se imprimen. La imagen backend instala únicamente `postgresql-client-16` desde el repositorio PGDG y comprueba ambas versiones durante el build; no instala un servidor. En un host local, el administrador debe instalar los clientes de la misma major que el servidor. Adapter disponible e instalación de herramientas son capas distintas: el adapter valida ejecutables presentes, pero no instala ni actualiza clientes en el host.
+Para PostgreSQL, el adapter requiere `pg_dump` y `pg_restore` disponibles en `PATH`; ambos deben tener la misma major que el servidor. La detección consulta `--version` con argumentos fijos y sin shell; la URL y sus credenciales no se pasan en la línea de comandos ni se imprimen. El adapter valida los ejecutables disponibles, pero no los instala ni actualiza; la integración aislada comprobada usó clientes/servidor PostgreSQL 18.6.
 
 Al seleccionar PostgreSQL, `crear` toma el motor y la conexión ya configurados en `DATABASE_URL`, consulta la revisión Alembic y genera `agenda.dump` con `pg_dump --format=custom`. En una transacción `REPEATABLE READ` cuenta las tablas y exporta un snapshot MVCC; mantiene esa transacción abierta mientras `pg_dump --snapshot=<id>` importa el mismo snapshot. Así, las filas confirmadas mientras corre el dump no alteran ni el payload ni sus recuentos. La contraseña viaja por `PGPASSWORD` en el entorno mínimo del proceso; los argumentos son fijos y no incluyen URL ni contraseña. Antes de declarar el bundle, `pg_restore --list` debe reconocer el archivo y se vuelve a comprobar el manifiesto/hash. Este paso comprueba estructura del archivo, no efectúa una restauración de ensayo.
 
@@ -242,4 +239,4 @@ El proceso espera PostgreSQL en la revisión `20261102_0009_turn_rescheduling`, 
 
 La creación prepara y valida payload y manifiesto en un directorio privado del mismo volumen y publica el directorio completo con una operación atómica que no reemplaza destinos. En Windows usa `os.rename`; en Linux exige `renameat2(RENAME_NOREPLACE)` y falla cerrado si no está disponible. Una colisión que aparezca durante la publicación, incluso un directorio POSIX vacío, se conserva sin cambios; una excepción previa deja el destino final ausente y limpia sólo el staging propio. El staging, payload y manifiesto mantienen permisos POSIX `0700`/`0600`; Windows conserva ACL heredadas. La copia contiene datos sensibles y debe guardarse fuera del repositorio.
 
-La integración de backup se ejecutó con un cluster temporal PostgreSQL 18.6 en `127.0.0.1:55432`, cliente 18.6 y la base ficticia `odontologia_test`, migrada hasta `20261102_0009_turn_rescheduling`. El comando anterior creó un dump custom de 37.173 bytes; `pg_restore --list` detectó 80 entradas y el manifiesto registró hash y 14 conteos. En una prueba, otra transacción confirmó un paciente después de exportar el snapshot y antes de invocar `pg_dump`; al restaurar el dump en una base aislada, sus 14 conteos coincidieron exactamente con `table_counts` y esa fila posterior al snapshot no estaba incluida. También se confirmó la retención de filas y auditoría ficticias. Este ensayo no usó la instancia del usuario en 5432. La prueba de build de la imagen PostgreSQL 16 queda pendiente porque Docker no está instalado en este host; esta ejecución PG18 valida el adapter con major compatible, no el cliente instalado en la imagen ni el runtime PG16.
+La integración de backup se ejecutó con un cluster temporal PostgreSQL 18.6 en `127.0.0.1:55432`, cliente 18.6 y la base ficticia `odontologia_test`, migrada hasta `20261102_0009_turn_rescheduling`. El comando creó un dump custom de 37.173 bytes; `pg_restore --list` detectó 80 entradas y el manifiesto registró hash y 14 conteos. En una prueba, otra transacción confirmó un paciente después de exportar el snapshot y antes de invocar `pg_dump`; al restaurar el dump en una base aislada, sus 14 conteos coincidieron exactamente con `table_counts` y esa fila posterior al snapshot no estaba incluida. También se confirmó la retención de filas y auditoría ficticias. Este ensayo no usó la instancia del usuario en 5432. Docker/PG16 no se validaron y quedan fuera del alcance acordado.

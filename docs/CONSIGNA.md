@@ -76,9 +76,9 @@ La implementación puede ser API o módulo de dominio; la interfaz gráfica no e
 
 ### Corrección de la cátedra (2026-10-29)
 
-- [x] Separar el código en `backend/` y `frontend/` y adoptar el stack fijado: Python, FastAPI, JWT, SQLAlchemy, PostgreSQL, Redis, Docker/Docker Compose; React, TypeScript, Vite. Estructura y documentación creadas; ver [bitácora](BITACORA.md).
-- [ ] Implementar cada tecnología en su change: PostgreSQL + SQLAlchemy (C-02), JWT (C-03), interfaz React (C-11), despliegue con Docker (C-14) y cola de recordatorios en Redis (C-17).
-- [ ] Ejecutar la comprobación completa en el equipo con acceso a Internet: dependencias, 53 tests, build del frontend y `docker compose up`.
+La cátedra indicó el stack y la separación en `backend/` y `frontend/`; el antecedente completo se conserva en la [bitácora](BITACORA.md) y DD-09. PostgreSQL + SQLAlchemy (C-02), JWT (C-03) y la interfaz React (C-11) forman parte de los changes implementados.
+
+**Aclaración de alcance vigente (2026-11-02):** para esta presentación el usuario definió que alcanza con construir el proyecto y mostrar los changes, sin Docker, Redis ni despliegue. C-14 queda opcional; Redis puede mencionarse como antecedente o alternativa futura, sin dependencia operativa. La lista histórica de Docker/Redis no es un pendiente de aceptación ni se presenta como implementada o verificada.
 
 ## Etapa 7 - Memoria
 

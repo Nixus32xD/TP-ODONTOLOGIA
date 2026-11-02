@@ -9,7 +9,6 @@ class Configuracion:
     persistencia: str
     odontologia_db: str
     database_url: str | None
-    redis_url: str | None
     jwt_secreto: str | None
     jwt_algoritmo: str
     jwt_minutos_expiracion: int
@@ -33,7 +32,6 @@ def cargar_configuracion() -> Configuracion:
         persistencia=persistencia,
         odontologia_db=os.environ.get('ODONTOLOGIA_DB', 'agenda.sqlite3'),
         database_url=database_url,
-        redis_url=os.environ.get('REDIS_URL'),
         jwt_secreto=os.environ.get('JWT_SECRETO'),
         jwt_algoritmo=os.environ.get('JWT_ALGORITMO', 'HS256'),
         jwt_minutos_expiracion=int(os.environ.get('JWT_MINUTOS_EXPIRACION', '30')),

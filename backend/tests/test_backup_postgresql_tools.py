@@ -103,15 +103,5 @@ class HerramientasPostgresqlTests(unittest.TestCase):
                 validar_runtime_postgresql(Engine())
         detectar.assert_called_once_with(160002)
 
-    def test_dockerfile_instala_solo_cliente_pg16_y_verifica_version(self):
-        from pathlib import Path
-
-        dockerfile = (Path(__file__).parents[1] / 'Dockerfile').read_text(encoding='utf-8')
-        self.assertIn('postgresql-client-16', dockerfile)
-        self.assertIn('pg_dump --version', dockerfile)
-        self.assertIn('pg_restore --version', dockerfile)
-        self.assertNotRegex(dockerfile, r'apt-get install[^\n]*postgresql-16(?:\s|$)')
-
-
 if __name__ == '__main__':
     unittest.main()

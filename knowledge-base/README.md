@@ -46,4 +46,4 @@ El usuario corrigió expresamente el stack a FastAPI y autorizó commit/push tra
 
 ## Corrección de la cátedra — stack y estructura (2026-10-29)
 
-El profesor fijó el stack del sistema: backend con Python, FastAPI, JWT, SQLAlchemy, PostgreSQL, Redis y Docker/Docker Compose; frontend con React, TypeScript y Vite, en carpetas separadas. Se actualizaron [02](02_descripcion_general.md), [08](08_arquitectura_propuesta.md) y [DD-09](09_decisiones_y_supuestos.md). C-01 se movió a `backend/` sin cambiar su contrato; las tecnologías nuevas quedan preparadas y asignadas a C-02, C-03, C-11, C-14 y C-17.
+El 2026-10-29 el profesor indicó un stack con Python, FastAPI, JWT, SQLAlchemy, PostgreSQL, Redis, Docker/Compose, React, TypeScript y Vite; queda registrado en [DD-09](09_decisiones_y_supuestos.md) como antecedente. El 2026-11-02 el usuario precisó que esta entrega se arma y demuestra mediante changes, sin Docker ni dependencia operativa de Redis. C-01 se movió a `backend/` sin cambiar su contrato; PostgreSQL/JWT y la UI se implementaron en sus changes. C-14 de despliegue es opcional y C-17 puede usar outbox PostgreSQL/canal simulado.

@@ -14,8 +14,8 @@ C-01 implementa el alta de turnos ficticios mediante FastAPI y un módulo de dom
 | Backend | JWT para autenticación | Implementado y archivado en C-03; auditado por C-04 |
 | Backend | ORM SQLAlchemy | Implementado en C-02/C-03 |
 | Backend | PostgreSQL para persistencia | Optativo; migraciones C-02/C-03 probadas en PostgreSQL temporal aislado |
-| Backend | Redis para funcionalidades asincrónicas | Servicio `redis` y `backend/odontologia/workers/`; cola de recordatorios en C-17 |
-| Backend | Docker / Docker Compose | `backend/Dockerfile`, `frontend/Dockerfile` y `docker-compose.yml`; despliegue controlado en C-14 |
+| Backend | Recordatorios asincrónicos | No implementados; C-17 puede proponer outbox en PostgreSQL y canal simulado |
+| Infraestructura de entrega | Docker / Docker Compose y Redis | No requeridos ni usados; se conservan sólo como antecedente de la indicación de cátedra |
 | Frontend | React + TypeScript + Vite | Estructura inicial en `frontend/`; interfaz de recepción en C-11 |
 | Persistencia disponible | SQLite predeterminada; PostgreSQL optativo | C-01–C-04; DDL explícito |
 | Pruebas | unittest, TestClient y multiprocessing | Suites SQLite y PostgreSQL temporal aislado; ver resultados de C-04 en evidencia |
@@ -40,4 +40,4 @@ API de dominio: inicializar_agenda(ruta_db) y crear_turno con paciente, profesio
 
 needs_infra:false significa sin infraestructura externa; Uvicorn sirve la API sólo en loopback; no ausencia de almacenamiento. El uso de JWT no convierte este proyecto en apto para producción ni habilita datos reales; Profesionales no acceden hasta C-08. Pruebas usan datos ficticios y almacenamiento temporal.
 
-Con el stack de la cátedra, PostgreSQL y Redis corren como servicios locales de Docker Compose publicados sólo en 127.0.0.1. C-02/C-03/C-04 validaron PostgreSQL de forma aislada; SQLite sigue como valor predeterminado. Redis y funcionalidades de cola permanecen planificados para C-17.
+La cátedra indicó Docker/Compose y Redis el 2026-10-29; el usuario aclaró el 2026-11-02 que la entrega se demuestra mostrando el proyecto y sus changes, sin desplegar ni levantar contenedores. C-02/C-03/C-04 y C-12 validan PostgreSQL de forma aislada; SQLite sigue como valor predeterminado. No hay worker de recordatorios; Redis queda como posible alternativa futura, no como dependencia de C-17.

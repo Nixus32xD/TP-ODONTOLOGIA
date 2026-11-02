@@ -6,7 +6,7 @@ Repositorio: [Nixus32xD/TP-ODONTOLOGIA](https://github.com/Nixus32xD/TP-ODONTOLO
 
 ## Estado actual
 
-OpenSpec inicializado y Discovery documental confirmado: quince sistemas relevados, matriz ponderada y once puntos aceptados el 2026-10-15 para un consultorio pequeño. C-01 crea turnos sin solapamientos y fue archivado el 2026-10-28. C-02 agrega PostgreSQL + SQLAlchemy, migraciones Alembic e importación explícita desde SQLite; C-03 agrega autenticación JWT y permisos de personal. C-01-C-07 y C-09 están implementados, validados y archivados localmente; el commit de C-09 será separado. La investigación documental está asistida por IA; confirmé mi revisión personal de las seis fuentes del registro el 2026-10-15. El cierre técnico no acredita por sí solo aceptación docente.
+OpenSpec inicializado y Discovery documental confirmado: quince sistemas relevados, matriz ponderada y once puntos aceptados el 2026-10-15 para un consultorio pequeño. C-01 crea turnos sin solapamientos y fue archivado el 2026-10-28. C-02 agrega PostgreSQL + SQLAlchemy, migraciones Alembic e importación explícita desde SQLite; C-03 agrega autenticación JWT y permisos de personal. C-01–C-13 están implementados, validados y archivados localmente. La investigación documental está asistida por IA; confirmé mi revisión personal de las seis fuentes del registro el 2026-10-15. El cierre técnico no acredita por sí solo aceptación docente.
 
 Se ejecutó `openspec init --tools codex --language es --no-animation`: configuración `spec-driven` y seis skills OPSX. Se incorporó `discovery-research` sólo en este proyecto. El estado de Active Stack conserva `version: 4` y registra `step: agents`: Discovery está registrado y la [base de conocimiento](knowledge-base/README.md) contiene diez documentos canónicos más su índice, generados desde las fuentes existentes. C-01 se implementó con FastAPI, Python 3.12+, SQLite y unittest; C-02 añadió PostgreSQL optativo y C-03 autenticación JWT. El campo step registra la última fase de fundación; el CLI de OpenSpec registra el progreso de cada change.
 
@@ -17,7 +17,7 @@ Set-Location -LiteralPath 'N:\Nueva carpeta\TP-ODONTOLOGIA'
 openspec list --json
 ```
 
-OpenSpec conserva C-01 a C-07 y C-09 archivados y validados localmente; C-08 está en Apply y aún no se archivó. C-09 gestiona estados de turno; su [archivo](openspec/changes/archive/2026-11-02-gestionar-estados-y-cancelaciones/) reúne proposal, diseño, tareas y deltas. C-07 documenta disponibilidad desde SQLite v5 o PostgreSQL 0006; C-09 migra a SQLite v6 o PostgreSQL 0007; C-08 añade vínculo de cuentas y consultas, con SQLite v7 y PostgreSQL 0008. El [roadmap](CHANGES.md) describe el alcance completo; C-10 a C-20 siguen planificados. La [evidencia técnica](docs/evidencia/implementacion-turnos.md), las evidencias de [C-06](docs/evidencia/implementacion-catalogos.md), [C-07](docs/evidencia/implementacion-disponibilidad.md), [C-09](docs/evidencia/implementacion-estados-turnos.md) y [C-08](docs/evidencia/implementacion-consultas-agenda.md) distinguen pruebas, revisión humana y aceptación docente. La [selección de skills](docs/fundacion/seleccion-skills.md), el [registro](.atl/skill-registry.md) y las reglas de [AGENTS.md](AGENTS.md) y [CLAUDE.md](CLAUDE.md) conservan las decisiones del proyecto.
+OpenSpec conserva C-01 a C-13 archivados y validados localmente. C-09 gestiona estados de turno; C-10 reprograma de forma atómica; C-11 opera la agenda desde recepción; C-12 respalda/restaura la agenda; C-13 endurece seguridad y observabilidad. El [roadmap](CHANGES.md) describe el alcance completo; C-14 despliegue es opcional y queda fuera de esta entrega; C-15 a C-20 siguen planificados. Las evidencias distinguen pruebas, revisión humana y aceptación docente. La [selección de skills](docs/fundacion/seleccion-skills.md), el [registro](.atl/skill-registry.md) y las reglas de [AGENTS.md](AGENTS.md) y [CLAUDE.md](CLAUDE.md) conservan las decisiones del proyecto.
 
 El proyecto comenzó desde cero con C-01 como primer cambio funcional de agenda. C-02 y C-03 amplían esa base; los changes posteriores siguen sujetos a su propio contrato, autorización y verificación. El desarrollo usa datos ficticios y no integra servicios clínicos reales.
 
@@ -27,14 +27,13 @@ Por corrección de la cátedra (2026-10-29), el sistema se trabaja con este stac
 
 | Parte | Tecnologías | Carpeta |
 | --- | --- | --- |
-| Backend | Python, FastAPI, JWT, SQLAlchemy, PostgreSQL, Redis, Docker / Docker Compose | [`backend/`](backend/README.md) |
+| Backend | Python, FastAPI, JWT, SQLAlchemy, SQLite y PostgreSQL optativo | [`backend/`](backend/README.md) |
 | Frontend | React, TypeScript, Vite | [`frontend/`](frontend/README.md) |
 
 ```text
 TP-ODONTOLOGIA/
 ├── backend/            # API FastAPI: agenda, PostgreSQL, catálogos, C-07 y consultas C-08
 ├── frontend/           # React + TypeScript + Vite
-├── docker-compose.yml  # db (PostgreSQL), redis, backend y frontend
 ├── openspec/           # specs vigentes y changes archivados
 ├── knowledge-base/     # base de conocimiento (10 archivos)
 ├── docs/               # Discovery, bitácora, evidencia y consigna
@@ -42,7 +41,7 @@ TP-ODONTOLOGIA/
 └── AGENTS.md / CLAUDE.md
 ```
 
-**Qué está implementado y qué queda planificado:** C-01 sigue disponible sobre SQLite, que conserva el valor predeterminado. C-02 agrega PostgreSQL optativo, migración Alembic e importación no destructiva; C-03 implementa JWT y permisos; C-04 agrega auditoría; C-05 administra fichas mínimas; C-06 administra catálogos; C-07 implementa disponibilidad; C-09 gestiona estados de turnos. C-08 está en Apply: consulta agenda paginada, disponibilidad orientativa y acceso Profesional de sólo lectura a su vínculo. C-10 a C-20 siguen planificados. Ver la [bitácora](docs/BITACORA.md) y las evidencias de [C-07](docs/evidencia/implementacion-disponibilidad.md), [C-08](docs/evidencia/implementacion-consultas-agenda.md) y [C-09](docs/evidencia/implementacion-estados-turnos.md).
+**Qué está implementado y qué queda planificado:** C-01 sigue disponible sobre SQLite, que conserva el valor predeterminado. C-02 agrega PostgreSQL optativo y migración Alembic; C-03 implementa JWT y permisos; C-04 agrega auditoría; C-05 administra fichas mínimas; C-06 administra catálogos; C-07 disponibilidad; C-08 consultas; C-09 estados; C-10 reprogramación; C-11 interfaz de recepción; C-12 backup/restauración; C-13 seguridad y observabilidad. C-14 despliegue queda opcional; C-15 a C-20 siguen planificados. Ver la [bitácora](docs/BITACORA.md) y las evidencias por change.
 
 ## Recorrido de la entrega
 
@@ -88,23 +87,19 @@ Todos los ejemplos y pruebas usan datos ficticios, sin secretos ni pacientes rea
 
 ## Ejecutar producto y pruebas
 
-### Con Docker Compose (stack completo)
+### Demostración del trabajo
 
-Requiere Docker Desktop. Desde la raíz:
+La entrega se presenta mostrando el repositorio, el roadmap y los changes OpenSpec, junto con la evidencia de pruebas. No es necesario construir imágenes, usar Docker/Compose, levantar servicios ni publicar el proyecto.
 
-```powershell
-Copy-Item .env.example .env   # completar POSTGRES_PASSWORD y JWT_SECRETO con valores locales
-docker compose up --build
-```
-
-Levanta PostgreSQL, Redis, el backend en http://127.0.0.1:8000 y el frontend en http://127.0.0.1:5173. El `.env.example` habilita explícitamente la documentación local con `ODONTOLOGIA_ENTORNO=desarrollo`; en producción se debe configurar `produccion`. Si falta o es desconocido, `/docs`, `/redoc` y `/openapi.json` responden 404. El backend prepara una agenda ficticia de C-01 en un volumen propio si todavía no existe. La primera vez, migrar el esquema y crear el Administrador de forma interactiva:
+Para revisar el estado de OpenSpec:
 
 ```powershell
-docker compose exec backend python -m alembic upgrade head
-docker compose exec backend python -m odontologia.auth.bootstrap_admin
+openspec list --json
+openspec status --change respaldar-y-restaurar-agenda --json
+openspec validate --all --strict
 ```
 
-El segundo comando solicita credenciales sin mostrarlas. No se crean cuentas predeterminadas. No publicar la aplicación ni utilizar datos reales.
+Para una inspección interactiva opcional, el backend puede iniciarse localmente con el flujo sin Docker descrito abajo; esto no es requisito de presentación ni una declaración de despliegue.
 
 ### Backend sin Docker
 
@@ -118,7 +113,7 @@ python -m venv .venv
 .\.venv\Scripts\python.exe -m odontologia.demo
 ```
 
-`requirements.txt` fija las dependencias directas de C-01, `requirements-dev.txt` añade HTTPX, `requirements-lock.txt` conserva el entorno verificado de C-01 y `requirements-stack.txt` suma SQLAlchemy, psycopg, Alembic, PyJWT y redis. En el entorno actual, la suite tiene 111 pruebas SQLite; con `ODONTOLOGIA_TEST_DATABASE_URL` aislada, se ejecutan 10 pruebas adicionales de migración, concurrencia y autenticación PostgreSQL. Python 3.12.14 / SQLite 3.53.1 / PostgreSQL 18.6 temporal. Starlette emite un aviso de deprecación por HTTPX; las pruebas pasan y el aviso se conserva.
+`requirements.txt` fija las dependencias directas de C-01, `requirements-dev.txt` añade HTTPX, `requirements-lock.txt` conserva el entorno verificado de C-01 y `requirements-stack.txt` suma SQLAlchemy, psycopg, Alembic y PyJWT. En el entorno actual, la suite tiene 111 pruebas SQLite; con `ODONTOLOGIA_TEST_DATABASE_URL` aislada, se ejecutan 10 pruebas adicionales de migración, concurrencia y autenticación PostgreSQL. Python 3.12.14 / SQLite 3.53.1 / PostgreSQL 18.6 temporal. Starlette emite un aviso de deprecación por HTTPX; las pruebas pasan y el aviso se conserva.
 
 Inicializar una agenda ficticia NUEVA en disco local (no asumir N: local), y luego iniciar la API sólo en loopback, siempre desde `backend/`:
 

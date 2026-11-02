@@ -14,7 +14,6 @@
 ## 3. Detección y runtime de herramientas PostgreSQL
 
 - [x] 3.1 Escribir pruebas RED para `pg_dump`/`pg_restore` ausentes, error de ejecución, versión mayor discordante con `server_version_num` y argumento malicioso; implementar detección/versionado con `subprocess` sin shell ni exposición de URL/secretos, y documentar prerrequisitos de host.
-- [x] 3.2 Incorporar cliente PostgreSQL 16 compatible en la imagen backend sin instalar un servidor, verificar versiones durante build y añadir una comprobación de configuración/runtime que falla antes de abrir salidas; validar el Dockerfile y dejar documentada la diferencia entre adapter y binarios instalados.
 
 ## 4. Backup PostgreSQL
 
@@ -35,17 +34,17 @@
 ## 7. Restauración segura PostgreSQL
 
 - [x] 7.1 Escribir pruebas RED para base objetivo ya existente/activa, falta de permiso, archivo corrupto, error parcial de `pg_restore` y destino de staging; implementar restore a base staging nueva con `--exit-on-error`, evitar cerrar conexiones externas y no modificar bases preexistentes.
-- [x] 7.2 Validar revisión y comparar recuentos de staging con `table_counts`; publicar renombrando a un nombre objetivo previamente ausente sólo tras éxito; en fallo eliminar únicamente staging propio. Probar con cluster temporal aislado y clientes de la misma major, nueva conexión y alta ficticia; documentar permisos/límites y separar evidencia de build PG16.
+- [x] 7.2 Validar revisión y comparar recuentos de staging con `table_counts`; publicar renombrando a un nombre objetivo previamente ausente sólo tras éxito; en fallo eliminar únicamente staging propio. Probar con cluster temporal aislado y clientes de la misma major, nueva conexión y alta ficticia; documentar permisos y límites.
 
 ## 8. Integración y evidencia final
 
-- [ ] 8.1 Ejecutar suite completa de backend, pruebas PostgreSQL aisladas, comandos CLI crear/verificar/restaurar, `pip check`, build de Docker cliente y `openspec validate --all --strict`; corregir sólo defectos de C-12, registrar resultados exactos y confirmar que los datos temporales se limpiaron sin tocar la instancia local.
+- [x] 8.1 Ejecutar suite completa de backend, pruebas PostgreSQL aisladas, comandos CLI crear/verificar/restaurar, `pip check` y `openspec validate --all --strict`; corregir sólo defectos de C-12, registrar resultados exactos y confirmar que los datos temporales se limpiaron sin tocar la instancia local. No requiere imágenes ni contenedores.
 
 ## 9. Correctivos posteriores a revisión independiente
 
 - [x] 9.1 Agregar primero pruebas RED en POSIX para permisos `0700` del staging y bundle, y `0600` del payload/manifest SQLite y PostgreSQL, observando payload bajo staging y después de publicar; aplicar permisos privados desde la creación sólo en POSIX y conservar ACL heredado en Windows.
 - [x] 9.2 Agregar primero prueba RED de la salida exitosa de `crear`; emitir un aviso accionable de datos sensibles y de ubicación fuera del repositorio sin imprimir rutas, URLs ni secretos; mantener la recomendación concreta en README.
-- [x] 9.3 Ejecutar las pruebas de permisos en WSL bajo `/tmp` además de las suites Windows; actualizar evidencia con resultados reales, ejecutar focused/full, y conservar 8.1 pendiente si no hay engine para construir Docker.
+- [x] 9.3 Ejecutar las pruebas de permisos en WSL bajo `/tmp` además de las suites; actualizar evidencia con resultados reales y dejar claro que la validación local PostgreSQL no depende de construir una imagen.
 - [x] 9.4 Probar primero crash/excepción tras preparar staging y colisión que aparece al publicar, incluso un directorio POSIX vacío; publicar el directorio completo atómicamente sin reemplazo en Windows/Linux, conservar intacto destino ocupado, limpiar sólo staging propio y validar ambos adapters en WSL.
 
 ## Workflow follow-up

@@ -32,6 +32,18 @@ class ConfiguracionTests(TestCase):
             with self.assertRaisesRegex(ValueError, 'ODONTOLOGIA_PERSISTENCIA'):
                 cargar_configuracion()
 
+    def test_redis_no_es_configuracion_del_runtime_aunque_haya_variable(self):
+        with patch.dict('os.environ', {'REDIS_URL': 'redis://localhost:6379/0'}, clear=True):
+            config = cargar_configuracion()
+
+        self.assertFalse(hasattr(config, 'redis_url'))
+
+    def test_redis_no_es_configuracion_del_runtime_sin_variable(self):
+        with patch.dict('os.environ', {}, clear=True):
+            config = cargar_configuracion()
+
+        self.assertFalse(hasattr(config, 'redis_url'))
+
 
 if __name__ == '__main__':
     import unittest

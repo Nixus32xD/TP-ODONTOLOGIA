@@ -23,7 +23,7 @@ El proyecto ya admite SQLite y PostgreSQL, pero no tiene comandos de copia ni re
 ## Impact
 
 - Backend: módulo CLI de backup/restore, manejo de archivos SQLite y adaptador PostgreSQL mediante las herramientas cliente; sin endpoints HTTP.
-- PostgreSQL: disponibilidad de `pg_dump`/`pg_restore` compatibles debe comprobarse explícitamente; la imagen actual `python:3.12-slim` no las instala.
+- PostgreSQL: disponibilidad de `pg_dump`/`pg_restore` compatibles debe comprobarse explícitamente en el host de prueba; C-12 no construye ni requiere una imagen de contenedor.
 - Documentación: comandos reproducibles, prerrequisitos por motor, límites de sensibilidad y guía de verificación técnica.
 - Persistencia: no cambia el esquema de negocio; la versión de aplicación del manifiesto requiere una fuente única del proyecto.
 - Fuera de alcance: almacenamiento remoto, copias programadas, retención/purga automática, cifrado gestionado, restauración sobre una base existente, uso de datos reales y afirmaciones de operación productiva.

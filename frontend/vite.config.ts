@@ -1,7 +1,7 @@
 import { defineConfig } from 'vitest/config'
 import react from '@vitejs/plugin-react'
 
-// En desarrollo, /api se redirige al backend FastAPI (en Docker: http://backend:8000).
+// En desarrollo, /api se redirige al backend FastAPI local.
 const backend = process.env.VITE_PROXY_TARGET ?? 'http://127.0.0.1:8000'
 
 export default defineConfig({

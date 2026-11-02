@@ -23,7 +23,7 @@ $env:VITE_PROXY_TARGET = 'http://127.0.0.1:8001'
 npm run dev
 ```
 
-En Docker Compose, el proxy usa `http://backend:8000`. No se usa un host distinto configurando las llamadas de la UI: todas pasan por `/api`.
+El proxy de desarrollo usa el backend local configurado por Vite. No se usa un host distinto configurando las llamadas de la UI: todas pasan por `/api`. Docker/Compose no son necesarios para la entrega.
 
 ## Sesión y seguridad del cliente
 

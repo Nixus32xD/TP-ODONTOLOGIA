@@ -1,7 +1,7 @@
 # CHANGES — Secuencia de Implementación
 
 > Índice canónico del proyecto **TP-ODONTOLOGIA**, actualizado el 2026-11-02.
-> **Plan del producto completo; C-01-C-10 están implementados, validados y archivados localmente. C-11-C-20 siguen planificados, con autorizaciones específicas de decisiones materiales según R-10.**
+> **Plan del producto completo; C-01-C-13 están implementados, validados y archivados localmente. C-14 es opcional y queda fuera de la entrega; C-15-C-20 siguen planificados, con decisiones materiales según R-10.**
 > **Leer este archivo antes de ejecutar cualquier `/opsx:propose`.**
 
 ---
@@ -19,13 +19,13 @@
 La aclaración del usuario del 2026-10-28 corrige el índice anterior: **hacer sólo C-01 ahora no significa planificar sólo C-01**. El producto futuro es un sistema para un consultorio odontológico pequeño, con recepción, profesionales y boxes: agenda operativa, catálogos, acceso seguro, interfaz de recepción, recuperación de datos y, después, módulos clínicos, comunicación con pacientes y administración.
 
 - **Entrega académica archivada:** C-01 `crear-turno-sin-solapamientos`, con 18/18 tareas completas y Archive confirmado el 2026-10-28; la spec principal es [alta-turnos](openspec/specs/alta-turnos/spec.md). No se cambia su nombre, su spec, su código ni su contrato. C-02, C-03 y C-04 también están implementados, validados y archivados localmente.
-- **MVP operativo futuro:** C-03 a C-14 completan una agenda de recepción administrable y un despliegue controlado. C-02 ya aporta el backend PostgreSQL optativo y está archivado; la seguridad, la auditoría y la restauración deben verificarse antes de habilitar datos reales.
+- **MVP académico demostrable:** C-03 a C-13 completan una agenda de recepción administrable, con cambios revisables, pruebas y demostración local. C-02 ya aporta el backend PostgreSQL optativo y está archivado; la seguridad, auditoría y recuperación usan datos ficticios. No se requiere desplegar el sistema ni levantar contenedores.
 - **Evolución del producto:** C-15 a C-20 agregan clínica, odontograma/plan de tratamiento, recordatorios, reserva del paciente, cobros y reportes. Se proponen para mostrar el alcance completo; su implementación requiere priorización y contratos propios.
 - **Opciones no comprometidas:** multisede/SaaS multitenant, IA, obras sociales y facturación electrónica ARCA no se vuelven obligatorias por aparecer en productos comparados. Si se eligen, se agregarán changes posteriores con investigación y aprobación específicas. C-19 no incluye emisión fiscal ni conexión con pagos reales.
 
 La KB y las instrucciones existentes documentan principalmente la porción académica C-01. Sus exclusiones siguen vigentes para esa implementación; las capacidades futuras del roadmap no amplían retroactivamente las US-001 a US-004. C-02 concreta la migración a PostgreSQL conservando la fuente SQLite; C-03/C-04 autenticación, permisos y auditoría; C-05 la ficha mínima; C-06 catálogos; C-07 disponibilidad; C-08 consultas de agenda; C-09 estados; y C-10 reprogramación atómica. C-01 standalone conserva compatibilidad. Se mantienen datos ficticios y ninguna integración externa real.
 
-**Stack definido por la cátedra (2026-10-29):** backend con Python, FastAPI, JWT, SQLAlchemy, PostgreSQL, Redis y Docker/Docker Compose; frontend con React, TypeScript y Vite ([DD-09](knowledge-base/09_decisiones_y_supuestos.md)). C-02 implementa PostgreSQL + SQLAlchemy; C-03 implementa JWT y permisos de personal. React/TS/Vite sigue en C-11, Docker Compose de despliegue en C-14 y Redis (cola de recordatorios) en C-17. La existencia de carpetas y servicios no acredita la implementación de esos changes.
+**Antecedente de stack de la cátedra (2026-10-29):** el profesor indicó Python, FastAPI, JWT, SQLAlchemy, PostgreSQL, Redis, Docker/Docker Compose, React, TypeScript y Vite ([DD-09](knowledge-base/09_decisiones_y_supuestos.md)). El alcance de esta entrega, aclarado por el usuario el 2026-11-02, no requiere Docker ni Redis: se construye y presenta mediante los changes, pruebas y demo local. Redis puede mencionarse como alternativa futura, sin dependencia operativa; el despliegue queda fuera de la entrega. La historia de la consigna se conserva como antecedente, no como trabajo completado.
 
 **Base técnica de C-01:** Python/FastAPI y SQLite local, movidos sin cambios a `backend/`. Bootstrap y modelos mínimos ya pertenecen a C-01; no se renumera como `foundation-setup`. Hosting y proveedores siguen siendo decisiones futuras justificadas. El contrato actual se consulta en [design.md](openspec/changes/archive/2026-10-28-crear-turno-sin-solapamientos/design.md), [spec.md](openspec/changes/archive/2026-10-28-crear-turno-sin-solapamientos/specs/alta-turnos/spec.md) y [api.py](backend/odontologia/api.py).
 
@@ -37,7 +37,7 @@ La KB y las instrucciones existentes documentan principalmente la porción acad�
 | Identidades, permisos, sesiones y auditoría | C-03/C-04 | C-03 y C-04 implementados, validados y archivados. |
 | Datos mínimos, prestaciones y disponibilidad | C-05/C-06/C-07 | C-05–C-07 implementados y archivados localmente; C-09 extiende el esquema a SQLite v6/Alembic 0007 |
 | Estados, cancelación y reprogramación | C-09/C-10 | C-09 y C-10 implementados, validados y archivados; versión optimista, operación atómica y sin exclusión por paciente adicional |
-| UI y operación desplegada | C-11/C-12/C-13/C-14 | Interfaz en React + TypeScript + Vite (fijada por la cátedra), despliegue con Docker Compose, recuperación y seguridad probadas |
+| UI, recuperación y seguridad demostrables | C-11/C-12/C-13 | Interfaz en React + TypeScript + Vite, pruebas locales, changes y evidencia; sin despliegue requerido |
 | Datos clínicos, comunicaciones y dinero | C-15 a C-20 | Revisión de permisos, privacidad, reglas clínicas/monetarias y proveedor cuando corresponda; sólo simulación en este ejercicio |
 
 ---
@@ -62,7 +62,6 @@ C-05 + C-07 + C-09
 
 C-11 + C-12
 └── C-13 endurecer-seguridad-y-observabilidad
-    ├── C-14 desplegar-mvp-en-entorno-controlado
     ├── C-15 registrar-historia-clinica (también C-05, C-06)
     │   └── C-16 gestionar-odontograma-y-plan
     ├── C-17 programar-recordatorios (también C-08, C-09, C-10)
@@ -95,11 +94,10 @@ GATE 3: C-07 y C-09 ✓
   → C-13 tras C-11 y C-12 ✓         [Agente A]
 
 GATE 4: C-13 ✓                       ← FORK
-  → C-14 despliegue                  [Agente A]
+  → C-15 clínica                     [Agente A]
   → C-17 recordatorios               [Agente B]
   → C-18 reserva del paciente        [Agente C]
-  → C-15 clínica                     [Agente A — después de C-14 en el plan]
-  → C-19 cobros                      [Agente B — después de C-17 en el plan]
+  → C-19 cobros                      [Agente B]
 
 GATE 5: C-15 y C-19 ✓
   → C-16 odontograma/plan            [Agente A — requiere C-15]
@@ -108,17 +106,17 @@ GATE 5: C-15 y C-19 ✓
 
 En GATE 5 cada rama puede empezar cuando se complete su propio prerrequisito; no debe esperar a la otra. En GATE 4 las cinco ramas son independientes entre sí, pero sólo se asignan tres a la vez. Las demás dependencias ya quedan satisfechas por los ancestros de C-13. Acordar interfaces y propiedad de archivos antes de ejecutar en paralelo; rutas, esquema y contratos compartidos se consolidan por un responsable, no mediante escrituras simultáneas.
 
-### Camino crítico (11 changes — mínimo irreducible)
+### Camino crítico (10 changes — mínimo irreducible)
 
-Para el **MVP operativo hasta C-14**, una ruta de mayor longitud por dependencias es:
+Para el **MVP académico demostrable hasta C-13**, una ruta de mayor longitud por dependencias es:
 
 ```text
-C-01 → C-02 → C-03 → C-04 → C-05 → C-09 → C-08 → C-10 → C-11 → C-13 → C-14
+C-01 → C-02 → C-03 → C-04 → C-05 → C-09 → C-08 → C-10 → C-11 → C-13
 ```
 
-La rama `C-04 → C-06 → C-07 → C-08` tiene la misma longitud que `C-04 → C-05 → C-09 → C-08`; C-09 también requiere C-06. **La cadena dibujada no basta sola:** C-06/C-07 y C-12 son prerrequisitos paralelos obligatorios; el conjunto mínimo del MVP contiene C-01 a C-14. Se cuenta longitud en changes para mostrar precedencias, no un plazo calculado: las duraciones no están estimadas.
+La rama `C-04 → C-06 → C-07 → C-08` tiene la misma longitud que `C-04 → C-05 → C-09 → C-08`; C-09 también requiere C-06. **La cadena dibujada no basta sola:** C-06/C-07 y C-12 son prerrequisitos paralelos obligatorios; el conjunto mínimo del MVP contiene C-01 a C-13. C-14 es opcional y queda fuera de esta entrega. Se cuenta longitud en changes para mostrar precedencias, no un plazo calculado: las duraciones no están estimadas.
 
-Si se prioriza todo el producto C-01 a C-20, las rutas más largas llegan a C-16 o C-20 y tienen **12 changes**: reemplazan el final `C-13 → C-14` por `C-13 → C-15 → C-16` o `C-13 → C-19 → C-20`. Clínica y cobros no bloquean el primer despliegue de la agenda; cada extensión requiere su propia verificación y actualización del paquete de despliegue antes de habilitarla.
+Si se prioriza todo el producto C-01 a C-20, las rutas más largas llegan a C-16 o C-20 y tienen **12 changes**: `C-01 → … → C-13 → C-15 → C-16` o `C-01 → … → C-13 → C-19 → C-20`. Clínica y cobros siguen siendo extensiones independientes del MVP académico; no requieren un paquete de despliegue.
 
 ### Plan óptimo con 3 agentes
 
@@ -135,9 +133,8 @@ Secuencia compatible con dependencias, sin prometer una optimización temporal n
 | 6 | C-10 | — | — |
 | 7 | — | — | C-11 |
 | 8 | C-13 | — | — |
-| 9 | C-14 | C-17 | C-18 |
-| 10 | C-15 | C-19 | — |
-| 11 | C-16 | C-20 | — |
+| 9 | C-15 | C-17 | C-18 |
+| 10 | C-16 | C-19 | C-20 |
 
 ---
 
@@ -168,7 +165,7 @@ Secuencia compatible con dependencias, sin prometer una optimización temporal n
 - **Estado**: implementado, validado localmente y archivado. La evidencia de C-02 está en [implementacion-turnos.md#c-02](docs/evidencia/implementacion-turnos.md#c-02).
 - **Scope**:
   - Añadir registro de versión de esquema y migraciones incrementales sobre copia ficticia; conservar IDs y turnos de C-01, sin bootstrap destructivo ni inicialización automática al importar.
-  - Separar configuración de entorno de datos y documentar recuperación ante una migración fallida. Importar a PostgreSQL con SQLAlchemy (stack de la cátedra, servicio `db` de Docker Compose) sin borrar la fuente; la copia es unidireccional y no sincroniza escrituras posteriores de PostgreSQL hacia SQLite.
+  - Separar configuración de entorno de datos y documentar recuperación ante una migración fallida. Importar a PostgreSQL con SQLAlchemy en un entorno local aislado, sin borrar la fuente; la copia es unidireccional y no sincroniza escrituras posteriores de PostgreSQL hacia SQLite.
   - Tests: agenda existente preservada, aplicación de migración una sola vez, fallo intermedio sin pérdida y rechazo de versión incompatible; mantener suite de regresión de C-01.
 - **Dependencias**: C-01 (archivado).
 - **Governance**: ALTO — configuración y evolución de datos existentes.
@@ -319,12 +316,12 @@ Secuencia compatible con dependencias, sin prometer una optimización temporal n
 
 ### [C-12] `respaldar-y-restaurar-agenda`
 
-- **Estado**: En implementación; 20/21 tareas completadas. Falta verificar el build real de Docker (no hay Docker, Podman ni Buildah disponibles en Windows o WSL); sigue activo en OpenSpec, sin Archive.
+- **Estado**: Implementado, validado y archivado localmente el 2026-11-02; 20/20 tareas completadas. Ver `openspec/changes/archive/2026-11-02-respaldar-y-restaurar-agenda/`.
 - **Scope**:
   - Implementar respaldos completos, manuales y locales para SQLite y PostgreSQL optativo, con manifiesto UTC, versiones, `table_counts` del mismo snapshot y SHA-256; el hash detecta alteración accidental, pero no autentica el manifiesto.
   - Restaurar únicamente en un destino explícito nuevo, validando esquema, integridad, claves foráneas y recuentos; no sobrescribir destinos, purgar copias ni incluir secretos `.env`/JWT o enviar datos a servicios externos.
   - Verificar actividad concurrente, copia corrupta/incompatible, destino existente preservado, recuperación con datos ficticios y una escritura posterior; distinguir evidencia técnica de prueba humana o de producción.
-  - La suite completa pasa (335 tests, 4 omitidos), incluidos los nuevos casos de publicación atómica. Los permisos POSIX y los adapters se comprobaron en WSL; la integración PostgreSQL aislada previa pasa (41/41). Queda pendiente un build real de la imagen backend con cliente PostgreSQL 16. El CLI Docker no está instalado y tampoco hay engine disponible en WSL; no afirmar ese build como verificado.
+  - La suite backend final pasa (361 tests, 4 omitidos); `pip check` está limpio; la integración PostgreSQL aislada pasó (41/41); OpenSpec strict pasó (15/15). Los adapters usan herramientas cliente locales de la misma major que el servidor. No se construyen imágenes ni se requiere Docker en esta entrega.
 - **Dependencias**: C-02, C-03, C-04.
 - **Governance**: ALTO — backup y restauración.
 - **Leer antes**:
@@ -349,19 +346,13 @@ Secuencia compatible con dependencias, sin prometer una optimización temporal n
 
 ### [C-14] `desplegar-mvp-en-entorno-controlado`
 
-- **Estado**: `[ ]` planificado; cierre del MVP operativo futuro.
+- **Estado**: Opcional y diferido fuera de la entrega académica; no es requisito del MVP demostrable.
 - **Scope**:
-  - Usar Docker / Docker Compose (stack de la cátedra) como paquete reproducible: imágenes de `backend/` y `frontend/`, servicios PostgreSQL y Redis, variables por entorno y secretos fuera del repositorio.
-  - Elegir y documentar un entorno de despliegue de una sola clínica; preparar paquete reproducible, configuración por entorno y pasos de migración con respaldo, rollback y control de acceso/red. No habilitar despliegue público por generar este roadmap.
-  - Agregar verificación automatizada de instalación y smoke del recorrido de recepción en entorno de prueba con datos ficticios; incluir guía de arranque/parada y recuperación referenciada a C-12.
-  - Criterios de salida: suite/E2E completos, readiness real, concurrencia validada en el almacenamiento y modo de ejecución elegidos, restauración comprobada y revisión humana de habilitación. Si se cambia el modelo de ejecución, volver a probar sus garantías.
-- **Dependencias**: C-13.
-- **Governance**: ALTO — configuración operativa y despliegue.
-- **Leer antes**:
-  - [01_vision_y_objetivos.md](knowledge-base/01_vision_y_objetivos.md) §Criterios de éxito propuestos.
-  - [02_descripcion_general.md](knowledge-base/02_descripcion_general.md) §Infraestructura y confianza.
-  - [08_arquitectura_propuesta.md](knowledge-base/08_arquitectura_propuesta.md) §Validación ejecutada.
-  - [10_preguntas_abiertas.md](knowledge-base/10_preguntas_abiertas.md) §Próxima decisión de implementación.
+  - Conservar el antecedente de la propuesta de despliegue; no construir imágenes, iniciar servicios ni publicar el sistema como parte de la entrega.
+  - Si más adelante se requiere despliegue, abrir un change nuevo con alcance, tecnología y validación aprobados por la cátedra. Redis puede evaluarse como alternativa, sin compromiso de uso.
+- **Dependencias**: ninguna mientras permanezca diferido.
+- **Governance**: ALTO si se reactiva configuración o despliegue.
+- **Leer antes**: [08_arquitectura_propuesta.md](knowledge-base/08_arquitectura_propuesta.md) §Alcance vigente.
 
 ## FASE 5 — Evolución clínica del producto
 
@@ -398,14 +389,14 @@ Secuencia compatible con dependencias, sin prometer una optimización temporal n
 
 ## FASE 6 — Comunicación, autoservicio y administración
 
-> Ramas independientes de la extensión clínica; no bloquean C-14. Se ejecutan con dobles/simuladores hasta elegir y autorizar cualquier proveedor externo. Cada change incluye una actualización controlada del despliegue cuando se habilite, sin considerar desplegadas sus funciones por cerrar C-14.
+> Ramas independientes de la extensión clínica; el despliegue queda fuera de la entrega. Se ejecutan con dobles/simuladores hasta elegir y autorizar cualquier proveedor externo. Cada change deja instrucciones y evidencia local; no requiere paquete de despliegue.
 
 ### [C-17] `programar-recordatorios`
 
 - **Estado**: `[ ]` planificado; canal real pendiente de decisión.
 - **Scope**:
   - Modelar preferencia de contacto y `Recordatorio`/outbox ligada al turno; definir anticipación, zona horaria, consentimiento y contenido mínimo sin datos clínicos. Preparar adaptador simulado antes de evaluar email o WhatsApp.
-  - Encolar los recordatorios en **Redis** (stack de la cátedra) y procesarlos con un worker en `backend/odontologia/workers/`, usando un canal simulado; Redis transporta el trabajo, el estado del recordatorio se persiste en PostgreSQL.
+  - Persistir el outbox de recordatorios en PostgreSQL y procesarlo de forma explícita con un worker local y canal simulado; no incorporar una cola externa como dependencia. Redis puede mencionarse como alternativa futura si luego se justifica y aprueba.
   - Programar sólo turnos elegibles; invalidar recordatorios anteriores al cancelar/reprogramar. Persistir estado/intentos y clave de deduplicación para evitar envíos repetidos; fallar el aviso no debe duplicar ni borrar el turno.
   - Tests: envío simulado, rechazo/fallo de canal, reintento acotado, petición repetida, cancelación y cambio horario; no afirmar entrega por aceptar un trabajo en cola.
 - **Dependencias**: C-08, C-09, C-10, C-13.

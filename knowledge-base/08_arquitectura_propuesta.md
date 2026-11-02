@@ -4,7 +4,7 @@
 
 Arquitectura inicial de C-01: Python 3.12+, SQLite local y módulo de dominio pequeño. Sobre esa base, C-02 añade PostgreSQL optativo y migraciones explícitas; C-03 añade JWT, sesiones revocables y autorización; está archivado. C-04 añade la tabla `eventos_auditoria` append-only en SQLite y PostgreSQL, inserta eventos en la misma transacción de cada cambio, y ofrece consulta paginada exclusiva de Administrador. Está validado localmente y pendiente de Archive. Ver [evidencia](../docs/evidencia/implementacion-turnos.md).
 
-**Actualización 2026-11-01:** C-01 se expone con FastAPI; C-02/C-03 ya usan SQLAlchemy, PostgreSQL optativo y JWT. El repositorio conserva la separación de la cátedra: Python/FastAPI/JWT/SQLAlchemy/PostgreSQL/Redis/Docker para backend y React/TypeScript/Vite para frontend (DD-09). La descripción inicial corresponde al diseño original de C-01.
+**Actualización 2026-11-02 — alcance vigente:** C-01 se expone con FastAPI; C-02/C-03 usan SQLAlchemy, PostgreSQL optativo y JWT. El stack completo indicado por la cátedra (incluidos Redis y Docker) se conserva como antecedente de DD-09; esta entrega se arma y demuestra mediante changes, pruebas y demo local, sin Redis, Docker ni despliegue.
 
 ## Responsabilidades y directorios
 
@@ -19,10 +19,14 @@ Desde la corrección de la cátedra (2026-10-29) el código se separa en `backen
 | [backend/odontologia/core/config.py](../backend/odontologia/core/config.py) | Lectura de variables de entorno del stack | Base |
 | `backend/odontologia/db/` | SQLAlchemy + PostgreSQL optativo, migración de C-01 | C-02 / C-03 |
 | `backend/odontologia/auth/` | JWT HS256, scrypt, sesiones revocables y RBAC | C-03 |
-| `backend/odontologia/workers/` | Cola de recordatorios en Redis (estructura) | C-17 |
+| Outbox PostgreSQL y worker local simulado | Alternativa propuesta para recordatorios sin cola externa; no implementada | C-17 |
 | [backend/tests/](../backend/tests/) | Regresión SQLite y PostgreSQL aislado por change | C-01–C-09 |
 | [frontend/](../frontend/README.md) | React + TypeScript + Vite; consume la API vía `/api` | C-11 |
-| [docker-compose.yml](../docker-compose.yml) | Servicios db, redis, backend y frontend en loopback | C-02 / C-14 |
+| Configuración de contenedores | No forma parte del flujo de entrega ni se verifica | Opcional/diferido |
+
+## Alcance vigente
+
+La entrega es revisable desde `CHANGES.md`, OpenSpec, código, pruebas y evidencia. No exige iniciar servicios ni publicar una aplicación. PostgreSQL se usa en pruebas aisladas. C-14 despliegue se difiere; C-17 podrá persistir recordatorios/outbox en PostgreSQL con canal simulado. Redis sólo podrá reconsiderarse como alternativa futura si surge una necesidad concreta.
 
 La UI no decide conflictos ni valida reglas de negocio por su cuenta: muestra lo que devuelve el backend.
 

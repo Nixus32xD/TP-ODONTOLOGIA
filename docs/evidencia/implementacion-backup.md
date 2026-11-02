@@ -43,7 +43,7 @@ La integración específica C-12 comprobó:
 
 Este ensayo demuestra el flujo de software y la compatibilidad del adapter con PostgreSQL 18/cliente 18; no demuestra recuperación ante pérdida real, revisión por el estudiante o compatibilidad del contenedor PG16.
 
-## Build Docker pendiente
+## Alcance del build de imagen
 
 Se intentó desde la raíz del repositorio:
 
@@ -51,13 +51,13 @@ Se intentó desde la raíz del repositorio:
 docker build -f backend/Dockerfile backend
 ```
 
-La shell informó que `docker` no es un comando reconocido. La búsqueda de runtimes no encontró Docker, Podman ni Buildah en Windows; la distribución WSL `Ubuntu` tampoco tiene esos ejecutables. Por eso no fue posible verificar el build de la imagen que instala `postgresql-client-16`, ni afirmar que pasó. No se instaló ni alteró un runtime.
+En la fecha de esa verificación, la shell informó que `docker` no era un comando reconocido y no se encontraron Docker, Podman ni Buildah en Windows o WSL. No se ejecutó ni verificó un build PG16. El 2026-11-02 el usuario aclaró que la entrega se demuestra mediante changes y no requiere Docker; por tanto, ese build queda fuera del alcance y no es un pendiente de aceptación. La evidencia de integración PostgreSQL real sigue limitada al cluster ficticio PG18.6 con cliente 18.6.
 
 ## OpenSpec y estado
 
 - `openspec validate --specs`: **13/13** pasó tras sincronizar la nueva capability principal `agenda-backup-restore`.
 - `openspec validate --all --strict`: **14/14** pasó después de crear la spec principal y completar los documentos de evidencia.
-- OpenSpec continúa activo, **16/17 tareas**. La tarea 8.1 permanece pendiente mientras el build Docker real siga sin verificar. No se archivó, no se hizo commit ni push; queda revisión independiente.
+- OpenSpec continúa activo, **16/17 tareas** en ese punto histórico; la única tarea pendiente exigía el build de imagen que el usuario luego quitó del alcance. No se presentó ese build como exitoso.
 
 ## Seguimiento de revisión independiente — permisos y aviso CLI
 
@@ -77,6 +77,12 @@ GREEN prepara todo el bundle dentro del staging privado del mismo volumen y publ
 
 También se intentó ejecutar toda la batería `test_backup_*.py` con el Python del sistema de WSL: **58 tests, 4 errores**, por dependencias no instaladas en ese intérprete (`sqlalchemy` ausente, además de un atributo de módulo PostgreSQL no cargado al faltar esa dependencia). No es un fallo de las pruebas de publicación, que pasan con ese mismo Python (5/5), ni de permisos POSIX (2/2). La suite enfocada completa se validó en el entorno virtual de Windows, donde sus dependencias están instaladas.
 
-OpenSpec reporta **20/21 tareas completadas**. 9.4 quedó marcada tras RED/GREEN y ambas validaciones de publicación. 8.1 permanece pendiente por el build Docker no disponible. No se archivó ni se hizo commit o push.
+OpenSpec reportó **20/21 tareas completadas** en ese punto histórico. 9.4 quedó marcada tras RED/GREEN y ambas validaciones de publicación. Luego, el usuario aclaró que la entrega no requiere Docker; se retiró esa tarea y C-12 se cerró en 20/20 y se archivó, sin afirmar que el build haya ocurrido.
+
+**Cierre posterior (2026-11-02):** se retiró la tarea de build de imagen del alcance acordado; la validación final local pasó con 361 tests backend y 4 omitidos, PostgreSQL aislado 41/41 previamente, `pip check` limpio y OpenSpec strict 15/15. C-12 quedó 20/20 y fue archivado mediante OpenSpec. No se construyó una imagen Docker; la entrega no requiere contenedores ni despliegue.
+
+## Aclaración de alcance — 2026-11-02
+
+El usuario definió que la entrega consiste en construir el proyecto y presentar sus changes, sin desplegar ni levantar Docker. El build de la imagen PostgreSQL 16 se conserva aquí como antecedente no ejecutado, pero no bloquea la entrega. Las pruebas realizadas corresponden a suites locales, WSL y un PostgreSQL temporal PG18.6; no acreditan un contenedor ni operación real.
 
 **Almacenamiento y control de versiones:** se recomienda una ruta fuera del repositorio (`N:\copias`). El CLI no puede impedir que se indique otra ruta: si el bundle se crea dentro del repositorio, no queda ignorado automáticamente; el operador debe evitar añadirlo al control de versiones. No se añadió un patrón amplio a `.gitignore`.
