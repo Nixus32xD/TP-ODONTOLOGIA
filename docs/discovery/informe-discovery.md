@@ -6,7 +6,7 @@
 
 **Estado:** Once puntos de Discovery y revisión personal de seis fuentes confirmados. Informe de trabajo, no entrega académica final.
 
-**Responsable de revisión:** estudiante. **Integrante/autor de la entrega:** pendiente de identificación expresa.
+**Responsable de revisión:** estudiante. **Integrante/autor de la entrega:** Moron Nicolás.
 
 ## Resumen ejecutivo
 
