@@ -44,6 +44,7 @@ class MigracionCicloVidaSQLiteTests(unittest.TestCase):
                 columnas = {fila[1] for fila in conexion.execute('PRAGMA table_info(turnos)')}
                 self.assertNotIn('auth_schema_version', tablas)
                 self.assertNotIn('estado', columnas)
+                self.assertNotIn('version', columnas)
                 self.assertEqual(
                     conexion.execute('SELECT id FROM turnos').fetchall(), [(creado.id,)])
 
@@ -65,17 +66,18 @@ class MigracionCicloVidaSQLiteTests(unittest.TestCase):
             with closing(sqlite3.connect(ruta)) as conexion:
                 self.assertEqual(
                     conexion.execute('SELECT version FROM auth_schema_version').fetchone(),
-                    (7,),
+                    (8,),
                 )
                 columnas = {fila[1] for fila in conexion.execute('PRAGMA table_info(turnos)')}
                 self.assertIn('estado', columnas)
+                self.assertIn('version', columnas)
                 fila = conexion.execute(
                     'SELECT id, paciente_id, profesional_id, box_id, inicio_minuto, '
-                    'fin_minuto, estado FROM turnos'
+                    'fin_minuto, estado, version FROM turnos'
                 ).fetchone()
                 self.assertEqual(fila[:4], (
                     creado.id, 'paciente-A', 'profesional-A', 'box-A'))
-                self.assertEqual(fila[-1], 'reservado')
+                self.assertEqual(fila[-2:], ('reservado', 1))
 
                 with self.assertRaises(sqlite3.IntegrityError):
                     conexion.execute(
@@ -89,11 +91,39 @@ class MigracionCicloVidaSQLiteTests(unittest.TestCase):
             migrar_sqlite(ruta)
 
             with closing(sqlite3.connect(ruta)) as conexion:
-                self.assertEqual(VERSION_ESQUEMA_AUTENTICACION, 7)
+                self.assertEqual(VERSION_ESQUEMA_AUTENTICACION, 8)
                 self.assertEqual(
                     conexion.execute('SELECT version FROM auth_schema_version').fetchone(),
-                    (7,),
+                    (8,),
                 )
+
+    def test_upgrade_desde_v7_inicializa_version_1_y_preserva_turno(self):
+        with TemporaryDirectory() as temporal:
+            ruta = Path(temporal) / 'agenda.sqlite3'
+            inicializar_agenda(ruta)
+            creado = crear_turno(
+                ruta, paciente_id='paciente-A', profesional_id='profesional-A',
+                box_id='box-A',
+                inicio=datetime.fromisoformat('2026-11-02T12:00:00+00:00'),
+                fin=datetime.fromisoformat('2026-11-02T12:30:00+00:00'))
+            migrar_sqlite(ruta)
+            with closing(sqlite3.connect(ruta)) as conexion:
+                columnas = {fila[1] for fila in conexion.execute(
+                    'PRAGMA table_info(turnos)')}
+                if 'version' in columnas:
+                    conexion.execute('ALTER TABLE turnos DROP COLUMN version')
+                conexion.execute('UPDATE auth_schema_version SET version=7')
+                conexion.commit()
+
+            migrar_sqlite(ruta)
+
+            with closing(sqlite3.connect(ruta)) as conexion:
+                self.assertEqual(conexion.execute(
+                    'SELECT version FROM auth_schema_version').fetchone(), (8,))
+                self.assertEqual(conexion.execute(
+                    'SELECT id, paciente_id, profesional_id, box_id, estado, version '
+                    'FROM turnos').fetchone(),
+                    (creado.id, 'paciente-A', 'profesional-A', 'box-A', 'reservado', 1))
 
     def test_migracion_amplia_catalogo_auditoria_y_preserva_eventos(self):
         with TemporaryDirectory() as temporal:
@@ -119,6 +149,10 @@ class MigracionCicloVidaSQLiteTests(unittest.TestCase):
                     "INSERT INTO eventos_auditoria(created_at, action, resource_type, "
                     "resource_id, result) VALUES ('2026-11-02T12:01:00+00:00', "
                     "'turno.estado_actualizado', 'turno', '1', 'confirmado')")
+                conexion.execute(
+                    "INSERT INTO eventos_auditoria(created_at, action, resource_type, "
+                    "resource_id, result) VALUES ('2026-11-02T12:02:00+00:00', "
+                    "'turno.reprogramado', 'turno', '1', 'confirmado')")
 
 
 if __name__ == '__main__':

@@ -29,7 +29,7 @@ class ResultadoEstadoTurno:
 
 def transicionar_estado_turno(engine: Engine, turno_id: int, destino: str, *,
                               actor_id: str, timeout_segundos: float = 5.0) -> ResultadoEstadoTurno:
-    """Persistir una transición permitida; auditoría atómica se integra en C-09.2.3."""
+    """Persistir una transición permitida con versión y auditoría atómicas."""
     try:
         with Session(engine) as session, session.begin():
             if session.bind.dialect.name == 'sqlite':
@@ -51,6 +51,7 @@ def transicionar_estado_turno(engine: Engine, turno_id: int, destino: str, *,
             if destino not in _TRANSICIONES_PERMITIDAS.get(turno.estado, frozenset()):
                 raise ErrorAgenda('transicion_invalida')
             turno.estado = destino
+            turno.version += 1
             session.flush()
             registrar_evento_session(
                 session, action='turno.estado_actualizado', resource_type='turno',

@@ -23,6 +23,8 @@ class ErrorAgenda(Exception):
             'agenda_ocupada': 'La agenda está ocupada por otro escritor.',
             'almacenamiento_error': 'No se pudo completar la operación de almacenamiento.',
             'transicion_invalida': 'La transición de estado del turno no está permitida.',
+            'version_desactualizada': 'La versión del turno cambió; vuelva a consultarlo.',
+            'turno_no_reprogramable': 'El turno no está en un estado reprogramable.',
             'turno_no_encontrado': 'El turno solicitado no existe.',
             'agenda_existente': 'La agenda ya existe y no se sobrescribió.',
         }

@@ -44,6 +44,7 @@ class ConsultaTurnosTests(unittest.TestCase):
         self.assertEqual([turno['id'] for turno in resultado['items']], [11])
         self.assertEqual(resultado['items'][0]['paciente_nombre'],
                          'Paciente de demostración paciente-B')
+        self.assertEqual(resultado['items'][0]['version'], 1)
         self.assertNotIn('telefono', resultado['items'][0])
 
         pagina_dos = listar_turnos(
@@ -59,6 +60,7 @@ class ConsultaTurnosTests(unittest.TestCase):
             profesional_vinculado_id='profesional-A')
         self.assertEqual(len(resultado['items']), 2)
         self.assertEqual(set(resultado['items'][0]), {'inicio', 'fin', 'paciente_nombre'})
+        self.assertNotIn('version', resultado['items'][0])
         with self.assertRaises(ErrorConsultaTurnos) as otro:
             listar_turnos(
                 self.engine, desde=datetime(2026, 10, 15, 12, tzinfo=timezone.utc),

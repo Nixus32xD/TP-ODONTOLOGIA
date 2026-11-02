@@ -48,7 +48,7 @@ def validar_esquema_autenticacion(engine, persistencia: str,
             raise RuntimeError('Ruta SQLite requerida.')
         validar_ruta_sqlite_existente(ruta_sqlite)
         consulta = text('SELECT version FROM auth_schema_version')
-        version_esperada = 7
+        version_esperada = 8
         validar_version = lambda version: version == version_esperada
         consulta_tablas = text(
             "SELECT name FROM sqlite_master WHERE type='table' "
@@ -58,7 +58,7 @@ def validar_esquema_autenticacion(engine, persistencia: str,
         consulta_vinculo_profesional = text('PRAGMA table_info(usuarios)')
     elif persistencia == 'postgresql':
         consulta = text('SELECT version_num FROM alembic_version')
-        version_esperada = '20261102_0008_professional_accounts'
+        version_esperada = '20261102_0009_turn_rescheduling'
         validar_version = lambda version: version == version_esperada
         consulta_tablas = text(
             'SELECT table_name FROM information_schema.tables '
@@ -67,7 +67,7 @@ def validar_esquema_autenticacion(engine, persistencia: str,
         consulta_estado_turno = text(
             'SELECT column_name FROM information_schema.columns '
             "WHERE table_schema = current_schema() AND table_name = 'turnos' "
-            "AND column_name = 'estado'")
+            "AND column_name IN ('estado', 'version')")
         consulta_vinculo_profesional = text(
             'SELECT column_name FROM information_schema.columns '
             "WHERE table_schema = current_schema() AND table_name = 'usuarios' "
@@ -92,6 +92,8 @@ def validar_esquema_autenticacion(engine, persistencia: str,
             raise RuntimeError('El esquema de disponibilidad no está preparado.')
         if 'estado' not in columnas_turnos:
             raise RuntimeError('La columna de estado de turnos no está preparada.')
+        if 'version' not in columnas_turnos:
+            raise RuntimeError('La columna de versión de turnos no está preparada.')
         if 'profesional_id' not in columnas_usuarios:
             raise RuntimeError('La columna de vínculo profesional no está preparada.')
     except SQLAlchemyError as exc:

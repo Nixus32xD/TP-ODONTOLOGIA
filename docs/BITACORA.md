@@ -259,3 +259,11 @@ C-08 sigue en Apply y queda pendiente revisión independiente y Archive. No hay 
 ### Seguimiento C-08 — fin local exacto a medianoche
 
 Una revisión independiente señaló el borde `23:45–00:00` con duración de 15 minutos. La prueba de regresión se añadió y ejecutó antes de cualquier cambio productivo; pasó con la lógica existente, que acepta exactamente el fin local `00:00` siguiente cuando el tramo termina en `24:00`. No se encontró defecto vigente ni se modificó código productivo. Se documenta cobertura adicional en la [evidencia C-08](evidencia/implementacion-consultas-agenda.md). Se repitieron las suites completas SQLite y PostgreSQL aislado con esta prueba nueva.
+
+## 2026-11-02 — C-10 reprogramación atómica (Apply)
+
+C-10 agrega `turnos.version` a SQLite v8 y PostgreSQL Alembic 0009, incrementa versión en transiciones efectivas, y permite `POST /turnos/{id}/reprogramacion` a Administrador/Recepción con control optimista. El servicio conserva paciente, duración, estado e identidad; valida agenda y ocupación bajo el lock común. Una auditoría metadata-only se confirma junto a la fila; fallos revierten todo. La consulta operativa muestra versión a Administrador/Recepción y mantiene la proyección Profesional acotada. C-01 standalone sigue sin requerir esquema/versionado.
+
+La suite completa pasó: SQLite **271 tests OK**; PostgreSQL aislado en `127.0.0.1:55432` **312 tests OK**, 0 omitidos. Una revisión encontró que el guard de fecha rechazaba 23:30–00:00 aunque C-07 permitía el fin exacto a 24:00. Las pruebas RED reprodujeron el caso en ambos motores; el guard ahora acepta sólo fin local exacto 00:00 y sigue rechazando que el turno continúe al día siguiente. Se repitieron ambas suites completas tras el cambio. `pip check` sin dependencias rotas; OpenSpec strict válido; `git diff --check` sin errores. El clúster temporal quedó detenido y 5432 no se alteró. La [evidencia C-10](evidencia/implementacion-reprogramacion.md) registra TDD, comandos, límites y el fixture de Alembic 0008 actualizado para restaurar la revisión 0009.
+
+La implementación queda pendiente de revisión independiente y Archive. No se hizo commit ni push. La modificación preexistente de `docs/discovery/informe-discovery.md` se preservó.

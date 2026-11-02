@@ -101,6 +101,7 @@ def listar_turnos(engine, *, desde: datetime, hasta: datetime,
                     'inicio': _minuto_a_fecha(turno.inicio_minuto),
                     'fin': _minuto_a_fecha(turno.fin_minuto),
                     'estado': turno.estado,
+                    'version': turno.version,
                 } for turno, paciente, profesional, box in filas]
             return {'items': items, 'limit': limit, 'offset': offset}
     except ErrorConsultaTurnos:

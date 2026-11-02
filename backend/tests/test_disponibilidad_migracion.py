@@ -67,7 +67,7 @@ class EsquemaDisponibilidadTests(unittest.TestCase):
 
             with closing(sqlite3.connect(ruta)) as conexion:
                 self.assertEqual(
-                    conexion.execute('SELECT version FROM auth_schema_version').fetchone(), (7,))
+                    conexion.execute('SELECT version FROM auth_schema_version').fetchone(), (8,))
                 self.assertTrue({
                     'horarios_semanales', 'excepciones_horario',
                     'tramos_excepcion', 'bloqueos_agenda',
@@ -94,7 +94,7 @@ class EsquemaDisponibilidadTests(unittest.TestCase):
 
             with closing(sqlite3.connect(ruta)) as conexion:
                 self.assertEqual(
-                    conexion.execute('SELECT version FROM auth_schema_version').fetchone(), (7,))
+                    conexion.execute('SELECT version FROM auth_schema_version').fetchone(), (8,))
                 self.assertEqual(conexion.execute(
                     "SELECT COUNT(*) FROM eventos_auditoria WHERE action='cuenta.bootstrap'"
                 ).fetchone(), (1,))
@@ -151,7 +151,7 @@ class EsquemaDisponibilidadTests(unittest.TestCase):
                             'fin_minuto_local) VALUES (?, ?, ?, ?, ?, ?)', valores)
 
     def test_guarda_de_esquema_requiere_versiones_de_disponibilidad(self):
-        self.assertEqual(REVISION_ESQUEMA_ACTUAL, '20261102_0008_professional_accounts')
+        self.assertEqual(REVISION_ESQUEMA_ACTUAL, '20261102_0009_turn_rescheduling')
         with TemporaryDirectory() as temporal:
             ruta = Path(temporal) / 'agenda.sqlite3'
             inicializar_agenda(ruta)

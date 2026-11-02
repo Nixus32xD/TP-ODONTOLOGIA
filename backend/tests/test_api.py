@@ -156,7 +156,8 @@ class ApiTests(unittest.TestCase):
             '/horarios/{tipo_recurso}/{recurso_id}/excepciones/{fecha}',
             '/bloqueos', '/bloqueos/{bloqueo_id}',
             '/turnos/{turno_id}/confirmacion', '/turnos/{turno_id}/cancelacion',
-            '/turnos/{turno_id}/atencion', '/turnos/{turno_id}/ausencia'})
+            '/turnos/{turno_id}/atencion', '/turnos/{turno_id}/ausencia',
+            '/turnos/{turno_id}/reprogramacion'})
         self.assertEqual(set(rutas['/turnos']), {'get', 'post'})
         self.assertEqual(set(rutas['/turnos']['post']['responses']),
                          {'201', '401', '403', '422', '404', '409', '503', '500'})

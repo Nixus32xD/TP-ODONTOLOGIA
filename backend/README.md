@@ -16,11 +16,12 @@ API del sistema odontológico. Stack definido por la cátedra (corrección del 2
 | Catálogos de profesionales, boxes y prestaciones | Implementado en SQLite/PostgreSQL; lectura paginada; baja lógica sólo Administrador | C-06 |
 | Horarios semanales, excepciones y bloqueos | Implementado, validado y archivado localmente; v5 / Alembic 0006 | C-07 |
 | Estados de turno y cancelación idempotente | Implementado, validado y archivado localmente; v6 / Alembic 0007 | C-09 |
-| Consulta paginada, opciones orientativas y acceso Profesional vinculado | Implementado en Apply; validación completa/Archive pendientes; v7 / Alembic 0008 | C-08 |
+| Consulta paginada, opciones orientativas y acceso Profesional vinculado | Implementado y archivado localmente; v7 / Alembic 0008 | C-08 |
+| Versión de turnos para reprogramación atómica | Esquema y versionado implementados; C-10 en Apply; v8 / Alembic 0009 | C-10 |
 | Cola de recordatorios en Redis (`odontologia/workers/`) | Estructura preparada, sin implementar | C-17 |
 | Imagen Docker y servicios en Docker Compose | Preparados | C-02 / C-14 |
 
-C-01 y SQLite siguen disponibles. C-02 permite PostgreSQL e importación manual desde SQLite; C-03 agrega JWT y sesiones revocables; C-04 audita metadatos; C-05 administra fichas; C-06 administra catálogos; C-07 configura horarios; C-09 añade estados. C-08 está implementado en Apply, sujeto a regresión final y revisión antes de Archive: Profesional tiene una cuenta vinculada única y consulta sólo su agenda y opciones, sin escritura; Administrador/Recepción consultan agenda. La consulta de disponibilidad es orientativa y el alta vuelve a validar dentro de su transacción. El inicio de la API no ejecuta migraciones ni importa datos. La fuente SQLite no se altera; la importación rechaza fuentes con solapamientos o destinos ya poblados.
+C-01 y SQLite siguen disponibles. C-02 permite PostgreSQL e importación manual desde SQLite; C-03 agrega JWT y sesiones revocables; C-04 audita metadatos; C-05 administra fichas; C-06 administra catálogos; C-07 configura horarios; C-09 añade estados y C-08 consultas. Profesional tiene una cuenta vinculada única y consulta sólo su agenda y opciones, sin escritura; Administrador/Recepción consultan agenda. La disponibilidad es orientativa y el alta vuelve a validar dentro de su transacción. C-10 agrega una versión positiva por turno para concurrencia optimista; sus operaciones están en desarrollo. El inicio de la API no ejecuta migraciones ni importa datos. La fuente SQLite C-01 no se altera; la importación rechaza fuentes con solapamientos o destinos ya poblados.
 
 ## Estructura
 
@@ -37,8 +38,8 @@ backend/
 │   ├── catalogos.py     # Catálogos ficticios y auditoría atómica (C-06)
 │   ├── pacientes.py     # Fichas mínimas y baja lógica (C-05)
 │   └── workers/         # Redis: recordatorios en cola (C-17)
-├── alembic/             # Revisiones versionadas de C-02 a C-06
-├── tests/               # Regresión C-01 a C-09
+├── alembic/             # Revisiones versionadas de C-02 a C-10
+├── tests/               # Regresión C-01 a C-10
 ├── requirements.txt         # Dependencias directas de C-01
 ├── requirements-dev.txt     # + HTTPX para tests
 ├── requirements-lock.txt    # Entorno verificado de C-01
@@ -80,7 +81,7 @@ El bootstrap pide identificador y contraseña de forma interactiva y oculta; no 
 ..\.venv\Scripts\python.exe -m odontologia.auth.bootstrap_admin
 ```
 
-Alembic aplica las revisiones consecutivas hasta C-09 y C-08 (`20261102_0008_professional_accounts`), incluida la ficha mínima, catálogos, auditoría, disponibilidad, estados y vínculo de cuenta Profesional. En Docker Compose, migrar el servicio backend con `docker compose exec backend python -m alembic upgrade head` y ejecutar el bootstrap interactivo con `docker compose exec backend python -m odontologia.auth.bootstrap_admin` después de configurar `.env`. No usar la API ni `GET /health` como comando de migración.
+Alembic aplica las revisiones consecutivas hasta C-10 (`20261102_0009_turn_rescheduling`), incluida la ficha mínima, catálogos, auditoría, disponibilidad, estados, vínculo de cuenta Profesional y versión de turnos. En Docker Compose, migrar el servicio backend con `docker compose exec backend python -m alembic upgrade head` y ejecutar el bootstrap interactivo con `docker compose exec backend python -m odontologia.auth.bootstrap_admin` después de configurar `.env`. No usar la API ni `GET /health` como comando de migración.
 
 `POST /sesiones` recibe `identificador` y `password`; su respuesta contiene `access_token`, `token_type` y `expires_in`. En Swagger, usar **Authorize** con `Bearer <token>`. `/sesiones/actual` permite consultar y cerrar la sesión propia. El Administrador puede consultar/crear usuarios y cambiar rol/estado; Recepción puede crear turnos y operar fichas mínimas de pacientes; sólo Administrador cambia el estado activo de pacientes. Desactivar una cuenta, cambiarle el rol o cerrar sesión revoca sus tokens persistidos. Los fallos de credenciales devuelven un mensaje genérico. Las fichas contienen sólo nombre y teléfono opcional ficticios; no usar datos reales ni añadir historia clínica. Los eventos guardan sólo actor/acción/recurso/resultado/fecha; no incluyen cuerpos, nombres, teléfonos, contraseñas, hashes, JWT, datos clínicos ni el identificador de un login rechazado. `GET /auditoria?limit=50&offset=0` es sólo Administrador, admite límite 1–100 y no ofrece edición, borrado ni purga automática. Si el evento falla, la mutación se revierte y la API no informa éxito. Sin secreto o esquema migrado, las operaciones protegidas fallan cerradas con 503 mientras `/health` continúa pública.
 
@@ -123,6 +124,24 @@ Authorization: Bearer <access_token>
 Para consultar esa configuración: `GET /horarios/profesional/profesional-A`. Una excepción del martes reemplaza la semana de ese día; enviar `{"tramos":[]}` lo cierra. Un bloqueo de una hora sobre un box se envía con `POST /bloqueos` y `tipo_recurso`, `recurso_id`, `inicio` y `fin`; las dos fechas deben tener offset explícito, por ejemplo `2026-11-02T12:00:00-03:00` y `2026-11-02T13:00:00-03:00`. `GET /bloqueos?limit=50&offset=0` lista y pagina; eliminar usa `DELETE /bloqueos/{bloqueo_id}`.
 
 Las respuestas de error siguen el objeto `{codigo, campo, mensaje}`: `401` requiere una sesión válida; `403` indica rol insuficiente en rutas restringidas; `409` rechaza una reserva fuera de disponibilidad o un cambio que afectaría turnos existentes; `422` indica un cuerpo, hora o paginación inválidos. OpenAPI documenta además `404` para recursos desconocidos y `503` para fallos transaccionales.
+
+## C-10 — Versionado para reprogramación
+
+La migración C-10 sube SQLite a v8 y PostgreSQL a Alembic `20261102_0009_turn_rescheduling`. Agrega `turnos.version` positiva, iniciada en 1 para turnos existentes, y permite el evento de auditoría metadata-only `turno.reprogramado`. Las transiciones efectivas incrementan la versión en la misma transacción que el estado y la auditoría; repetir la cancelación no crea otro cambio ni incrementa versión.
+
+La columna existe únicamente en el esquema migrado de la API. El contrato standalone de C-01 sigue usando sus bases sin `auth_schema_version` y no requiere `version`; no ejecutar su servicio con una base parcialmente migrada. Si una base declara v8/0009 pero carece de la columna requerida, las operaciones protegidas fallan cerradas con 503.
+
+`GET /turnos` devuelve `version` a Administrador y Recepción; la proyección Profesional mantiene sólo `inicio`, `fin` y `paciente_nombre`. Para mover una fila existente, Administrador o Recepción envía `POST /turnos/{turno_id}/reprogramacion` con la versión que consultó:
+
+```http
+POST /turnos/42/reprogramacion
+Authorization: Bearer <access_token>
+Content-Type: application/json
+
+{"version":1,"inicio":"2026-11-02T10:00:00-03:00","fin":"2026-11-02T10:30:00-03:00","profesional_id":"profesional-B","box_id":"box-B"}
+```
+
+El cuerpo no admite campos adicionales. El paciente, la duración y el estado del turno se conservan; el intervalo debe quedar en el mismo día local, dentro de los horarios y sin bloqueo ni ocupación. Una respuesta `200` devuelve la nueva versión. Ante `409 version_desactualizada`, volver a consultar `GET /turnos` y revisar la asignación antes de reintentar con la versión vigente. Los otros `409` (`turno_no_reprogramable`, `recurso_inactivo`, `fuera_de_disponibilidad`, `conflicto_profesional` o `conflicto_box`) requieren resolver la condición informada; el rechazo no altera la fila. `404` identifica un turno o destino inexistente y `422` un cuerpo inválido. Profesional no tiene permiso de escritura; ausencia de sesión responde `401`. Los ejemplos y respuestas están publicados en `/docs` y `/openapi.json`.
 
 Una excepción identifica un recurso y fecha local `YYYY-MM-DD`; reemplaza todos sus tramos semanales de ese día. Una excepción con `tramos: []` cierra el día; eliminarla hace que vuelva a regir la semana. Como supuesto explícito del modelo, cada bloqueo pertenece exactamente a un profesional o a un box, nunca a ambos ni a toda la clínica; la solicitud usa `tipo_recurso`, `recurso_id`, `inicio` y `fin` ISO 8601 con offset. Los bloqueos se comparan como instantes UTC y el listado usa `limit` 1–100 y `offset` no negativo. Las consultas no generan eventos de auditoría.
 

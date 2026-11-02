@@ -1,7 +1,7 @@
 # CHANGES — Secuencia de Implementación
 
 > Índice canónico del proyecto **TP-ODONTOLOGIA**, actualizado el 2026-11-02.
-> **Plan del producto completo; C-01-C-07 y C-09 están implementados, validados y archivados localmente. C-08 tiene propuesta aprobada y está en Apply; C-10-C-20 siguen planificados, con autorizaciones específicas de decisiones materiales según R-10.**
+> **Plan del producto completo; C-01-C-10 están implementados, validados y archivados localmente. C-11-C-20 siguen planificados, con autorizaciones específicas de decisiones materiales según R-10.**
 > **Leer este archivo antes de ejecutar cualquier `/opsx:propose`.**
 
 ---
@@ -23,7 +23,7 @@ La aclaración del usuario del 2026-10-28 corrige el índice anterior: **hacer s
 - **Evolución del producto:** C-15 a C-20 agregan clínica, odontograma/plan de tratamiento, recordatorios, reserva del paciente, cobros y reportes. Se proponen para mostrar el alcance completo; su implementación requiere priorización y contratos propios.
 - **Opciones no comprometidas:** multisede/SaaS multitenant, IA, obras sociales y facturación electrónica ARCA no se vuelven obligatorias por aparecer en productos comparados. Si se eligen, se agregarán changes posteriores con investigación y aprobación específicas. C-19 no incluye emisión fiscal ni conexión con pagos reales.
 
-La KB y las instrucciones existentes documentan principalmente la porción académica C-01. Sus exclusiones siguen vigentes para esa implementación; las capacidades futuras del roadmap no amplían retroactivamente las US-001 a US-004. C-02 concreta la migración a PostgreSQL conservando la fuente SQLite; C-03/C-04 autenticación, permisos y auditoría; C-05 la ficha mínima; C-06 catálogos; C-07 disponibilidad; C-09 estados. C-08 ya está archivado localmente; el resto conserva contratos propios antes de su implementación. Se mantienen datos ficticios y ninguna integración externa real.
+La KB y las instrucciones existentes documentan principalmente la porción académica C-01. Sus exclusiones siguen vigentes para esa implementación; las capacidades futuras del roadmap no amplían retroactivamente las US-001 a US-004. C-02 concreta la migración a PostgreSQL conservando la fuente SQLite; C-03/C-04 autenticación, permisos y auditoría; C-05 la ficha mínima; C-06 catálogos; C-07 disponibilidad; C-08 consultas de agenda; C-09 estados; y C-10 reprogramación atómica. C-01 standalone conserva compatibilidad. Se mantienen datos ficticios y ninguna integración externa real.
 
 **Stack definido por la cátedra (2026-10-29):** backend con Python, FastAPI, JWT, SQLAlchemy, PostgreSQL, Redis y Docker/Docker Compose; frontend con React, TypeScript y Vite ([DD-09](knowledge-base/09_decisiones_y_supuestos.md)). C-02 implementa PostgreSQL + SQLAlchemy; C-03 implementa JWT y permisos de personal. React/TS/Vite sigue en C-11, Docker Compose de despliegue en C-14 y Redis (cola de recordatorios) en C-17. La existencia de carpetas y servicios no acredita la implementación de esos changes.
 
@@ -36,7 +36,7 @@ La KB y las instrucciones existentes documentan principalmente la porción acad�
 | Versionado de esquema y migración a PostgreSQL con SQLAlchemy (stack de la cátedra) | C-02 | Implementado, validado con PostgreSQL aislado y archivado; copia unidireccional, fuente SQLite preservada. |
 | Identidades, permisos, sesiones y auditoría | C-03/C-04 | C-03 y C-04 implementados, validados y archivados. |
 | Datos mínimos, prestaciones y disponibilidad | C-05/C-06/C-07 | C-05–C-07 implementados y archivados localmente; C-09 extiende el esquema a SQLite v6/Alembic 0007 |
-| Estados, cancelación y reprogramación | C-09/C-10 | C-09 implementa estados, transiciones y concurrencia en Apply; C-10 sigue planificado; exclusión del paciente explícitamente decidida |
+| Estados, cancelación y reprogramación | C-09/C-10 | C-09 y C-10 implementados, validados y archivados; versión optimista, operación atómica y sin exclusión por paciente adicional |
 | UI y operación desplegada | C-11/C-12/C-13/C-14 | Interfaz en React + TypeScript + Vite (fijada por la cátedra), despliegue con Docker Compose, recuperación y seguridad probadas |
 | Datos clínicos, comunicaciones y dinero | C-15 a C-20 | Revisión de permisos, privacidad, reglas clínicas/monetarias y proveedor cuando corresponda; sólo simulación en este ejercicio |
 
@@ -71,7 +71,7 @@ C-11 + C-12
         └── C-20 consultar-reportes-operativos (también C-08, C-09)
 ```
 
-Los números son identificadores estables agrupados por capacidad, no un orden de ejecución por sí solos: C-09 precede a C-08 porque una consulta operativa debe conocer qué estados ocupan recursos. C-01 está archivado desde el 2026-10-28; C-02 a C-09 también están archivados.
+Los números son identificadores estables agrupados por capacidad, no un orden de ejecución por sí solos: C-09 precede a C-08 porque una consulta operativa debe conocer qué estados ocupan recursos. C-01 está archivado desde el 2026-10-28; C-02 a C-10 también están archivados.
 
 ### Paralelismo por fase
 
@@ -161,7 +161,7 @@ Secuencia compatible con dependencias, sin prometer una optimización temporal n
 
 ## FASE 2 — Fundamento evolutivo, acceso y trazabilidad
 
-> C-01–C-09 están archivados localmente y validados. C-10 a C-20 siguen planificados con desarrollo global autorizado. Las decisiones materiales de governance CRÍTICO/ALTO requieren aprobación específica antes del código.
+> C-01–C-10 están archivados localmente y validados. C-11 a C-20 siguen planificados con desarrollo global autorizado. Las decisiones materiales de governance CRÍTICO/ALTO requieren aprobación específica antes del código.
 
 ### [C-02] `evolucionar-esquema-y-configuracion`
 
@@ -259,7 +259,7 @@ Secuencia compatible con dependencias, sin prometer una optimización temporal n
   - `GET /turnos`: rangos offset-aware semiabiertos de hasta 31 días, filtros por profesional/box/estado, paginación estable; Admin/Recepción ven datos operativos sin teléfono y Profesional sólo su propio horario y nombre de paciente.
   - `GET /disponibilidad`: candidatos cada 15 minutos en `America/Argentina/Mendoza`; intersecta horario/excepción de ambos recursos, filtra inactivos, bloqueos y estados ocupantes C-09. Las opciones no reservan y `POST /turnos` revalida en su transacción.
   - Cuenta Profesional con FK única al recurso, asignable sólo por Administrador; vínculo incorporado a JWT e identidad validada; cambio de rol/vínculo revoca sesiones. C-01 standalone conserva su compatibilidad.
-  - Migraciones: SQLite v7 y PostgreSQL Alembic 0008, preservando filas existentes. Los tests dirigidos de servicios/API están en verde; regresión completa ambos motores, evidencia final, validación OpenSpec y diff-check quedan pendientes.
+  - Migraciones: SQLite v7 y PostgreSQL Alembic 0008, preservando filas existentes. Suites completas: SQLite 244 OK y PostgreSQL aislado 275/275; `pip check`, OpenSpec strict y `git diff --check` limpios. Ver [evidencia C-08](docs/evidencia/implementacion-consultas-agenda.md).
 - **Dependencias**: C-05, C-07, C-09.
 - **Governance**: MEDIO — consulta con reglas de disponibilidad y acceso.
 - **Leer antes**:
@@ -286,11 +286,13 @@ Secuencia compatible con dependencias, sin prometer una optimización temporal n
 
 ### [C-10] `reprogramar-turnos-atomicamente`
 
-- **Estado**: [ ] planificado; no implementado ni propuesto en OpenSpec.
+- **Estado**: implementado, validado y archivado localmente el 2026-11-02. Ver [change archivado](openspec/changes/archive/2026-11-02-reprogramar-turnos-atomicamente/) y [evidencia](docs/evidencia/implementacion-reprogramacion.md). Sin push.
 - **Scope**:
-  - Proponer `POST /turnos/{id}/reprogramacion` para cambiar intervalo y recursos con control de versión/competencia acordado; revalidar referencias, estado, disponibilidad y exclusión dentro de la misma operación.
-  - Conservar el turno original si falla la nueva asignación y auditar el cambio confirmado. Decidir expresamente exclusión simultánea del paciente: C-01 la permite con recursos distintos; cualquier nueva restricción necesita escenarios y migración de contrato propios.
-  - Tests: nueva franja válida, conflicto de cada recurso, falla previa al commit sin pérdida del original y dos reprogramaciones competidoras; no implementar como cancelar y luego crear en transacciones separadas.
+  - `POST /turnos/{id}/reprogramacion` para Administrador/Recepción; versión esperada obligatoria, intervalos offset-aware de precisión al minuto, conserva paciente/duración/estado y cambia intervalo/profesional/box.
+  - Sólo turnos `reservado` o `confirmado`; revalida recursos, horarios/excepciones, bloqueos y ocupación en una operación serializada. Versión obsoleta, conflicto, terminal o fallo de auditoría conservan fila y versión sin evento de mutación. Incluye el fin exacto a medianoche cuando el tramo termina a `24:00`; rechaza continuar después.
+  - Reprogramación y auditoría `turno.reprogramado` se confirman en la misma transacción; solicitudes concurrentes con versión igual producen una confirmación y un 409. C-01 standalone conserva su contrato histórico.
+  - C-01 permite turnos simultáneos del paciente cuando profesional y box son distintos; C-10 preserva esa regla. La prestación no se guarda ni se asocia durante la reprogramación.
+  - Suites completas tras el ajuste de medianoche: SQLite 271/271 y PostgreSQL aislado 312/312; `pip check`, OpenSpec strict y `git diff --check` limpios. La evidencia registra una desviación TDD para pruebas de éxito/concurrencia por implementación adelantada durante 2.1.
 - **Dependencias**: C-08, C-09.
 - **Governance**: MEDIO.
 - **Leer antes**:

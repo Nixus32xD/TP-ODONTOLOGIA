@@ -42,6 +42,12 @@ class CicloVidaTurnoTests(unittest.TestCase):
                 text('SELECT estado FROM turnos WHERE id=:id'), {'id': self.turno_id}
             ).scalar_one()
 
+    def _version(self):
+        with self.engine.connect() as conexion:
+            return conexion.execute(
+                text('SELECT version FROM turnos WHERE id=:id'), {'id': self.turno_id}
+            ).scalar_one()
+
     def test_transiciones_permitidas_persisten_estado(self):
         for destino in ('confirmado', 'atendido'):
             resultado = transicionar_estado_turno(
@@ -95,6 +101,25 @@ class CicloVidaTurnoTests(unittest.TestCase):
                 "SELECT COUNT(*) FROM eventos_auditoria WHERE action='turno.estado_actualizado' "
                 "AND resource_id=:id"), {'id': str(self.turno_id)}).scalar_one()
         self.assertEqual(eventos, 1)
+
+    def test_transicion_efectiva_incrementa_version(self):
+        self.assertEqual(self._version(), 1)
+        transicionar_estado_turno(
+            self.engine, self.turno_id, 'confirmado', actor_id='usuario-admin')
+        self.assertEqual(self._version(), 2)
+        transicionar_estado_turno(
+            self.engine, self.turno_id, 'atendido', actor_id='usuario-admin')
+        self.assertEqual(self._version(), 3)
+
+    def test_cancelacion_idempotente_no_incrementa_version(self):
+        transicionar_estado_turno(
+            self.engine, self.turno_id, 'cancelado', actor_id='usuario-admin')
+        version_cancelado = self._version()
+        repetida = transicionar_estado_turno(
+            self.engine, self.turno_id, 'cancelado', actor_id='usuario-admin')
+        self.assertEqual(repetida.estado, 'cancelado')
+        self.assertEqual(version_cancelado, 2)
+        self.assertEqual(self._version(), version_cancelado)
 
     def test_fallo_de_auditoria_revierte_la_transicion(self):
         with patch('odontologia.turnos.registrar_evento_session',

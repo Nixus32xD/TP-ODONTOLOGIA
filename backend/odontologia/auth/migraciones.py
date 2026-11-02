@@ -3,7 +3,7 @@ from pathlib import Path
 import sqlite3
 
 
-VERSION_ESQUEMA_AUTENTICACION = 7
+VERSION_ESQUEMA_AUTENTICACION = 8
 
 
 def _migrar_auditoria(conexion: sqlite3.Connection) -> None:
@@ -13,7 +13,8 @@ def _migrar_auditoria(conexion: sqlite3.Connection) -> None:
             created_at TEXT NOT NULL,
             actor_id TEXT REFERENCES usuarios(id) ON DELETE RESTRICT,
             action TEXT NOT NULL CHECK (action IN (
-                'turno.creado', 'turno.estado_actualizado', 'paciente.creado', 'paciente.actualizado',
+                'turno.creado', 'turno.estado_actualizado', 'turno.reprogramado',
+                'paciente.creado', 'paciente.actualizado',
                 'paciente.desactivado', 'paciente.reactivado',
                 'profesional.creado', 'profesional.actualizado',
                 'profesional.desactivado', 'profesional.reactivado',
@@ -33,6 +34,7 @@ def _migrar_auditoria(conexion: sqlite3.Connection) -> None:
             CHECK (
                 (action = 'turno.creado' AND resource_type = 'turno' AND result = 'confirmado') OR
                 (action = 'turno.estado_actualizado' AND resource_type = 'turno' AND result = 'confirmado') OR
+                (action = 'turno.reprogramado' AND resource_type = 'turno' AND result = 'confirmado') OR
                 (action = 'paciente.creado' AND resource_type = 'paciente' AND result = 'confirmado') OR
                 (action = 'paciente.actualizado' AND resource_type = 'paciente' AND result = 'confirmado') OR
                 (action = 'paciente.desactivado' AND resource_type = 'paciente' AND result = 'confirmado') OR
@@ -243,6 +245,15 @@ def _migrar_estado_turnos(conexion: sqlite3.Connection) -> None:
         ''')
 
 
+def _migrar_version_turnos(conexion: sqlite3.Connection) -> None:
+    columnas = {fila[1] for fila in conexion.execute('PRAGMA table_info(turnos)')}
+    if 'version' not in columnas:
+        conexion.execute('''
+            ALTER TABLE turnos ADD COLUMN version INTEGER NOT NULL DEFAULT 1
+                CHECK (typeof(version) = 'integer' AND version > 0)
+        ''')
+
+
 def _migrar_vinculo_profesional(conexion: sqlite3.Connection) -> None:
     """Agregar un rol Profesional y su vínculo 1:1 sin perder FKs dependientes."""
     columnas = {fila[1] for fila in conexion.execute('PRAGMA table_info(usuarios)')}
@@ -325,6 +336,24 @@ def _actualizar_auditoria_ciclo_turnos(conexion: sqlite3.Connection) -> None:
     conexion.execute('DROP TABLE eventos_auditoria_v5')
 
 
+def _actualizar_auditoria_reprogramacion(conexion: sqlite3.Connection) -> None:
+    triggers = {'eventos_auditoria_no_update', 'eventos_auditoria_no_delete'}
+    existentes = {fila[0] for fila in conexion.execute(
+        "SELECT name FROM sqlite_master WHERE type='trigger'")}
+    for trigger in triggers & existentes:
+        conexion.execute(f'DROP TRIGGER {trigger}')
+    conexion.execute('DROP INDEX IF EXISTS ix_eventos_auditoria_fecha_id')
+    conexion.execute('ALTER TABLE eventos_auditoria RENAME TO eventos_auditoria_v6')
+    _migrar_auditoria(conexion)
+    conexion.execute('''
+        INSERT INTO eventos_auditoria
+            (id, created_at, actor_id, action, resource_type, resource_id, result)
+        SELECT id, created_at, actor_id, action, resource_type, resource_id, result
+        FROM eventos_auditoria_v6
+    ''')
+    conexion.execute('DROP TABLE eventos_auditoria_v6')
+
+
 class MigracionAutenticacionError(RuntimeError):
     """Error público y genérico al preparar el almacenamiento de autenticación."""
 
@@ -369,7 +398,7 @@ def migrar_sqlite(ruta_db: str | Path) -> None:
                 conexion.execute('UPDATE auth_schema_version SET version=2')
                 tablas.add('eventos_auditoria')
                 version = (2,)
-            if version not in ((2,), (3,), (4,), (5,), (6,),
+            if version not in ((2,), (3,), (4,), (5,), (6,), (7,),
                                (VERSION_ESQUEMA_AUTENTICACION,)):
                 raise MigracionAutenticacionError('La versión de autenticación no es compatible.')
             if not {'usuarios', 'sesiones', 'eventos_auditoria'} <= tablas:
@@ -402,8 +431,15 @@ def migrar_sqlite(ruta_db: str | Path) -> None:
             if version == (6,):
                 _migrar_vinculo_profesional(conexion)
                 conexion.execute('UPDATE auth_schema_version SET version=7')
+                version = (7,)
             else:
                 _migrar_vinculo_profesional(conexion)
+            if version == (7,):
+                _migrar_version_turnos(conexion)
+                _actualizar_auditoria_reprogramacion(conexion)
+                conexion.execute('UPDATE auth_schema_version SET version=8')
+            else:
+                _migrar_version_turnos(conexion)
             if conexion.execute('PRAGMA foreign_key_check').fetchone() is not None:
                 raise MigracionAutenticacionError(
                     'La migración produciría referencias incompletas.')
@@ -447,6 +483,7 @@ def migrar_sqlite(ruta_db: str | Path) -> None:
         _migrar_catalogos(conexion)
         _migrar_disponibilidad(conexion)
         _migrar_estado_turnos(conexion)
+        _migrar_version_turnos(conexion)
         if conexion.execute('PRAGMA foreign_key_check').fetchone() is not None:
             raise MigracionAutenticacionError(
                 'La migración produciría referencias incompletas.')

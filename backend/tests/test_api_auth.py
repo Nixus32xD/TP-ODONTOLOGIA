@@ -146,6 +146,11 @@ class ApiAutenticacionTests(unittest.TestCase):
             'rol': 'profesional', 'profesional_id': 'profesional-A'})
         self.assertEqual(creada_cuenta.status_code, 201, creada_cuenta.text)
         profesional = self.login('profesional.a', 'otra-frase-segura-2026')
+        recepcion_creada = self.client.post('/usuarios', headers=self.admin, json={
+            'identificador': 'recepcion.agenda',
+            'password': 'frase-distinta-segura-2026', 'rol': 'recepcion'})
+        self.assertEqual(recepcion_creada.status_code, 201, recepcion_creada.text)
+        recepcion = self.login('recepcion.agenda', 'frase-distinta-segura-2026')
         rango = ('?desde=2026-10-15T09:00:00-03:00'
                  '&hasta=2026-10-15T11:00:00-03:00&limit=1&offset=0')
         auditoria_antes = self.filas_auditoria()
@@ -154,7 +159,11 @@ class ApiAutenticacionTests(unittest.TestCase):
         self.assertEqual((personal.json()['limit'], personal.json()['offset']), (1, 0))
         self.assertEqual(len(personal.json()['items']), 1)
         self.assertIn('profesional_nombre', personal.json()['items'][0])
+        self.assertEqual(personal.json()['items'][0]['version'], 1)
         self.assertNotIn('telefono', personal.json()['items'][0])
+        consulta_recepcion = self.client.get('/turnos' + rango, headers=recepcion)
+        self.assertEqual(consulta_recepcion.status_code, 200, consulta_recepcion.text)
+        self.assertEqual(consulta_recepcion.json()['items'][0]['version'], 1)
 
         agenda_propia = self.client.get('/turnos' + rango, headers=profesional)
         self.assertEqual(agenda_propia.status_code, 200, agenda_propia.text)
@@ -247,6 +256,22 @@ class ApiAutenticacionTests(unittest.TestCase):
             tablas = {fila[0] for fila in conexion.execute(
                 "SELECT name FROM sqlite_master WHERE type='table'")}
         self.assertFalse({'usuarios', 'sesiones', 'auth_schema_version'} & tablas)
+
+    def test_api_sqlite_falla_cerrado_si_falta_version_en_esquema_vigente(self):
+        auditoria_antes = self.filas_auditoria()
+        with closing(sqlite3.connect(self.ruta)) as conexion:
+            conexion.execute('ALTER TABLE turnos DROP COLUMN version')
+            conexion.commit()
+
+        respuesta = self.client.post('/turnos', headers=self.admin, json={
+            'paciente_id': 'paciente-A', 'profesional_id': 'profesional-A',
+            'box_id': 'box-A', 'inicio': '2026-10-15T09:00:00-03:00',
+            'fin': '2026-10-15T09:30:00-03:00'})
+
+        self.assertEqual(respuesta.status_code, 503, respuesta.text)
+        self.assertEqual(respuesta.json()['codigo'], 'autenticacion_no_configurada')
+        self.assertEqual(self.filas_turno(), 0)
+        self.assertEqual(self.filas_auditoria(), auditoria_antes)
 
 
 if __name__ == '__main__':

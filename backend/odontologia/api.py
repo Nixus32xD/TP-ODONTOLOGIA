@@ -74,6 +74,53 @@ class RespuestaTurno(BaseModel):
     estado: str
 
 
+class SolicitudReprogramacion(BaseModel):
+    model_config = ConfigDict(extra='forbid', json_schema_extra={
+        'examples': [{
+            'version': 1,
+            'inicio': '2026-11-02T10:00:00-03:00',
+            'fin': '2026-11-02T10:30:00-03:00',
+            'profesional_id': 'profesional-B',
+            'box_id': 'box-B',
+        }],
+    })
+    version: StrictInt = Field(gt=0, description='Versión actual devuelta al consultar el turno.')
+    inicio: datetime = Field(description='ISO 8601 con offset explícito y minuto exacto.')
+    fin: datetime = Field(description='ISO 8601 con offset explícito y minuto exacto.')
+    profesional_id: StrictStr
+    box_id: StrictStr
+
+    @field_validator('inicio', 'fin', mode='before')
+    @classmethod
+    def fecha_iso(cls, valor):
+        if not isinstance(valor, str) or 'T' not in valor:
+            raise ValueError('Se requiere fecha-hora ISO con T y offset explícito.')
+        return valor
+
+
+class RespuestaReprogramacion(BaseModel):
+    model_config = ConfigDict(json_schema_extra={
+        'examples': [{
+            'id': 42,
+            'paciente_id': 'paciente-A',
+            'profesional_id': 'profesional-B',
+            'box_id': 'box-B',
+            'inicio': '2026-11-02T13:00:00Z',
+            'fin': '2026-11-02T13:30:00Z',
+            'estado': 'reservado',
+            'version': 2,
+        }],
+    })
+    id: int
+    paciente_id: str
+    profesional_id: str
+    box_id: str
+    inicio: datetime
+    fin: datetime
+    estado: str
+    version: int
+
+
 class RespuestaEstadoTurno(BaseModel):
     id: int
     estado: str
@@ -261,6 +308,7 @@ class RespuestaListaBloqueos(BaseModel):
 
 ESTADOS_ERROR = {'entrada_invalida': 422, 'recurso_desconocido': 404,
                  'turno_no_encontrado': 404, 'transicion_invalida': 409,
+                 'version_desactualizada': 409, 'turno_no_reprogramable': 409,
                  'recurso_inactivo': 409,
                  'fuera_de_disponibilidad': 409, 'turnos_afectados': 409,
                  'conflicto_profesional': 409, 'conflicto_box': 409,
@@ -438,6 +486,25 @@ def crear_app(ruta_db: str | Path | None = None, *, timeout_segundos: float = 5.
             id=turno.id, paciente_id=turno.paciente_id,
             profesional_id=turno.profesional_id, box_id=turno.box_id,
             inicio=turno.inicio, fin=turno.fin, estado='reservado')
+
+    @app.post('/turnos/{turno_id}/reprogramacion',
+              response_model=RespuestaReprogramacion, responses={
+                  404: {'model': ErrorHTTP}, 409: {'model': ErrorHTTP},
+                  422: {'model': ErrorHTTP}, 500: {'model': ErrorHTTP},
+                  **respuestas_auth,
+              })
+    def reprogramar(turno_id: int, solicitud: SolicitudReprogramacion,
+                    identidad=Depends(personal_operativo)):
+        from odontologia.reprogramacion import reprogramar_turno
+
+        asegurar_esquema()
+        resultado = reprogramar_turno(
+            engine or auth_engine, turno_id,
+            version_esperada=solicitud.version,
+            inicio=solicitud.inicio, fin=solicitud.fin,
+            profesional_id=solicitud.profesional_id, box_id=solicitud.box_id,
+            actor_id=identidad['usuario_id'], timeout_segundos=timeout_segundos)
+        return RespuestaReprogramacion(**resultado.__dict__)
 
     def cambiar_estado(turno_id: int, destino: str, identidad):
         return transicionar_estado_turno(

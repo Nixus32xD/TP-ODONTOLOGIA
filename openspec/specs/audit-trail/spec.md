@@ -38,7 +38,7 @@ El sistema SHALL confirmar cada mutación auditable y su evento en la misma tran
 - **THEN** la operación termina con error 503 genérico y no expone si la cuenta existe
 
 ### Requirement: Operaciones incluidas en auditoría
-El sistema SHALL auditar altas de turno confirmadas; creación, cambio de rol y cambio de estado de cuentas; bootstrap del Administrador; y aperturas, cierres y rechazos de sesión.
+El sistema SHALL auditar altas de turno confirmadas y reprogramaciones confirmadas; creación, cambio de rol y cambio de estado de cuentas; bootstrap del Administrador; y aperturas, cierres y rechazos de sesión.
 
 #### Scenario: Cuenta actualizada
 - **GIVEN** un Administrador crea una cuenta o cambia su rol o estado
@@ -54,6 +54,11 @@ El sistema SHALL auditar altas de turno confirmadas; creación, cambio de rol y 
 - **GIVEN** se crea el primer Administrador
 - **WHEN** se confirma el bootstrap
 - **THEN** queda un evento con actor nulo y recurso de cuenta, sin nombre ni credenciales
+
+#### Scenario: Reprogramación confirmada
+- **GIVEN** Administrador o Recepción reprograma un turno y confirma la transacción
+- **WHEN** se registra el evento `turno.reprogramado`
+- **THEN** contiene actor, recurso `turno`, ID opaco y resultado `confirmado`, sin paciente, recursos, intervalo ni cuerpo
 
 ### Requirement: Consulta de auditoría protegida y paginada
 El sistema SHALL exponer una consulta paginada de eventos sólo para Administrador, con límite predeterminado de 50 y máximo de 100, desplazamiento no negativo y orden estable por fecha UTC descendente e identificador descendente.

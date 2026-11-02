@@ -21,7 +21,7 @@ class EsquemaPostgreSQLTests(unittest.TestCase):
         )
         self.assertEqual(
             set(Turno.__table__.columns.keys()),
-            {'id', 'paciente_id', 'profesional_id', 'box_id', 'inicio_minuto', 'fin_minuto', 'estado'},
+            {'id', 'paciente_id', 'profesional_id', 'box_id', 'inicio_minuto', 'fin_minuto', 'estado', 'version'},
         )
         self.assertIn('inicio_minuto < fin_minuto', {
             str(constraint.sqltext) for constraint in Turno.__table__.constraints

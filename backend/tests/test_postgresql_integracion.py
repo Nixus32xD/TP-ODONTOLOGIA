@@ -651,7 +651,7 @@ class IntegracionPostgreSQLTests(unittest.TestCase):
         finally:
             with self.engine.begin() as conexion:
                 conexion.execute(text(
-                    "UPDATE alembic_version SET version_num = '20261102_0008_professional_accounts'"))
+                    "UPDATE alembic_version SET version_num = '20261102_0009_turn_rescheduling'"))
 
     def test_revision_esquema_desconocida_falla_cerrado(self):
         self._seed_catalogos()
@@ -667,7 +667,7 @@ class IntegracionPostgreSQLTests(unittest.TestCase):
         finally:
             with self.engine.begin() as conexion:
                 conexion.execute(text(
-                    "UPDATE alembic_version SET version_num = '20261102_0008_professional_accounts'"))
+                    "UPDATE alembic_version SET version_num = '20261102_0009_turn_rescheduling'"))
 
         self.assertEqual(contexto.exception.codigo, 'almacenamiento_error')
         with Session(self.engine) as session:
@@ -790,7 +790,7 @@ class IntegracionPostgreSQLTests(unittest.TestCase):
                         'SELECT COUNT(*) FROM horarios_semanales')).scalar_one()
             finally:
                 upgrade_engine.dispose()
-            self.assertEqual(revision, '20261102_0008_professional_accounts')
+            self.assertEqual(revision, '20261102_0009_turn_rescheduling')
             self.assertEqual(tuple(turno), ('paciente-A', 'profesional-A', 'box-A'))
             self.assertEqual(evento, 1)
             self.assertEqual(horarios, 0)
@@ -853,11 +853,68 @@ class IntegracionPostgreSQLTests(unittest.TestCase):
                         conexion.execute(text("UPDATE turnos SET estado='desconocido'"))
             finally:
                 upgrade_engine.dispose()
-            self.assertEqual(revision, '20261102_0008_professional_accounts')
+            self.assertEqual(revision, '20261102_0009_turn_rescheduling')
             self.assertEqual(tuple(turno), (
                 'paciente-A', 'profesional-A', 'box-A', 29700000, 29700030, 'reservado'))
             self.assertEqual(eventos, 1)
         finally:
+            with self.root_engine.begin() as conexion:
+                conexion.execute(text(f'DROP SCHEMA {schema} CASCADE'))
+
+    def test_upgrade_desde_c08_inicializa_version_y_preserva_turno_y_auditoria(self):
+        schema = f'tp_odontologia_rescheduling_{uuid4().hex}'
+        with self.root_engine.begin() as conexion:
+            conexion.execute(text(f'CREATE SCHEMA {schema}'))
+        url = str(make_url(os.environ['DATABASE_URL']).update_query_dict(
+            {'options': f'-csearch_path={schema}'}))
+        config = Config(str(Path(__file__).parents[1] / 'alembic.ini'))
+        engine = None
+        try:
+            with patch.dict(os.environ, {'DATABASE_URL': url}):
+                command.upgrade(config, '20261102_0008_professional_accounts')
+                engine = create_engine(url)
+                with engine.begin() as conexion:
+                    conexion.execute(text(
+                        "INSERT INTO pacientes(id,nombre,telefono,activo) "
+                        "VALUES ('paciente-A','Paciente de prueba',NULL,true)"))
+                    conexion.execute(text(
+                        "INSERT INTO profesionales(id,nombre,activo) "
+                        "VALUES ('profesional-A','Profesional de prueba',true)"))
+                    conexion.execute(text(
+                        "INSERT INTO boxes(id,nombre,activo) "
+                        "VALUES ('box-A','Box de prueba',true)"))
+                    conexion.execute(text(
+                        "INSERT INTO turnos(paciente_id,profesional_id,box_id,"
+                        "inicio_minuto,fin_minuto) VALUES "
+                        "('paciente-A','profesional-A','box-A',29700000,29700030)"))
+                    conexion.execute(text(
+                        "INSERT INTO eventos_auditoria(created_at,action,resource_type,"
+                        "resource_id,result) VALUES (now(),'turno.creado','turno','1',"
+                        "'confirmado')"))
+                command.upgrade(config, 'head')
+
+            with engine.begin() as conexion:
+                revision = conexion.execute(text(
+                    'SELECT version_num FROM alembic_version')).scalar_one()
+                fila = conexion.execute(text(
+                    'SELECT id, estado, version FROM turnos')).one()
+                evento_previo = conexion.execute(text(
+                    "SELECT COUNT(*) FROM eventos_auditoria WHERE action='turno.creado'"
+                )).scalar_one()
+                conexion.execute(text(
+                    "INSERT INTO eventos_auditoria(created_at,action,resource_type,"
+                    "resource_id,result) VALUES (now(),'turno.reprogramado','turno','1',"
+                    "'confirmado')"))
+                evento_nuevo = conexion.execute(text(
+                    "SELECT COUNT(*) FROM eventos_auditoria WHERE action='turno.reprogramado'"
+                )).scalar_one()
+            self.assertEqual(revision, '20261102_0009_turn_rescheduling')
+            self.assertEqual(tuple(fila), (1, 'reservado', 1))
+            self.assertEqual(evento_previo, 1)
+            self.assertEqual(evento_nuevo, 1)
+        finally:
+            if engine is not None:
+                engine.dispose()
             with self.root_engine.begin() as conexion:
                 conexion.execute(text(f'DROP SCHEMA {schema} CASCADE'))
 
@@ -1113,6 +1170,288 @@ class IntegracionPostgreSQLTests(unittest.TestCase):
         with Session(self.engine) as session:
             self.assertEqual(session.get(Turno, turno.id).estado, 'reservado')
 
+    def test_transicion_postgresql_incrementa_version_y_cancelacion_idempotente_no(self):
+        self._seed_catalogos()
+        turno = crear_turno_postgresql(
+            self.engine, paciente_id='paciente-A', profesional_id='profesional-A',
+            box_id='box-A', inicio=datetime(2026, 10, 15, 12, tzinfo=timezone.utc),
+            fin=datetime(2026, 10, 15, 12, 30, tzinfo=timezone.utc))
+        with Session(self.engine) as session:
+            self.assertEqual(session.get(Turno, turno.id).version, 1)
+        transicionar_estado_turno(
+            self.engine, turno.id, 'confirmado', actor_id=None)
+        with Session(self.engine) as session:
+            self.assertEqual(session.get(Turno, turno.id).version, 2)
+        transicionar_estado_turno(
+            self.engine, turno.id, 'cancelado', actor_id=None)
+        version_cancelado = None
+        with Session(self.engine) as session:
+            version_cancelado = session.get(Turno, turno.id).version
+        self.assertEqual(version_cancelado, 3)
+        transicionar_estado_turno(
+            self.engine, turno.id, 'cancelado', actor_id=None)
+        with Session(self.engine) as session:
+            self.assertEqual(session.get(Turno, turno.id).version, version_cancelado)
+
+    def test_reprogramacion_postgresql_rechazos_preservan_version_y_auditoria(self):
+        from odontologia.reprogramacion import reprogramar_turno
+
+        self._seed_catalogos()
+        turno = crear_turno_postgresql(
+            self.engine, paciente_id='paciente-A', profesional_id='profesional-A',
+            box_id='box-A', inicio=datetime(2026, 10, 15, 12, tzinfo=timezone.utc),
+            fin=datetime(2026, 10, 15, 12, 30, tzinfo=timezone.utc))
+        with self.engine.begin() as conexion:
+            conexion.execute(text(
+                "DELETE FROM horarios_semanales WHERE profesional_id='profesional-B'"))
+
+        def assert_rechazo(esperado, *, version=1, inicio=None, fin=None,
+                           profesional_id='profesional-A', box_id='box-B'):
+            if inicio is None:
+                inicio = datetime(2026, 10, 15, 13, tzinfo=timezone.utc)
+            if fin is None:
+                fin = datetime(2026, 10, 15, 13, 30, tzinfo=timezone.utc)
+            with Session(self.engine) as session:
+                fila = session.get(Turno, turno.id)
+                anterior = (fila.paciente_id, fila.profesional_id, fila.box_id,
+                            fila.inicio_minuto, fila.fin_minuto, fila.estado, fila.version)
+            with self.assertRaises(ErrorAgenda) as error:
+                reprogramar_turno(
+                    self.engine, turno.id, version_esperada=version,
+                    inicio=inicio, fin=fin, profesional_id=profesional_id,
+                    box_id=box_id, actor_id=None)
+            self.assertEqual(error.exception.codigo, esperado)
+            with Session(self.engine) as session:
+                fila = session.get(Turno, turno.id)
+                actual = (fila.paciente_id, fila.profesional_id, fila.box_id,
+                          fila.inicio_minuto, fila.fin_minuto, fila.estado, fila.version)
+                self.assertEqual(actual, anterior)
+                self.assertEqual(session.scalar(select(func.count()).select_from(
+                    EventoAuditoria).where(
+                        EventoAuditoria.action == 'turno.reprogramado')), 0)
+
+        assert_rechazo(
+            'version_desactualizada', version=7, profesional_id='profesional-B')
+        assert_rechazo('fuera_de_disponibilidad', profesional_id='profesional-B')
+        assert_rechazo(
+            'entrada_invalida', fin=datetime(2026, 10, 15, 13, 45, tzinfo=timezone.utc))
+        assert_rechazo(
+            'fuera_de_disponibilidad',
+            inicio=datetime(2026, 10, 16, 2, 45, tzinfo=timezone.utc),
+            fin=datetime(2026, 10, 16, 3, 15, tzinfo=timezone.utc))
+        crear_bloqueo(
+            self.engine, 'profesional', 'profesional-A',
+            datetime(2026, 10, 15, 13, tzinfo=timezone.utc),
+            datetime(2026, 10, 15, 14, tzinfo=timezone.utc))
+        assert_rechazo('fuera_de_disponibilidad')
+        with self.engine.begin() as conexion:
+            conexion.execute(text("UPDATE pacientes SET activo=false WHERE id='paciente-A'"))
+        assert_rechazo('recurso_inactivo')
+        with self.engine.begin() as conexion:
+            conexion.execute(text("UPDATE pacientes SET activo=true WHERE id='paciente-A'"))
+            conexion.execute(text("UPDATE profesionales SET activo=false WHERE id='profesional-A'"))
+        assert_rechazo('recurso_inactivo')
+        transicionar_estado_turno(self.engine, turno.id, 'cancelado', actor_id=None)
+        assert_rechazo('turno_no_reprogramable', version=2)
+
+    def test_reprogramacion_postgresql_valida_audita_y_cambia_recursos(self):
+        from odontologia.reprogramacion import reprogramar_turno
+
+        self._seed_catalogos()
+        turno = crear_turno_postgresql(
+            self.engine, paciente_id='paciente-A', profesional_id='profesional-A',
+            box_id='box-A', inicio=datetime(2026, 10, 15, 12, tzinfo=timezone.utc),
+            fin=datetime(2026, 10, 15, 12, 30, tzinfo=timezone.utc))
+        actor_id = crear_primer_administrador(
+            self.engine, 'admin.reprogramar', 'frase-larga-segura-prueba-2026')['id']
+        resultado = reprogramar_turno(
+            self.engine, turno.id, version_esperada=1,
+            inicio=datetime(2026, 10, 15, 13, tzinfo=timezone.utc),
+            fin=datetime(2026, 10, 15, 13, 30, tzinfo=timezone.utc),
+            profesional_id='profesional-B', box_id='box-B', actor_id=actor_id)
+        self.assertEqual((resultado.paciente_id, resultado.profesional_id,
+                          resultado.box_id, resultado.inicio, resultado.fin,
+                          resultado.estado, resultado.version), (
+            'paciente-A', 'profesional-B', 'box-B',
+            datetime(2026, 10, 15, 13, tzinfo=timezone.utc),
+            datetime(2026, 10, 15, 13, 30, tzinfo=timezone.utc), 'reservado', 2))
+        with Session(self.engine) as session:
+            evento = session.scalar(select(EventoAuditoria).where(
+                EventoAuditoria.action == 'turno.reprogramado'))
+            self.assertEqual((evento.actor_id, evento.resource_type,
+                              evento.resource_id, evento.result),
+                             (actor_id, 'turno', str(turno.id), 'confirmado'))
+
+    def test_reprogramacion_postgresql_conflicto_en_profesional_y_exclusion_propia(self):
+        from odontologia.reprogramacion import reprogramar_turno
+
+        self._seed_catalogos()
+        turno = crear_turno_postgresql(
+            self.engine, paciente_id='paciente-A', profesional_id='profesional-A',
+            box_id='box-A', inicio=datetime(2026, 10, 15, 12, tzinfo=timezone.utc),
+            fin=datetime(2026, 10, 15, 12, 30, tzinfo=timezone.utc))
+        crear_turno_postgresql(
+            self.engine, paciente_id='paciente-B', profesional_id='profesional-A',
+            box_id='box-B', inicio=datetime(2026, 10, 15, 13, tzinfo=timezone.utc),
+            fin=datetime(2026, 10, 15, 13, 30, tzinfo=timezone.utc))
+        with Session(self.engine) as session:
+            original = session.get(Turno, turno.id)
+            inicio_original, fin_original = original.inicio_minuto, original.fin_minuto
+        with self.assertRaises(ErrorAgenda) as error:
+            reprogramar_turno(
+                self.engine, turno.id, version_esperada=1,
+                inicio=datetime(2026, 10, 15, 13, tzinfo=timezone.utc),
+                fin=datetime(2026, 10, 15, 13, 30, tzinfo=timezone.utc),
+                profesional_id='profesional-A', box_id='box-A', actor_id=None)
+        self.assertEqual(error.exception.codigo, 'conflicto_profesional')
+        with Session(self.engine) as session:
+            vigente = session.get(Turno, turno.id)
+            self.assertEqual((vigente.profesional_id, vigente.box_id,
+                              vigente.inicio_minuto, vigente.fin_minuto,
+                              vigente.estado, vigente.version),
+                             ('profesional-A', 'box-A', inicio_original,
+                              fin_original, 'reservado', 1))
+            self.assertEqual(session.scalar(select(func.count()).select_from(
+                EventoAuditoria).where(
+                    EventoAuditoria.action == 'turno.reprogramado')), 0)
+        resultado = reprogramar_turno(
+            self.engine, turno.id, version_esperada=1,
+            inicio=datetime(2026, 10, 15, 12, tzinfo=timezone.utc),
+            fin=datetime(2026, 10, 15, 12, 30, tzinfo=timezone.utc),
+            profesional_id='profesional-A', box_id='box-A', actor_id=None)
+        self.assertEqual((resultado.profesional_id, resultado.box_id, resultado.version),
+                         ('profesional-A', 'box-A', 2))
+
+    def test_reprogramacion_postgresql_conflicto_en_box(self):
+        from odontologia.reprogramacion import reprogramar_turno
+
+        self._seed_catalogos()
+        turno = crear_turno_postgresql(
+            self.engine, paciente_id='paciente-A', profesional_id='profesional-A',
+            box_id='box-A', inicio=datetime(2026, 10, 15, 12, tzinfo=timezone.utc),
+            fin=datetime(2026, 10, 15, 12, 30, tzinfo=timezone.utc))
+        crear_turno_postgresql(
+            self.engine, paciente_id='paciente-B', profesional_id='profesional-B',
+            box_id='box-A', inicio=datetime(2026, 10, 15, 13, tzinfo=timezone.utc),
+            fin=datetime(2026, 10, 15, 13, 30, tzinfo=timezone.utc))
+        with Session(self.engine) as session:
+            original = session.get(Turno, turno.id)
+            inicio_original, fin_original = original.inicio_minuto, original.fin_minuto
+        with self.assertRaises(ErrorAgenda) as error:
+            reprogramar_turno(
+                self.engine, turno.id, version_esperada=1,
+                inicio=datetime(2026, 10, 15, 13, tzinfo=timezone.utc),
+                fin=datetime(2026, 10, 15, 13, 30, tzinfo=timezone.utc),
+                profesional_id='profesional-A', box_id='box-A', actor_id=None)
+        self.assertEqual(error.exception.codigo, 'conflicto_box')
+        with Session(self.engine) as session:
+            vigente = session.get(Turno, turno.id)
+            self.assertEqual((vigente.profesional_id, vigente.box_id,
+                              vigente.inicio_minuto, vigente.fin_minuto,
+                              vigente.estado, vigente.version),
+                             ('profesional-A', 'box-A', inicio_original,
+                              fin_original, 'reservado', 1))
+            self.assertEqual(session.scalar(select(func.count()).select_from(
+                EventoAuditoria).where(
+                    EventoAuditoria.action == 'turno.reprogramado')), 0)
+
+    def test_reprogramacion_postgresql_con_misma_version_serializa_una_confirmacion(self):
+        from odontologia.reprogramacion import reprogramar_turno
+
+        self._seed_catalogos()
+        turno = crear_turno_postgresql(
+            self.engine, paciente_id='paciente-A', profesional_id='profesional-A',
+            box_id='box-A', inicio=datetime(2026, 10, 15, 12, tzinfo=timezone.utc),
+            fin=datetime(2026, 10, 15, 12, 30, tzinfo=timezone.utc))
+        actor_id = crear_primer_administrador(
+            self.engine, 'admin.carrera-reprog', 'frase-larga-segura-prueba-2026')['id']
+        barrera = Barrier(2)
+        resultados = []
+
+        def reprogramar(hora):
+            barrera.wait()
+            inicio = datetime(2026, 10, 15, hora, tzinfo=timezone.utc)
+            fin = datetime(2026, 10, 15, hora, 30, tzinfo=timezone.utc)
+            try:
+                resultados.append(reprogramar_turno(
+                    self.engine, turno.id, version_esperada=1,
+                    inicio=inicio, fin=fin, profesional_id='profesional-B',
+                    box_id='box-B', actor_id=actor_id))
+            except ErrorAgenda as error:
+                resultados.append(error.codigo)
+
+        hilos = [Thread(target=reprogramar, args=(hora,)) for hora in (13, 14)]
+        for hilo in hilos:
+            hilo.start()
+        for hilo in hilos:
+            hilo.join(10)
+        self.assertTrue(all(not hilo.is_alive() for hilo in hilos))
+        self.assertEqual(sum(not isinstance(valor, str) for valor in resultados), 1)
+        self.assertEqual(resultados.count('version_desactualizada'), 1)
+        with Session(self.engine) as session:
+            vigente = session.get(Turno, turno.id)
+            eventos = session.scalars(select(EventoAuditoria).where(
+                EventoAuditoria.action == 'turno.reprogramado',
+                EventoAuditoria.resource_id == str(turno.id))).all()
+            self.assertEqual(vigente.version, 2)
+            self.assertEqual(vigente.profesional_id, 'profesional-B')
+            self.assertEqual(len(eventos), 1)
+            self.assertEqual(eventos[0].actor_id, actor_id)
+
+    def test_fallo_de_auditoria_postgresql_revierte_reprogramacion(self):
+        from odontologia.reprogramacion import reprogramar_turno
+
+        self._seed_catalogos()
+        turno = crear_turno_postgresql(
+            self.engine, paciente_id='paciente-A', profesional_id='profesional-A',
+            box_id='box-A', inicio=datetime(2026, 10, 15, 12, tzinfo=timezone.utc),
+            fin=datetime(2026, 10, 15, 12, 30, tzinfo=timezone.utc))
+        actor_id = crear_primer_administrador(
+            self.engine, 'admin.audit-reprog', 'frase-larga-segura-prueba-2026')['id']
+        with Session(self.engine) as session:
+            fila_original = session.get(Turno, turno.id)
+            anterior = (fila_original.paciente_id, fila_original.profesional_id,
+                        fila_original.box_id, fila_original.inicio_minuto,
+                        fila_original.fin_minuto, fila_original.estado,
+                        fila_original.version)
+        with patch('odontologia.reprogramacion.registrar_evento_session',
+                   side_effect=ErrorAuditoria('fallo de prueba')):
+            with self.assertRaises(ErrorAgenda) as error:
+                reprogramar_turno(
+                    self.engine, turno.id, version_esperada=1,
+                    inicio=datetime(2026, 10, 15, 13, tzinfo=timezone.utc),
+                    fin=datetime(2026, 10, 15, 13, 30, tzinfo=timezone.utc),
+                    profesional_id='profesional-B', box_id='box-B', actor_id=actor_id)
+        self.assertEqual(error.exception.codigo, 'almacenamiento_error')
+        with Session(self.engine) as session:
+            fila = session.get(Turno, turno.id)
+            actual = (fila.paciente_id, fila.profesional_id, fila.box_id,
+                      fila.inicio_minuto, fila.fin_minuto, fila.estado, fila.version)
+            self.assertEqual(actual, anterior)
+            self.assertEqual(session.scalar(select(func.count()).select_from(
+                EventoAuditoria).where(
+                    EventoAuditoria.action == 'turno.reprogramado')), 0)
+
+    def test_reprogramacion_postgresql_acepta_fin_local_a_medianoche(self):
+        from odontologia.reprogramacion import reprogramar_turno
+
+        self._seed_catalogos()
+        guardar_horario(self.engine, 'profesional', 'profesional-A', {
+            '4': [{'inicio': '23:00', 'fin': '24:00'}]})
+        guardar_horario(self.engine, 'box', 'box-A', {
+            '4': [{'inicio': '23:00', 'fin': '24:00'}]})
+        turno = crear_turno_postgresql(
+            self.engine, paciente_id='paciente-A', profesional_id='profesional-B',
+            box_id='box-B', inicio=datetime(2026, 10, 15, 12, tzinfo=timezone.utc),
+            fin=datetime(2026, 10, 15, 12, 30, tzinfo=timezone.utc))
+        resultado = reprogramar_turno(
+            self.engine, turno.id, version_esperada=1,
+            inicio=datetime(2026, 10, 16, 2, 30, tzinfo=timezone.utc),
+            fin=datetime(2026, 10, 16, 3, 0, tzinfo=timezone.utc),
+            profesional_id='profesional-A', box_id='box-A', actor_id=None)
+        self.assertEqual(resultado.fin, datetime(2026, 10, 16, 3, tzinfo=timezone.utc))
+        self.assertEqual((resultado.estado, resultado.version), ('reservado', 2))
+
     def test_validador_postgresql_falla_cerrado_si_falta_tabla_c07(self):
         schema = f'tp_odontologia_missing_availability_{uuid4().hex}'
         with self.root_engine.begin() as conexion:
@@ -1168,7 +1507,7 @@ class IntegracionPostgreSQLTests(unittest.TestCase):
                 columnas = {fila[0] for fila in conexion.execute(text(
                     "SELECT column_name FROM information_schema.columns "
                     "WHERE table_schema=current_schema() AND table_name='usuarios'"))}
-                self.assertEqual(revision, '20261102_0008_professional_accounts')
+                self.assertEqual(revision, '20261102_0009_turn_rescheduling')
                 self.assertIn('profesional_id', columnas)
                 self.assertEqual(conexion.execute(text(
                     "SELECT id, rol, profesional_id FROM usuarios WHERE id='usuario-admin'"
@@ -1205,13 +1544,15 @@ class IntegracionPostgreSQLTests(unittest.TestCase):
         engine = None
         try:
             with patch.dict(os.environ, {'DATABASE_URL': url}):
-                command.upgrade(config, '20261102_0007_turn_status')
+                command.upgrade(config, 'head')
             engine = create_engine(url)
             with engine.begin() as conexion:
                 conexion.execute(text(
-                    "UPDATE alembic_version SET version_num='20261102_0008_professional_accounts'"))
+                    'ALTER TABLE usuarios DROP CONSTRAINT ck_usuarios_vinculo_profesional'))
                 conexion.execute(text(
-                    'ALTER TABLE usuarios ADD COLUMN profesional_id VARCHAR(64)'))
+                    'ALTER TABLE usuarios DROP CONSTRAINT uq_usuarios_profesional_id'))
+                conexion.execute(text(
+                    'ALTER TABLE usuarios DROP CONSTRAINT fk_usuarios_profesional_id_profesionales'))
                 conexion.execute(text(
                     'ALTER TABLE usuarios DROP COLUMN profesional_id'))
             with self.assertRaisesRegex(RuntimeError, 'vínculo profesional'):
@@ -1221,6 +1562,43 @@ class IntegracionPostgreSQLTests(unittest.TestCase):
                 engine.dispose()
             with self.root_engine.begin() as conexion:
                 conexion.execute(text(f'DROP SCHEMA {schema} CASCADE'))
+
+    def test_api_postgresql_falla_cerrado_si_falta_version_de_turno(self):
+        self._seed_catalogos()
+        crear_primer_administrador(
+            self.engine, 'admin.version-ausente', 'frase-larga-segura-prueba-2026')
+        with TestClient(crear_app()) as client:
+            sesion = client.post('/sesiones', json={
+                'identificador': 'admin.version-ausente',
+                'password': 'frase-larga-segura-prueba-2026'})
+            self.assertEqual(sesion.status_code, 200, sesion.text)
+            headers = {'Authorization': f"Bearer {sesion.json()['access_token']}"}
+
+            with self.engine.begin() as conexion:
+                revision = conexion.execute(text(
+                    'SELECT version_num FROM alembic_version')).scalar_one()
+                self.assertEqual(revision, '20261102_0009_turn_rescheduling')
+                conexion.execute(text(
+                    'ALTER TABLE turnos DROP CONSTRAINT ck_turnos_version_positiva'))
+                conexion.execute(text('ALTER TABLE turnos DROP COLUMN version'))
+            try:
+                respuesta = client.post('/turnos', headers=headers, json={
+                    'paciente_id': 'paciente-A', 'profesional_id': 'profesional-A',
+                    'box_id': 'box-A', 'inicio': '2026-11-02T12:00:00Z',
+                    'fin': '2026-11-02T12:30:00Z'})
+                self.assertEqual(respuesta.status_code, 503, respuesta.text)
+                self.assertEqual(respuesta.json()['codigo'], 'autenticacion_no_configurada')
+                with Session(self.engine) as session:
+                    self.assertEqual(session.scalar(select(func.count()).select_from(Turno)), 0)
+                    self.assertEqual(session.scalar(select(func.count()).select_from(
+                        EventoAuditoria).where(EventoAuditoria.action == 'turno.creado')), 0)
+            finally:
+                with self.engine.begin() as conexion:
+                    conexion.execute(text(
+                        'ALTER TABLE turnos ADD COLUMN version INTEGER NOT NULL DEFAULT 1'))
+                    conexion.execute(text(
+                        'ALTER TABLE turnos ADD CONSTRAINT ck_turnos_version_positiva '
+                        'CHECK (version > 0)'))
 
     def test_api_postgresql_falla_cerrado_si_falta_estado_en_turnos(self):
         self._seed_catalogos()
