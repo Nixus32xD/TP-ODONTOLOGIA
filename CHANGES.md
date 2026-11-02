@@ -319,11 +319,12 @@ Secuencia compatible con dependencias, sin prometer una optimización temporal n
 
 ### [C-12] `respaldar-y-restaurar-agenda`
 
-- **Estado**: [ ] planificado; no implementado ni propuesto en OpenSpec.
+- **Estado**: En implementación; 20/21 tareas completadas. Falta verificar el build real de Docker (no hay Docker, Podman ni Buildah disponibles en Windows o WSL); sigue activo en OpenSpec, sin Archive.
 - **Scope**:
-  - Preparar comandos restringidos de backup coherente del almacenamiento y restauración sobre un destino nuevo, con manifiesto de versión/integridad; definir retención, protección y recuperación sin sobrescribir la agenda activa.
-  - Documentar recuperación de una copia, validación de esquema y prueba de alta tras restaurar; adaptar el mecanismo al motor realmente elegido en C-02, incluyendo adjuntos si se incorporan después.
-  - Tests: backup durante actividad controlada, archivo corrupto/incompatible, destino existente preservado y restauración ejecutada con comprobación de filas; conservar copia no equivale a demostrar recuperación.
+  - Implementar respaldos completos, manuales y locales para SQLite y PostgreSQL optativo, con manifiesto UTC, versiones, `table_counts` del mismo snapshot y SHA-256; el hash detecta alteración accidental, pero no autentica el manifiesto.
+  - Restaurar únicamente en un destino explícito nuevo, validando esquema, integridad, claves foráneas y recuentos; no sobrescribir destinos, purgar copias ni incluir secretos `.env`/JWT o enviar datos a servicios externos.
+  - Verificar actividad concurrente, copia corrupta/incompatible, destino existente preservado, recuperación con datos ficticios y una escritura posterior; distinguir evidencia técnica de prueba humana o de producción.
+  - La suite completa pasa (335 tests, 4 omitidos), incluidos los nuevos casos de publicación atómica. Los permisos POSIX y los adapters se comprobaron en WSL; la integración PostgreSQL aislada previa pasa (41/41). Queda pendiente un build real de la imagen backend con cliente PostgreSQL 16. El CLI Docker no está instalado y tampoco hay engine disponible en WSL; no afirmar ese build como verificado.
 - **Dependencias**: C-02, C-03, C-04.
 - **Governance**: ALTO — backup y restauración.
 - **Leer antes**:

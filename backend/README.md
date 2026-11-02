@@ -169,3 +169,69 @@ $env:ODONTOLOGIA_TEST_DATABASE_URL = 'postgresql+psycopg://usuario:clave@127.0.0
 ```
 
 Si la variable no está definida, las pruebas PostgreSQL se omiten; esa ejecución no verifica PostgreSQL.
+
+## Copias locales de agenda (C-12)
+
+El bundle de backup es un directorio nuevo con el payload completo (`agenda.sqlite3` o `agenda.dump`) y `manifest.json`. El manifiesto v1 incluye `created_at_utc` (ISO 8601 en UTC), `backend`, `application_version`, `schema_version`, `payload_name`, `payload_size_bytes`, `payload_sha256` (SHA-256 hexadecimal) y `table_counts` (nombre de cada tabla vigente y cantidad de filas como entero no negativo). Los conteos son agregados y no incluyen valores ni identificadores de filas. La versión del backend se define en `odontologia.version`; el esquema aceptado actualmente es SQLite `8` o PostgreSQL `20261102_0009_turn_rescheduling`. El hash detecta corrupción/cambios accidentales del payload, no autentica el manifiesto si un atacante reemplaza ambos; los conteos no prometen confidencialidad. El manifiesto no guarda URL, ruta de origen, credenciales ni datos personales.
+
+Los comandos C-12 son manuales y locales; la API y el arranque no crean ni restauran copias. Los bundles contienen la base completa, incluidas fichas, cuentas/sesiones y auditoría, por lo que deben tratarse como datos sensibles. No contienen `.env` ni el secreto JWT. No se suben automáticamente, no tienen cifrado gestionado ni política de purga automática. Las pruebas usan bases temporales y datos ficticios; no demuestran recuperación humana ni preparación de producción.
+
+Guarda cada bundle en una ruta local fuera del repositorio (por ejemplo, `N:\copias`), limita quién puede acceder y no lo compartas. La orden `crear` también muestra un aviso porque el bundle contiene datos sensibles de pacientes, cuentas y auditoría.
+
+En POSIX, staging y bundle publicado usan modo `0700`, mientras que payload y manifiesto usan `0600` durante la preparación y después de publicar. En Windows no se cambia ni se certifica el ACL heredado del directorio/volumen; revisarlo según el equipo donde se guarde la copia.
+
+Para SQLite, configurar la base activa y pedir un directorio de bundle nuevo desde `backend/` en PowerShell:
+
+```powershell
+$env:ODONTOLOGIA_PERSISTENCIA = 'sqlite'
+$env:ODONTOLOGIA_DB = 'C:\ruta\agenda.sqlite3'
+..\.venv\Scripts\python.exe -m odontologia.backup crear 'N:\copias\agenda-2026-11-02'
+```
+
+El adapter SQLite abre el origen en sólo lectura y usa la Online Backup API, que produce un snapshot coherente aunque haya conexiones concurrentes y contempla la base en modo WAL. Luego calcula `table_counts` leyendo el archivo ya copiado, no la base activa. No se usa `copy`/`Copy-Item` sobre el archivo activo. La operación no confirma transacciones ajenas ni modifica agenda, versión de esquema o auditoría.
+
+Antes de copiar, la base debe declarar `auth_schema_version=8`, incluir `turnos.version`, superar `PRAGMA integrity_check` y no tener filas en `PRAGMA foreign_key_check`. No se migra ni repara el origen. El bundle se prepara en un directorio temporal exclusivo dentro del mismo padre y sólo se publica en un destino que todavía no existe; si la copia falla se elimina ese staging y se conserva intacto cualquier destino previo. La comprobación puede rechazar bases C-01 standalone sin migrar, archivos ausentes/corruptos o una revisión incompatible.
+
+Los rechazos usan códigos estables internos: `origen_ausente`, `origen_invalido`, `esquema_incompatible`, `integridad_invalida`, `referencias_invalidas`, `destino_existente`, `configuracion_invalida`, `bundle_invalido`, `herramienta_ausente`, `herramienta_invalida`, `version_incompatible`, `servidor_no_disponible` y `operacion_fallida`. La CLI presenta un mensaje breve; el detalle del motor no debe revelar rutas o secretos. Los estados son: bundle creado y verificado, rechazo previo sin salida, o fallo sin destino publicado. Esto no constituye evidencia de una restauración real.
+
+La verificación es offline y de sólo lectura respecto del bundle: SQLite comprueba hash, versión de esquema, `integrity_check` y claves foráneas; PostgreSQL comprueba el manifiesto/hash y que `pg_restore --list` pueda leer el archive. No requiere conectarse al servidor ni demuestra que el destino vaya a aceptar la restauración.
+
+```powershell
+..\.venv\Scripts\python.exe -m odontologia.backup verificar 'N:\copias\agenda-2026-11-02'
+```
+
+La restauración SQLite requiere que la carpeta destino exista y que el archivo destino no exista. Se prepara en staging en el mismo volumen, se comprueban integridad, revisión y recuentos, y se publica con una operación exclusiva que rechaza carreras; nunca reemplaza la agenda activa, un archivo existente o un destino dentro del bundle. Si el filesystem no permite publicar mediante enlace duro, la operación falla cerrada y no crea un destino utilizable.
+
+```powershell
+..\.venv\Scripts\python.exe -m odontologia.backup restaurar `
+  'N:\copias\agenda-2026-11-02' 'N:\pruebas\agenda-recuperada.sqlite3'
+```
+
+La suite usa fixtures ficticios: restaura a archivo nuevo, abre una conexión SQLite nueva, comprueba una fila y permite una inserción ficticia posterior. Eso acredita el flujo técnico automatizado en temporales; no acredita una recuperación de datos reales ni una revisión humana. En este host Windows no se pudo crear un symlink en la prueba (WinError 1314); el rechazo se implementa, pero esa ruta específica quedó sin prueba de ejecución.
+
+Para PostgreSQL, seleccionar el motor ya configurado y pasar un nombre de base nuevo (no una URL ni un path). El usuario de conexión necesita `CREATEDB` y permiso para conectarse a `postgres`. El adapter consulta primero que el destino no exista, crea una base temporal aleatoria, ejecuta `pg_restore --exit-on-error`, compara revision, constraints y los 14 recuentos contra el manifiesto, cierra sólo las conexiones que abrió y renombra el staging únicamente si el nombre final sigue libre. En cualquier error limpia sólo la base temporal propia; no termina conexiones ajenas ni borra una base existente. Los nombres se restringen a minúsculas, dígitos y guion bajo (máximo 63 caracteres).
+
+```powershell
+$env:ODONTOLOGIA_PERSISTENCIA = 'postgresql'
+$env:DATABASE_URL = 'postgresql+psycopg://usuario:clave@127.0.0.1:55432/odontologia_test'
+..\.venv\Scripts\python.exe -m odontologia.backup restaurar `
+  'N:\copias\agenda-postgresql-2026-11-02' 'agenda_recuperada'
+```
+
+El destino pertenece al cluster configurado por `DATABASE_URL`, y debe estar ausente. La integración del adapter se validó en el cluster efímero PG18.6 local, restauró a una base nueva con revisión y conteos iguales al manifiesto, abrió otra conexión e insertó un paciente ficticio. El build PG16 sigue pendiente al no haber Docker en el host; una prueba con cliente/servidor 18.6 no demuestra el paquete de imagen PG16.
+
+Para PostgreSQL, el adapter requiere `pg_dump` y `pg_restore` disponibles en `PATH`; ambos deben tener la misma major que el servidor (por ejemplo, clientes 16 con servidor 16). La detección consulta `--version` con argumentos fijos y sin shell; la URL y sus credenciales no se pasan en la línea de comandos ni se imprimen. La imagen backend instala únicamente `postgresql-client-16` desde el repositorio PGDG y comprueba ambas versiones durante el build; no instala un servidor. En un host local, el administrador debe instalar los clientes de la misma major que el servidor. Adapter disponible e instalación de herramientas son capas distintas: el adapter valida ejecutables presentes, pero no instala ni actualiza clientes en el host.
+
+Al seleccionar PostgreSQL, `crear` toma el motor y la conexión ya configurados en `DATABASE_URL`, consulta la revisión Alembic y genera `agenda.dump` con `pg_dump --format=custom`. En una transacción `REPEATABLE READ` cuenta las tablas y exporta un snapshot MVCC; mantiene esa transacción abierta mientras `pg_dump --snapshot=<id>` importa el mismo snapshot. Así, las filas confirmadas mientras corre el dump no alteran ni el payload ni sus recuentos. La contraseña viaja por `PGPASSWORD` en el entorno mínimo del proceso; los argumentos son fijos y no incluyen URL ni contraseña. Antes de declarar el bundle, `pg_restore --list` debe reconocer el archivo y se vuelve a comprobar el manifiesto/hash. Este paso comprueba estructura del archivo, no efectúa una restauración de ensayo.
+
+```powershell
+$env:ODONTOLOGIA_PERSISTENCIA = 'postgresql'
+$env:DATABASE_URL = 'postgresql+psycopg://usuario:clave@127.0.0.1:55432/odontologia_test'
+..\.venv\Scripts\python.exe -m odontologia.backup crear 'N:\copias\agenda-postgresql-2026-11-02'
+```
+
+El proceso espera PostgreSQL en la revisión `20261102_0009_turn_rescheduling`, servidor/clientes de la misma major y un destino nuevo. La contraseña de ejemplo se reemplaza sólo en el entorno local; no guardarla en documentos ni en el manifiesto. Sin PostgreSQL local de prueba compatible, no ejecutar esta orden contra una agenda real.
+
+La creación prepara y valida payload y manifiesto en un directorio privado del mismo volumen y publica el directorio completo con una operación atómica que no reemplaza destinos. En Windows usa `os.rename`; en Linux exige `renameat2(RENAME_NOREPLACE)` y falla cerrado si no está disponible. Una colisión que aparezca durante la publicación, incluso un directorio POSIX vacío, se conserva sin cambios; una excepción previa deja el destino final ausente y limpia sólo el staging propio. El staging, payload y manifiesto mantienen permisos POSIX `0700`/`0600`; Windows conserva ACL heredadas. La copia contiene datos sensibles y debe guardarse fuera del repositorio.
+
+La integración de backup se ejecutó con un cluster temporal PostgreSQL 18.6 en `127.0.0.1:55432`, cliente 18.6 y la base ficticia `odontologia_test`, migrada hasta `20261102_0009_turn_rescheduling`. El comando anterior creó un dump custom de 37.173 bytes; `pg_restore --list` detectó 80 entradas y el manifiesto registró hash y 14 conteos. En una prueba, otra transacción confirmó un paciente después de exportar el snapshot y antes de invocar `pg_dump`; al restaurar el dump en una base aislada, sus 14 conteos coincidieron exactamente con `table_counts` y esa fila posterior al snapshot no estaba incluida. También se confirmó la retención de filas y auditoría ficticias. Este ensayo no usó la instancia del usuario en 5432. La prueba de build de la imagen PostgreSQL 16 queda pendiente porque Docker no está instalado en este host; esta ejecución PG18 valida el adapter con major compatible, no el cliente instalado en la imagen ni el runtime PG16.
