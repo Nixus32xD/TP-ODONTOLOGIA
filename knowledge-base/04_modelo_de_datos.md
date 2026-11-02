@@ -2,7 +2,7 @@
 
 ## Alcance del modelo
 
-Modelo implementado en [agenda.py](../odontologia/agenda.py) según el [diseño](../openspec/changes/archive/2026-10-28-crear-turno-sin-solapamientos/design.md). Sólo datos ficticios, sin información clínica ni contactos.
+El dominio de agenda se implementa en [agenda.py](../backend/odontologia/agenda.py). C-04 agrega una tabla técnica de auditoría, descrita abajo. Sólo se usan datos ficticios, sin información clínica ni contactos.
 
 ## Entidades propuestas
 
@@ -26,3 +26,9 @@ Bootstrap implementado: paciente-A/B, profesional-A/B, box-A/B y cero turnos. Re
 ## Límites que afectan el modelo
 
 Sin estados/cancelación, disponibilidad, prestaciones ni compatibilidad profesional-box. Cada fila ocupa recursos. Paciente simultáneo permitido si ambos recursos difieren. Sin idempotencia, excepción de sobreturno ni garantías para SQL directo externo. Estos límites académicos no son recomendaciones clínicas.
+
+## Auditoría técnica de C-04
+
+`eventos_auditoria` se agrega mediante migración explícita SQLite versión 2 o Alembic PostgreSQL `20261101_0003_audit`. Sus columnas son `id`, `created_at` UTC, `actor_id` opcional, `action`, `resource_type`, `resource_id` opcional y `result`. Guarda sólo metadatos permitidos; no guarda nombres/identificadores ingresados, datos clínicos, cuerpos, contraseñas, hashes, JWT ni IDs de sesión. `actor_id` puede ser nulo en bootstrap y login rechazado. Los eventos no se editan ni borran por operaciones ordinarias y no hay purga automática.
+
+Las operaciones C-04 agregan el evento dentro de la transacción que confirma la mutación de turno, cuenta o sesión. Tanto helper como DDL aplican la misma matriz acción→recurso→resultado: turno creado→turno/confirmado; bootstrap, alta o actualización→cuenta/confirmado; inicio o cierre de sesión→sesión/confirmado; rechazo de sesión→sesión/rechazado. Si la escritura falla, la operación revierte y devuelve error genérico. La consulta paginada sólo la puede realizar Administrador.

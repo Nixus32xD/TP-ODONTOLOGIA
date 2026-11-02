@@ -4,7 +4,7 @@ from datetime import datetime
 from pathlib import Path
 import os
 
-from fastapi import Depends, FastAPI, Request
+from fastapi import Depends, FastAPI, Query, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
@@ -18,6 +18,7 @@ from odontologia.auth.tokens import validar_secreto_jwt
 from odontologia.auth.usuarios import (
     ErrorUsuarios, actualizar_usuario, crear_usuario, listar_usuarios,
 )
+from odontologia.audit import listar_eventos
 
 
 class SolicitudTurno(BaseModel):
@@ -171,8 +172,11 @@ def crear_app(ruta_db: str | Path | None = None, *, timeout_segundos: float = 5.
             from odontologia.db.postgresql import crear_turno_postgresql
 
             return crear_turno_postgresql(
-                engine, **solicitud.model_dump(), timeout_segundos=timeout_segundos)
-        return crear_turno(ruta, **solicitud.model_dump(), timeout_segundos=timeout_segundos)
+                engine, **solicitud.model_dump(), timeout_segundos=timeout_segundos,
+                actor_id=_identidad['usuario_id'])
+        return crear_turno(
+            ruta, **solicitud.model_dump(), timeout_segundos=timeout_segundos,
+            actor_id=_identidad['usuario_id'])
 
     @app.post('/sesiones', response_model=RespuestaLogin, responses={
         401: {'model': ErrorHTTP, 'description': 'Credenciales inválidas.'},
@@ -209,7 +213,9 @@ def crear_app(ruta_db: str | Path | None = None, *, timeout_segundos: float = 5.
     def alta_usuario(solicitud: SolicitudUsuario, _identidad=Depends(administrador)):
         asegurar_esquema()
         try:
-            return crear_usuario(auth_engine, solicitud.identificador, solicitud.password, solicitud.rol)
+            return crear_usuario(
+                auth_engine, solicitud.identificador, solicitud.password, solicitud.rol,
+                actor_id=_identidad['usuario_id'])
         except ValueError as exc:
             raise ErrorUsuarios('entrada_invalida', 'Los datos de la cuenta no son válidos.', 422) from exc
 
@@ -223,7 +229,24 @@ def crear_app(ruta_db: str | Path | None = None, *, timeout_segundos: float = 5.
         if solicitud.rol is None and solicitud.activo is None:
             raise ErrorUsuarios('entrada_invalida', 'Debe informar al menos un cambio.', 422)
         return actualizar_usuario(
-            auth_engine, usuario_id, rol=solicitud.rol, activo=solicitud.activo)
+            auth_engine, usuario_id, rol=solicitud.rol, activo=solicitud.activo,
+            actor_id=_identidad['usuario_id'])
+
+    @app.get('/auditoria', responses={
+        401: respuestas_auth[401], 403: respuestas_auth[403],
+        422: {'model': ErrorHTTP}, 503: respuestas_auth[503],
+    })
+    def consulta_auditoria(
+            limit: int = Query(default=50, ge=1, le=100),
+            offset: int = Query(default=0, ge=0),
+            _identidad=Depends(administrador)):
+        asegurar_esquema()
+        try:
+            items = listar_eventos(auth_engine, limit=limit, offset=offset)
+        except RuntimeError as exc:
+            raise ErrorSesiones(
+                'almacenamiento_error', 'La auditoría no está disponible.', 503) from exc
+        return {'items': items, 'limit': limit, 'offset': offset}
 
     @app.get('/health')
     def health() -> dict[str, str]:

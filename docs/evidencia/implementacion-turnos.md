@@ -204,3 +204,28 @@ La suite SQLite final pasó **111 tests**; el test de PostgreSQL se omite si no 
 TDD documentado: suite base 81/1 skip; pruebas de esquema 2/2, SQLite migration 3/3, scrypt 3/3, almacenamiento 2/2, usuarios 3/3 (más el guard del último administrador), configuración 7/7, bootstrap 2/2, servicio de sesiones 3/3, migración CLI SQLite 2/2 y API HTTP 5/5 pasaron tras cada GREEN. Los nuevos tests API inicialmente fallaron porque las rutas todavía no existían. No se creó commit ni se hizo push. La revisión del diff y Archive de C-03 quedan pendientes.
 
 La base de cambios previa a esta implementación era `3c34879510594348034bfaa5472456078335cc28`; los cambios C-03 siguen locales y sin commit. El archivo `docs/discovery/informe-discovery.md` contiene un cambio preexistente del usuario y se preservó sin incluirlo en el alcance C-03.
+
+## C-04 — Registro de auditoría de operaciones (2026-11-02)
+
+Se desarrolló `registrar-auditoria-de-operaciones` tras aprobación explícita de la política CRÍTICA: registrar metadatos de altas confirmadas de turnos, bootstrap/alta/cambios de cuentas, inicio/cierre de sesión y rechazos de login genéricos; no guardar identificador intentado, nombres, payloads, datos clínicos, passwords/hashes ni JWT. La auditoría y cada mutación comparten transacción y fallan cerradas; `GET /auditoria` es exclusivo de Administrador, paginado, estable y acotado. No hay edición/borrado ordinario ni purga automática.
+
+SQLite suma migración explícita versión 2, incluyendo upgrade desde esquema autenticación v1 y triggers append-only. PostgreSQL suma Alembic `20261101_0003_audit`. Se conserva el C-01 y matriz RBAC C-03. Los cambios de usuarios/sesiones y los eventos se confirman o revierten juntos.
+
+### Evidencia ejecutada
+
+- Baseline previo al código C-04: `python -m unittest discover -s tests -v` desde `backend/`: **111 passed, 1 PostgreSQL skip**.
+- RED de persistencia antes de producción: 3 casos fallaron como esperado porque faltaban `eventos_auditoria`, `odontologia.audit` y consulta paginada.
+- Suite SQLite final desde `backend/`: `..\.venv\Scripts\python.exe -m unittest discover -s tests -q` → **127 tests, OK (1 PostgreSQL skip)**. Incluye migración v1→v2, triggers append-only, privacidad de rechazos, permisos, paginación, rollback por fallo de auditoría y regresiones de C-01/C-03.
+- `..\.venv\Scripts\python.exe -m pip check` → **No broken requirements found**.
+- PostgreSQL real aislado: `tests.test_postgresql_integracion` → **12/12 OK**; Alembic aplicó C-01, C-03 y `20261101_0003_audit`. Se probó escritura/lectura de eventos, API Admin, atomicidad ante fallos inyectados en turnos, alta/cambio de cuenta y login/logout, además de append-only y la restricción que impide IDs en login rechazado.
+- La DB de pruebas fue `audit_test` en `127.0.0.1:55432`, bajo un clúster temporal propio en `C:\Users\Oficina\AppData\Local\Temp\tp-odontologia-c04-audit-20261101`. La suite no se conectó a `5432`; el guard rechaza ese puerto y destinos no loopback. Al cerrar la verificación se detuvo el clúster y se comprobó que `55432` quedó libre.
+- `openspec validate registrar-auditoria-de-operaciones --strict` → válido, sin problemas. La suite incluye OpenAPI `/auditoria`.
+- Starlette reportó el aviso preexistente de deprecación `TestClient`/HTTPX; no afectó las pruebas.
+
+OpenSpec conserva el change activo con las 15 tareas completas; el Archive queda pendiente de revisión del responsable. No se ejecutaron Archive, commit, push ni publicación; quedan para revisión del responsable. `docs/discovery/informe-discovery.md` no se modificó en este avance.
+
+### Corrección de revisión P3: matriz de eventos (2026-11-02)
+
+La revisión encontró que validar acción, recurso y resultado en listas independientes admitía combinaciones semánticamente inválidas (por ejemplo, `turno.creado` con recurso `cuenta` y resultado `rechazado`). Se reemplazó esa validación por una matriz explícita action→resource_type→result y se agregó el mismo `CHECK` de combinación al DDL SQLite y PostgreSQL. Los rechazos de autenticación siguen siendo genéricos y sin identificadores.
+
+Pruebas RED reprodujeron seis fallos en helper y SQLite DDL. Tras el cambio, `tests.test_auditoria tests.test_postgres_schema tests.test_auth_schema`: **23 OK**; `tests.test_postgresql_integracion`: **13 OK** en un clúster PostgreSQL temporal propio (`127.0.0.1:55432/audit_test`). Los casos positivos verifican todas las combinaciones usadas por los callsites reales; los negativos verifican los tres cruces inválidos en helper y ambos DDL. El clúster quedó detenido y el puerto libre; el directorio temporal se conservó.

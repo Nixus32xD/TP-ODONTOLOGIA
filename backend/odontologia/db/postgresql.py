@@ -7,6 +7,7 @@ from sqlalchemy import Engine, select, text
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 
+from odontologia.audit import ErrorAuditoria
 from odontologia.agenda import (
     ErrorAgenda,
     Turno as TurnoDominio,
@@ -15,7 +16,7 @@ from odontologia.agenda import (
 from odontologia.db.models import AgendaMutex, Box, Paciente, Profesional, Turno
 
 
-REVISION_ESQUEMA_ACTUAL = '20261101_0002_auth'
+REVISION_ESQUEMA_ACTUAL = '20261101_0003_audit'
 
 
 def crear_engine(database_url: str) -> Engine:
@@ -61,7 +62,8 @@ def _hay_solapamiento(session: Session, columna: str, recurso_id: str,
 
 def crear_turno_postgresql(engine: Engine, *, paciente_id: str, profesional_id: str,
                             box_id: str, inicio: datetime, fin: datetime,
-                            timeout_segundos: float = 5.0) -> TurnoDominio:
+                            timeout_segundos: float = 5.0,
+                            actor_id: str | None = None) -> TurnoDominio:
     solicitud = validar_solicitud_turno(
         paciente_id=paciente_id, profesional_id=profesional_id, box_id=box_id,
         inicio=inicio, fin=fin, timeout_segundos=timeout_segundos,
@@ -105,8 +107,16 @@ def crear_turno_postgresql(engine: Engine, *, paciente_id: str, profesional_id: 
             session.add(turno)
             session.flush()
             nuevo_id = turno.id
+            if actor_id is not None:
+                from odontologia.audit import registrar_evento_session
+
+                registrar_evento_session(
+                    session, action='turno.creado', resource_type='turno',
+                    resource_id=str(turno.id), actor_id=actor_id, result='confirmado')
     except ErrorAgenda:
         raise
+    except ErrorAuditoria as exc:
+        raise ErrorAgenda('almacenamiento_error') from exc
     except SQLAlchemyError as exc:
         raise ErrorAgenda(codigo_error_postgresql(exc)) from exc
 

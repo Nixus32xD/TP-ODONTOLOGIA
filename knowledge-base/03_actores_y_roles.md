@@ -14,7 +14,7 @@ La matriz de C-03 fue aprobada para el consultorio pequeño: Administrador gesti
 
 ## RBAC — matriz de permisos conceptual
 
-El primer change C-01 no tenía autenticación. C-03 implementa y valida localmente autenticación y autorización en SQLite y PostgreSQL; su Archive sigue pendiente. El backend verifica el permiso en cada operación, no sólo en la interfaz.
+El primer change C-01 no tenía autenticación. C-03 implementa y archiva autenticación y autorización en SQLite y PostgreSQL. C-04 añade auditoría de operaciones; su implementación está validada localmente y su Archive pendiente de revisión. El backend verifica el permiso en cada operación, no sólo en la interfaz.
 
 | Actor | Recurso / acción | Estado conceptual |
 | --- | --- | --- |
@@ -24,14 +24,14 @@ El primer change C-01 no tenía autenticación. C-03 implementa y valida localme
 | Recepción | Editar/cancelar turnos o administrar catálogos | No incluido; estados y cancelación pendientes |
 | Profesional | Ingresar con cuenta o administrar agenda propia | No habilitado; requiere definición de agenda en C-08 |
 | Paciente | Reservar, cancelar o ver historia clínica | Postergado |
-| Administrador | Crear/listar cuentas y cambiar rol/estado activo | Implementado en C-03; último Administrador activo protegido |
+| Administrador | Crear/listar cuentas y cambiar rol/estado activo | Implementado en C-03; último Administrador activo protegido; eventos consultables sólo por Administrador en C-04 |
 | Estudiante | Ejecutar pruebas y revisar datos ficticios | Actividad del proceso, no permiso de producción |
 
 La matriz no implica CRUD completo de turnos, pacientes, profesionales ni boxes. C-03 sólo habilita el alta de turnos ya definida por C-01 y la administración de cuentas indicada arriba.
 
 ## Rutas públicas
 
-GET /health y la documentación local son públicas. POST /turnos exige Bearer vigente de Administrador o Recepción; las rutas de usuario exigen Administrador. POST /sesiones recibe credenciales y emite JWT; GET/DELETE /sesiones/actual consultan y revocan la propia sesión. No hay reserva pública; el servicio no es apto para pacientes reales ni publicación pública. Se mantienen excluidos los proveedores externos.
+GET /health y la documentación local son públicas. GET /auditoria requiere rol Administrador y retorna sólo metadatos paginados. POST /turnos exige Bearer vigente de Administrador o Recepción; las rutas de usuario exigen Administrador. POST /sesiones recibe credenciales y emite JWT; GET/DELETE /sesiones/actual consultan y revocan la propia sesión. No hay reserva pública; el servicio no es apto para pacientes reales ni publicación pública. Se mantienen excluidos los proveedores externos.
 
 ## Datos y responsabilidad
 

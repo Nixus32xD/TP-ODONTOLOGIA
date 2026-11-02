@@ -2,7 +2,7 @@
 
 ## Estado y objetivo
 
-Arquitectura inicial de C-01: Python 3.12+, SQLite local y módulo de dominio pequeño. Sobre esa base, C-02 añade PostgreSQL optativo y migraciones explícitas; C-03 añade JWT, sesiones revocables y autorización. Ambos cambios están validados localmente y pendientes de Archive. Ver [evidencia](../docs/evidencia/implementacion-turnos.md).
+Arquitectura inicial de C-01: Python 3.12+, SQLite local y módulo de dominio pequeño. Sobre esa base, C-02 añade PostgreSQL optativo y migraciones explícitas; C-03 añade JWT, sesiones revocables y autorización; está archivado. C-04 añade la tabla `eventos_auditoria` append-only en SQLite y PostgreSQL, inserta eventos en la misma transacción de cada cambio, y ofrece consulta paginada exclusiva de Administrador. Está validado localmente y pendiente de Archive. Ver [evidencia](../docs/evidencia/implementacion-turnos.md).
 
 **Actualización 2026-11-01:** C-01 se expone con FastAPI; C-02/C-03 ya usan SQLAlchemy, PostgreSQL optativo y JWT. El repositorio conserva la separación de la cátedra: Python/FastAPI/JWT/SQLAlchemy/PostgreSQL/Redis/Docker para backend y React/TypeScript/Vite para frontend (DD-09). La descripción inicial corresponde al diseño original de C-01.
 
@@ -44,4 +44,4 @@ C-01 usa `ODONTOLOGIA_DB` (SQLite por defecto); timeout numérico 5s. C-02/C-03 
 
 Verificación vigente registrada en [evidencia técnica](../docs/evidencia/implementacion-turnos.md): 111 tests en SQLite y 121 al añadir pruebas de PostgreSQL temporal aislado, incluidos autenticación, roles, sesiones revocables, migraciones y concurrencia. Pruebas con datos ficticios y almacenamiento temporal; no acreditan operación clínica, despliegue ni aceptación docente.
 
-Archive de C-01 confirmado el 2026-10-28. C-02 y C-03 tienen su Apply validado pero permanecen activos hasta Archive; las evidencias humanas y la aceptación académica se acreditan por separado.
+Archive de C-01 confirmado el 2026-10-28. C-02 y C-03 están archivados. C-04 está implementado y validado localmente en SQLite y PostgreSQL aislado, con Archive pendiente; las evidencias humanas y la aceptación académica se acreditan por separado.

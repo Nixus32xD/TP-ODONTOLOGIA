@@ -22,10 +22,14 @@ from fastapi.testclient import TestClient
 from odontologia import ErrorAgenda, crear_turno, inicializar_agenda
 from odontologia.api import crear_app
 from odontologia.auth.bootstrap_admin import main as bootstrap_admin
-from odontologia.auth.usuarios import crear_usuario, actualizar_usuario
+from odontologia.auth.usuarios import (
+    ErrorUsuarios, crear_primer_administrador, crear_usuario, actualizar_usuario,
+)
+from odontologia.auth.sesiones import ErrorSesiones, autenticar, cerrar_sesion, validar_sesion
+from odontologia.audit import listar_eventos
 from odontologia.db.migracion import ErrorMigracion, migrar_agenda_sqlite
 from odontologia.db.models import (
-    AgendaMutex, Base, Box, Paciente, Profesional, Sesion, Turno, Usuario,
+    AgendaMutex, Base, Box, EventoAuditoria, Paciente, Profesional, Sesion, Turno, Usuario,
 )
 from odontologia.db.postgresql import crear_turno_postgresql
 
@@ -117,6 +121,7 @@ class IntegracionPostgreSQLTests(unittest.TestCase):
 
     def setUp(self):
         with Session(self.engine) as session, session.begin():
+            session.execute(text('TRUNCATE TABLE eventos_auditoria RESTART IDENTITY'))
             session.execute(delete(Sesion))
             session.execute(delete(Usuario))
             session.execute(delete(Turno))
@@ -298,6 +303,131 @@ class IntegracionPostgreSQLTests(unittest.TestCase):
         self.assertEqual(respuesta_adyacente.status_code, 201)
         self.assertEqual(respuesta_desconocido.status_code, 404)
 
+    def test_auditoria_postgresql_registra_turno_y_consulta_admin(self):
+        self._seed_catalogos()
+        administrador = crear_primer_administrador(
+            self.engine, 'admin.audit', 'frase-larga-segura-2026')
+        turno = crear_turno_postgresql(
+            self.engine, paciente_id='paciente-A', profesional_id='profesional-A', box_id='box-A',
+            inicio=datetime(2026, 10, 15, 12, tzinfo=timezone.utc),
+            fin=datetime(2026, 10, 15, 12, 30, tzinfo=timezone.utc), actor_id=administrador['id'])
+        evento_turno = next(
+            item for item in listar_eventos(self.engine, limit=10)
+            if item['action'] == 'turno.creado')
+        self.assertEqual(evento_turno['actor_id'], administrador['id'])
+        self.assertEqual(evento_turno['resource_id'], str(turno.id))
+        self.assertNotIn('paciente-A', str(evento_turno))
+        for statement in (
+                "UPDATE eventos_auditoria SET result='rechazado'",
+                'DELETE FROM eventos_auditoria',
+                "INSERT INTO eventos_auditoria (created_at, action, resource_type, "
+                "resource_id, result) VALUES (now(), 'sesion.rechazada', 'sesion', "
+                "'dato-intentado', 'rechazado')"):
+            with self.subTest(statement=statement), self.assertRaises(SQLAlchemyError):
+                with self.engine.begin() as conexion:
+                    conexion.execute(text(statement))
+        with TestClient(crear_app()) as cliente:
+            login = cliente.post('/sesiones', json={
+                'identificador': 'admin.audit', 'password': 'frase-larga-segura-2026'})
+            headers = {'Authorization': f"Bearer {login.json()['access_token']}"}
+            respuesta = cliente.get('/auditoria', headers=headers)
+            self.assertEqual(respuesta.status_code, 200, respuesta.text)
+            self.assertIn('turno.creado', {
+                item['action'] for item in respuesta.json()['items']})
+
+    def test_matriz_eventos_postgresql_acepta_solo_eventos_reales(self):
+        eventos_validos = (
+            ('turno.creado', 'turno', 'confirmado'),
+            ('cuenta.bootstrap', 'cuenta', 'confirmado'),
+            ('cuenta.creada', 'cuenta', 'confirmado'),
+            ('cuenta.actualizada', 'cuenta', 'confirmado'),
+            ('sesion.iniciada', 'sesion', 'confirmado'),
+            ('sesion.cerrada', 'sesion', 'confirmado'),
+            ('sesion.rechazada', 'sesion', 'rechazado'),
+        )
+        with self.engine.begin() as conexion:
+            for action, resource_type, result in eventos_validos:
+                conexion.execute(text(
+                    'INSERT INTO eventos_auditoria '
+                    '(created_at, action, resource_type, result) '
+                    'VALUES (now(), :action, :resource_type, :result)'), {
+                        'action': action, 'resource_type': resource_type, 'result': result,
+                    })
+            self.assertEqual(conexion.execute(text(
+                'SELECT action, resource_type, result FROM eventos_auditoria ORDER BY id'
+            )).all(), list(eventos_validos))
+
+        combinaciones_invalidas = (
+            ('turno.creado', 'cuenta', 'rechazado'),
+            ('cuenta.creada', 'cuenta', 'rechazado'),
+            ('sesion.iniciada', 'turno', 'confirmado'),
+        )
+        for action, resource_type, result in combinaciones_invalidas:
+            with self.subTest(action=action, resource_type=resource_type, result=result):
+                with self.assertRaises(SQLAlchemyError):
+                    with self.engine.begin() as conexion:
+                        conexion.execute(text(
+                            'INSERT INTO eventos_auditoria '
+                            '(created_at, action, resource_type, result) '
+                            'VALUES (now(), :action, :resource_type, :result)'), {
+                                'action': action, 'resource_type': resource_type,
+                                'result': result,
+                            })
+
+    def test_fallo_de_auditoria_postgres_reversa_turno_cuenta_y_login(self):
+        self._seed_catalogos()
+        administrador = crear_primer_administrador(
+            self.engine, 'admin.audit', 'frase-larga-segura-2026')
+        recepcion = crear_usuario(
+            self.engine, 'recepcion.audit', 'otra-frase-larga-segura-2026', 'recepcion')
+        secreto = 'secreto-postgresql-test-local-no-reutilizar-2026'
+        token_admin = autenticar(
+            self.engine, 'admin.audit', 'frase-larga-segura-2026', secreto)
+        token_recepcion = autenticar(
+            self.engine, 'recepcion.audit', 'otra-frase-larga-segura-2026', secreto)
+
+        def fallar_auditoria(_conn, _cursor, statement, _parameters, _context, _many):
+            if 'insert into eventos_auditoria' in statement.lower():
+                raise SQLAlchemyError('fallo inyectado')
+
+        event.listen(self.engine, 'before_cursor_execute', fallar_auditoria)
+        try:
+            with self.assertRaises(ErrorAgenda) as error_turno:
+                crear_turno_postgresql(
+                    self.engine, paciente_id='paciente-A', profesional_id='profesional-A',
+                    box_id='box-A', inicio=datetime(2026, 10, 15, 12, tzinfo=timezone.utc),
+                    fin=datetime(2026, 10, 15, 12, 30, tzinfo=timezone.utc),
+                    actor_id=administrador['id'])
+            self.assertEqual(error_turno.exception.codigo, 'almacenamiento_error')
+            with self.assertRaises(ErrorUsuarios) as error_cuenta:
+                crear_usuario(
+                    self.engine, 'recepcion.segunda', 'una-frase-larga-segura-2026', 'recepcion',
+                    actor_id=administrador['id'])
+            self.assertEqual(error_cuenta.exception.estado, 503)
+            with self.assertRaises(ErrorSesiones) as error_login:
+                autenticar(
+                    self.engine, 'admin.audit', 'frase-larga-segura-2026',
+                    secreto)
+            self.assertEqual(error_login.exception.estado, 503)
+            with self.assertRaises(ErrorUsuarios) as error_actualizar:
+                actualizar_usuario(
+                    self.engine, recepcion['id'], activo=False, actor_id=administrador['id'])
+            self.assertEqual(error_actualizar.exception.estado, 503)
+            with self.assertRaises(ErrorSesiones) as error_logout:
+                cerrar_sesion(self.engine, token_recepcion, secreto)
+            self.assertEqual(error_logout.exception.estado, 503)
+        finally:
+            event.remove(self.engine, 'before_cursor_execute', fallar_auditoria)
+
+        with Session(self.engine) as session:
+            self.assertEqual(session.scalar(select(func.count()).select_from(Turno)), 0)
+            self.assertIsNone(session.scalar(select(Usuario).where(
+                Usuario.identificador == 'recepcion.segunda')))
+            self.assertTrue(session.get(Usuario, recepcion['id']).activo)
+            self.assertEqual(session.scalar(select(func.count()).select_from(Sesion)), 2)
+        self.assertEqual(validar_sesion(self.engine, token_admin, secreto)['rol'], 'administrador')
+        self.assertEqual(validar_sesion(self.engine, token_recepcion, secreto)['rol'], 'recepcion')
+
     def test_autenticacion_postgresql_revoca_al_cambiar_rol(self):
         recepcion = crear_usuario(
             self.engine, 'recepcion.test', 'frase-larga-segura-de-prueba-2026', 'recepcion')
@@ -323,7 +453,7 @@ class IntegracionPostgreSQLTests(unittest.TestCase):
         finally:
             with self.engine.begin() as conexion:
                 conexion.execute(text(
-                    "UPDATE alembic_version SET version_num = '20261101_0002_auth'"))
+                    "UPDATE alembic_version SET version_num = '20261101_0003_audit'"))
 
     def test_revision_esquema_desconocida_falla_cerrado(self):
         self._seed_catalogos()
@@ -339,7 +469,7 @@ class IntegracionPostgreSQLTests(unittest.TestCase):
         finally:
             with self.engine.begin() as conexion:
                 conexion.execute(text(
-                    "UPDATE alembic_version SET version_num = '20261101_0002_auth'"))
+                    "UPDATE alembic_version SET version_num = '20261101_0003_audit'"))
 
         self.assertEqual(contexto.exception.codigo, 'almacenamiento_error')
         with Session(self.engine) as session:

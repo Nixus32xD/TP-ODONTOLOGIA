@@ -15,6 +15,7 @@ from odontologia.auth.credenciales import (
 )
 from odontologia.auth.tokens import validar_secreto_jwt
 from odontologia.db.models import AgendaMutex, Sesion, Usuario
+from odontologia.audit import ErrorAuditoria
 
 
 _EMISOR = 'odontologia-local'
@@ -36,7 +37,21 @@ def _bloquear_sqlite(session: Session) -> None:
     if session.bind.dialect.name == 'sqlite':
         session.execute(text('BEGIN IMMEDIATE'))
     else:
-        session.scalar(select(AgendaMutex.id).where(AgendaMutex.id == 1).with_for_update())
+        mutex = session.scalar(select(AgendaMutex.id).where(
+            AgendaMutex.id == 1).with_for_update())
+        if mutex != 1:
+            raise ErrorSesiones(
+                'almacenamiento_error', 'No se pudo validar la sesión.', 503)
+
+
+def _registrar_rechazo(engine) -> None:
+    from odontologia.audit import registrar_evento_session
+
+    with Session(engine) as session, session.begin():
+        _bloquear_sqlite(session)
+        registrar_evento_session(
+            session, action='sesion.rechazada', resource_type='sesion',
+            result='rechazado')
 
 
 def _token_payload(token: str, secreto: str, ahora: int) -> dict:
@@ -56,13 +71,24 @@ def autenticar(engine, identificador: str, password: str, secreto: str,
     instante = _ahora(ahora)
     try:
         clave = validar_secreto_jwt(secreto)
+    except ValueError as exc:
+        raise ErrorSesiones(
+            'autenticacion_no_configurada', 'La autenticación no está configurada.', 503) from exc
+    try:
         nombre = normalizar_identificador(identificador)
         validar_password(password)
     except ValueError as exc:
-        raise ErrorSesiones('credenciales_invalidas', 'Identificador o contraseña inválidos.', 401) from exc
+        try:
+            _registrar_rechazo(engine)
+        except (ErrorAuditoria, SQLAlchemyError) as error:
+            raise ErrorSesiones(
+                'almacenamiento_error', 'No se pudo validar la sesión.', 503) from error
+        raise ErrorSesiones(
+            'credenciales_invalidas', 'Identificador o contraseña inválidos.', 401) from None
     if not isinstance(duracion_segundos, int) or not 60 <= duracion_segundos <= 24 * 60 * 60:
         raise ErrorSesiones('autenticacion_no_configurada', 'La autenticación no está configurada.', 503)
 
+    rechazado = False
     try:
         with Session(engine) as session, session.begin():
             _bloquear_sqlite(session)
@@ -71,20 +97,37 @@ def autenticar(engine, identificador: str, password: str, secreto: str,
                 # Igualar aproximadamente el coste de scrypt y evitar enumeración temporal.
                 hashlib.scrypt(password.encode('utf-8'), salt=b'auth-dummy-salt-01',
                                n=1 << 14, r=8, p=1, dklen=64)
-                raise ErrorSesiones('credenciales_invalidas', 'Identificador o contraseña inválidos.', 401)
-            if not verificar_password(password, usuario.password_hash) or not usuario.activo:
-                raise ErrorSesiones('credenciales_invalidas', 'Identificador o contraseña inválidos.', 401)
-            sesion_id = str(uuid4())
-            jti = str(uuid4())
-            expira = instante + duracion_segundos
-            session.add(Sesion(id=sesion_id, usuario_id=usuario.id, jti=jti,
-                               expira_en=expira, creado_en=instante))
-            session.flush()
-            payload = {'iss': _EMISOR, 'sub': usuario.id, 'sid': sesion_id,
-                       'jti': jti, 'rol': usuario.rol, 'iat': instante, 'exp': expira}
+                rechazado = True
+            elif not verificar_password(password, usuario.password_hash) or not usuario.activo:
+                rechazado = True
+            if rechazado:
+                from odontologia.audit import registrar_evento_session
+
+                registrar_evento_session(
+                    session, action='sesion.rechazada', resource_type='sesion',
+                    result='rechazado')
+            else:
+                sesion_id = str(uuid4())
+                jti = str(uuid4())
+                expira = instante + duracion_segundos
+                session.add(Sesion(id=sesion_id, usuario_id=usuario.id, jti=jti,
+                                   expira_en=expira, creado_en=instante))
+                session.flush()
+                from odontologia.audit import registrar_evento_session
+
+                registrar_evento_session(
+                    session, action='sesion.iniciada', resource_type='sesion',
+                    actor_id=usuario.id, result='confirmado')
+                payload = {'iss': _EMISOR, 'sub': usuario.id, 'sid': sesion_id,
+                           'jti': jti, 'rol': usuario.rol, 'iat': instante, 'exp': expira}
+        if rechazado:
+            raise ErrorSesiones(
+                'credenciales_invalidas', 'Identificador o contraseña inválidos.', 401)
         return jwt.encode(payload, clave, algorithm='HS256')
     except ErrorSesiones:
         raise
+    except ErrorAuditoria as exc:
+        raise ErrorSesiones('almacenamiento_error', 'No se pudo validar la sesión.', 503) from exc
     except SQLAlchemyError as exc:
         raise ErrorSesiones('almacenamiento_error', 'No se pudo validar la sesión.', 503) from exc
 
@@ -121,8 +164,19 @@ def cerrar_sesion(engine, token: str, secreto: str, *, ahora: int | None = None)
     try:
         with Session(engine) as session, session.begin():
             _bloquear_sqlite(session)
-            session.execute(update(Sesion).where(
+            resultado = session.execute(update(Sesion).where(
                 Sesion.id == identidad['sesion_id'], Sesion.revocada_en.is_(None)
             ).values(revocada_en=instante))
+            if resultado.rowcount != 1:
+                raise ErrorSesiones('token_invalido', 'La sesión no es válida.', 401)
+            from odontologia.audit import registrar_evento_session
+
+            registrar_evento_session(
+                session, action='sesion.cerrada', resource_type='sesion',
+                actor_id=identidad['usuario_id'], result='confirmado')
+    except ErrorSesiones:
+        raise
+    except ErrorAuditoria as exc:
+        raise ErrorSesiones('almacenamiento_error', 'No se pudo cerrar la sesión.', 503) from exc
     except SQLAlchemyError as exc:
         raise ErrorSesiones('almacenamiento_error', 'No se pudo cerrar la sesión.', 503) from exc

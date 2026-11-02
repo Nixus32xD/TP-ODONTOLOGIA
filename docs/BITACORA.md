@@ -201,3 +201,15 @@ La verificación completa pasó 89 tests (incluye 8 tests de integración Postgr
 La guía de operación y recuperación quedó en [backend/README.md](../backend/README.md); la [evidencia reproducible](evidencia/implementacion-turnos.md#c-02) registra comandos, resultados y límites. Cambiar de PostgreSQL a SQLite reabre la fuente pre-migración, no incorpora las altas hechas después en PostgreSQL: no existe doble escritura ni exportación inversa. Por eso la fuente se conserva y una vuelta de motor tras nuevas escrituras requiere una estrategia aparte.
 
 C-02 está técnicamente implementado y validado, con sus tareas completas, pero sigue activo en OpenSpec y pendiente de Archive. No se hizo commit ni push. C-03 a C-20 permanecen planificados. No se modificaron `docs/discovery/informe-discovery.md` ni su PDF.
+
+## 2026-11-02 — C-04: auditoría append-only
+
+El usuario autorizó expresamente la política de C-04, crítica por afectar autenticación y auditoría. La solución registra sólo metadatos permitidos: turno confirmado; bootstrap, alta/cambio de cuenta; inicio/cierre de sesión; rechazo genérico de login sin actor ni identificador intentado. No persiste datos clínicos/personales, cuerpos, credenciales, hashes o tokens. La mutación y el evento comparten transacción; si falla auditoría se revierte y se responde sin éxito. Lectura paginada sólo Administrador, sin edición/borrado ordinario ni purga automática en el demo.
+
+Se añadió migración SQLite v2 explícita (incluye actualización desde v1) y revisión Alembic PostgreSQL `20261101_0003_audit`; C-01 y RBAC C-03 permanecen vigentes. La validación completa pasó: SQLite **127 tests, OK (1 PostgreSQL skip)**, `pip check` sin dependencias rotas; PostgreSQL aislado en loopback `127.0.0.1:55432`, base `audit_test`, **12/12 tests**, incluido rollback de turnos/cuentas/sesiones cuando falla el insert de auditoría y protección append-only. Se detuvo el clúster temporal y se confirmó el puerto libre. OpenSpec strict pasó.
+
+El change OpenSpec sigue activo, sin Archive, commit ni push: el responsable debe revisar el resultado. Discovery no se tocó. Evidencia detallada: [implementacion-turnos.md, C-04](evidencia/implementacion-turnos.md#c-04--registro-de-auditoría-de-operaciones-2026-11-02).
+
+### Seguimiento de revisión C-04 — matriz semántica (2026-11-02)
+
+Una revisión detectó que la base aceptaba combinaciones cruzadas aunque cada acción/recurso/resultado individual perteneciera a su catálogo. Se corrigió con una matriz exacta en el helper y un `CHECK` equivalente en SQLite y PostgreSQL. RED reprodujo combinaciones inválidas en helper y DDL; GREEN: 23 tests SQLite/schema OK y 13 tests de integración PostgreSQL OK, incluyendo todos los tipos de evento emitidos realmente. PostgreSQL temporal se detuvo y el puerto 55432 quedó libre. No hubo migración de datos, commit, push ni Archive.

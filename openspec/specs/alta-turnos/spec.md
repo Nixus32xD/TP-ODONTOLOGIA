@@ -218,6 +218,11 @@ El adaptador SHALL mapear entrada_invalida a 422, recurso_desconocido a 404, con
 - **WHEN** se solicita alta válida
 - **THEN** responde 500 almacenamiento_error o 503 agenda_ocupada, sin éxito ficticio ni fuga de rutas
 
+#### Scenario: Fallo al almacenar auditoría del turno
+- **GIVEN** el alta del turno es válida pero falla la escritura de su evento de auditoría
+- **WHEN** se solicita `POST /turnos`
+- **THEN** responde 500 almacenamiento_error y la transacción revierte tanto el turno como el evento
+
 ### Requirement: Liveness y documentación local
 El sistema SHALL exponer GET /health con 200 y status ok independientemente de la DB, identificándolo como liveness. SHALL publicar en /openapi.json, /docs y /redoc los contratos de alta, sesiones y administración de usuarios, con estados y modelos de entrada/salida. SHALL mantener servidor limitado a uso local sin proveedores externos ni acceso de pacientes.
 

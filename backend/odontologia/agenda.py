@@ -157,7 +157,7 @@ def inicializar_agenda(ruta_db: str | Path) -> None:
 
 def crear_turno(ruta_db: str | Path, *, paciente_id: str, profesional_id: str,
                 box_id: str, inicio: datetime, fin: datetime,
-                timeout_segundos: float = 5.0) -> Turno:
+                timeout_segundos: float = 5.0, actor_id: str | None = None) -> Turno:
     """Registrar una ocupación ficticia en una agenda local existente."""
     solicitud = validar_solicitud_turno(
         paciente_id=paciente_id, profesional_id=profesional_id, box_id=box_id,
@@ -188,6 +188,12 @@ def crear_turno(ruta_db: str | Path, *, paciente_id: str, profesional_id: str,
             'INSERT INTO turnos(paciente_id, profesional_id, box_id, inicio_minuto, fin_minuto) '
             'VALUES (?, ?, ?, ?, ?)',
             (paciente_id, profesional_id, box_id, inicio_minuto, fin_minuto))
+        if actor_id is not None:
+            from odontologia.audit import registrar_evento_sqlite
+
+            registrar_evento_sqlite(
+                conexion, action='turno.creado', resource_type='turno',
+                resource_id=str(cursor.lastrowid), actor_id=actor_id, result='confirmado')
         conexion.execute('COMMIT')
         return Turno(cursor.lastrowid, paciente_id, profesional_id, box_id, inicio_utc, fin_utc)
     except (OSError, ValueError, sqlite3.Error) as exc:

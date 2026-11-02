@@ -9,12 +9,13 @@ API del sistema odontológico. Stack definido por la cátedra (corrección del 2
 | --- | --- | --- |
 | Alta de turnos sin solapamientos (`POST /turnos`, `GET /health`) | Implementado; regresión incluida en la suite; archivado | C-01 |
 | Persistencia en SQLite local (`ODONTOLOGIA_DB`) | Predeterminada y compatible con C-01 | C-01 |
-| PostgreSQL + SQLAlchemy, Alembic y migración explícita | Implementado y validado en PostgreSQL aislado; change activo pendiente de Archive | C-02 |
-| Autenticación JWT y autorización del personal | Implementado localmente en SQLite y PostgreSQL; C-03 activo, pendiente de Archive | C-03 |
+| PostgreSQL + SQLAlchemy, Alembic y migración explícita | Implementado, validado en PostgreSQL aislado y archivado | C-02 |
+| Autenticación JWT y autorización del personal | Implementado y archivado en SQLite/PostgreSQL | C-03 |
+| Auditoría append-only y `GET /auditoria` | Implementado/validado en SQLite y PostgreSQL; sólo Administrador; Archive pendiente | C-04 |
 | Cola de recordatorios en Redis (`odontologia/workers/`) | Estructura preparada, sin implementar | C-17 |
 | Imagen Docker y servicios en Docker Compose | Preparados | C-02 / C-14 |
 
-C-01 y SQLite siguen disponibles. C-02 permite elegir PostgreSQL de forma explícita, versiona el esquema con Alembic y ofrece una importación manual desde SQLite. C-03 agrega acceso con JWT, sesiones revocables y permisos de Administrador/Recepción. Profesional no tiene cuenta habilitada hasta C-08. El inicio de la API no ejecuta migraciones ni importa datos. La fuente SQLite no se altera; la importación rechaza fuentes con solapamientos o destinos ya poblados.
+C-01 y SQLite siguen disponibles. C-02 permite elegir PostgreSQL de forma explícita, versiona el esquema con Alembic y ofrece una importación manual desde SQLite; está archivado. C-03 agrega acceso con JWT, sesiones revocables y permisos de Administrador/Recepción; está archivado. C-04 registra metadatos de turnos, cuentas y sesiones en la misma transacción; los fallos de auditoría revierten la mutación. Profesional no tiene cuenta habilitada hasta C-08. El inicio de la API no ejecuta migraciones ni importa datos. La fuente SQLite no se altera; la importación rechaza fuentes con solapamientos o destinos ya poblados.
 
 ## Estructura
 
@@ -22,14 +23,15 @@ C-01 y SQLite siguen disponibles. C-02 permite elegir PostgreSQL de forma explí
 backend/
 ├── odontologia/
 │   ├── agenda.py        # Dominio de C-01: validación, transacción y alta
-│   ├── api.py           # Adaptador FastAPI de C-01
+│   ├── api.py           # Adaptador FastAPI de C-01/C-03/C-04
 │   ├── demo.py          # Demo por consola con agenda temporal
 │   ├── core/config.py   # Variables de entorno del stack
-│   ├── db/              # SQLAlchemy + PostgreSQL (C-02)
+│   ├── db/              # SQLAlchemy + PostgreSQL (C-02/C-04)
 │   ├── auth/            # JWT (C-03)
+│   ├── audit.py         # Metadatos append-only y consulta segura (C-04)
 │   └── workers/         # Redis: recordatorios en cola (C-17)
-├── alembic/             # Revisiones versionadas de C-02 y C-03
-├── tests/               # Regresión C-01, C-02 y C-03
+├── alembic/             # Revisiones versionadas de C-02, C-03 y C-04
+├── tests/               # Regresión C-01 a C-04
 ├── requirements.txt         # Dependencias directas de C-01
 ├── requirements-dev.txt     # + HTTPX para tests
 ├── requirements-lock.txt    # Entorno verificado de C-01
@@ -71,9 +73,9 @@ El bootstrap pide identificador y contraseña de forma interactiva y oculta; no 
 ..\.venv\Scripts\python.exe -m odontologia.auth.bootstrap_admin
 ```
 
-Alembic aplica primero C-01 y luego las tablas de C-03. En Docker Compose, migrar el servicio backend con `docker compose exec backend python -m alembic upgrade head` y ejecutar el bootstrap interactivo con `docker compose exec backend python -m odontologia.auth.bootstrap_admin` después de configurar `.env`. No usar la API ni `GET /health` como comando de migración.
+Alembic aplica las revisiones consecutivas de C-01 a C-04, incluida la tabla append-only de auditoría. En Docker Compose, migrar el servicio backend con `docker compose exec backend python -m alembic upgrade head` y ejecutar el bootstrap interactivo con `docker compose exec backend python -m odontologia.auth.bootstrap_admin` después de configurar `.env`. No usar la API ni `GET /health` como comando de migración.
 
-`POST /sesiones` recibe `identificador` y `password`; su respuesta contiene `access_token`, `token_type` y `expires_in`. En Swagger, usar **Authorize** con `Bearer <token>`. `/sesiones/actual` permite consultar y cerrar la sesión propia. El Administrador puede consultar/crear usuarios y cambiar rol/estado; Recepción sólo crea turnos. Desactivar una cuenta, cambiarle el rol o cerrar sesión revoca sus tokens persistidos. Los fallos de credenciales devuelven un mensaje genérico. Sin secreto o esquema migrado, las operaciones protegidas fallan cerradas con 503 mientras `/health` continúa pública.
+`POST /sesiones` recibe `identificador` y `password`; su respuesta contiene `access_token`, `token_type` y `expires_in`. En Swagger, usar **Authorize** con `Bearer <token>`. `/sesiones/actual` permite consultar y cerrar la sesión propia. El Administrador puede consultar/crear usuarios y cambiar rol/estado; Recepción sólo crea turnos. Desactivar una cuenta, cambiarle el rol o cerrar sesión revoca sus tokens persistidos. Los fallos de credenciales devuelven un mensaje genérico. Los eventos guardan sólo actor/acción/recurso/resultado/fecha; no incluyen cuerpos, contraseñas, hashes, JWT, datos clínicos ni el identificador de un login rechazado. `GET /auditoria?limit=50&offset=0` es sólo Administrador, admite límite 1–100 y no ofrece edición, borrado ni purga automática. Si el evento falla, la mutación se revierte y la API no informa éxito. Sin secreto o esquema migrado, las operaciones protegidas fallan cerradas con 503 mientras `/health` continúa pública.
 
 ## Preparar PostgreSQL y migrar una agenda existente
 

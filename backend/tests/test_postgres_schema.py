@@ -3,14 +3,15 @@ import unittest
 from sqlalchemy import select
 from sqlalchemy.dialects import postgresql
 
-from odontologia.db.models import AgendaMutex, Base, Turno
+from odontologia.db.models import AgendaMutex, Base, EventoAuditoria, Turno
 
 
 class EsquemaPostgreSQLTests(unittest.TestCase):
     def test_esquema_representa_catalogos_turnos_y_mutex(self):
         self.assertEqual(
             set(Base.metadata.tables),
-            {'pacientes', 'profesionales', 'boxes', 'turnos', 'agenda_mutex', 'usuarios', 'sesiones'},
+            {'pacientes', 'profesionales', 'boxes', 'turnos', 'agenda_mutex', 'usuarios', 'sesiones',
+             'eventos_auditoria'},
         )
         self.assertEqual(
             set(Turno.__table__.columns.keys()),
@@ -22,6 +23,16 @@ class EsquemaPostgreSQLTests(unittest.TestCase):
         })
         self.assertIsNotNone(Turno.__table__.c.id.identity)
         self.assertEqual(AgendaMutex.__table__.primary_key.columns.keys(), ['id'])
+        self.assertEqual(
+            set(EventoAuditoria.__table__.columns.keys()),
+            {'id', 'created_at', 'actor_id', 'action', 'resource_type', 'resource_id', 'result'},
+        )
+        self.assertTrue({
+            'ck_eventos_auditoria_rechazo_generico',
+            'ck_eventos_auditoria_combinacion',
+        } <= {
+            constraint.name for constraint in EventoAuditoria.__table__.constraints
+        })
 
     def test_lock_de_agenda_se_compila_como_bloqueo_de_fila_postgres(self):
         statement = select(AgendaMutex.id).with_for_update()

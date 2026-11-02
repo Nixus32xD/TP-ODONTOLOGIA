@@ -140,7 +140,8 @@ class ApiTests(unittest.TestCase):
         self.assertEqual(esquema.status_code, 200)
         rutas = esquema.json()['paths']
         self.assertEqual(set(rutas), {
-            '/turnos', '/health', '/sesiones', '/sesiones/actual', '/usuarios', '/usuarios/{usuario_id}'})
+            '/turnos', '/health', '/sesiones', '/sesiones/actual', '/usuarios',
+            '/usuarios/{usuario_id}', '/auditoria'})
         self.assertEqual(set(rutas['/turnos']), {'post'})
         self.assertEqual(set(rutas['/turnos']['post']['responses']),
                          {'201', '401', '403', '422', '404', '409', '503', '500'})

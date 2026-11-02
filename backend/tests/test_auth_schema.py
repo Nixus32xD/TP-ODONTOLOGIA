@@ -19,13 +19,13 @@ class EsquemaAutenticacionTests(unittest.TestCase):
         self.assertTrue({'id', 'usuario_id', 'jti', 'expira_en', 'revocada_en'} <= set(sesion.c.keys()))
         self.assertTrue(any(isinstance(c, ForeignKeyConstraint) for c in sesion.constraints))
 
-    def test_migracion_postgresql_encadena_sobre_c02(self):
-        ruta = Path(__file__).parents[1] / 'alembic' / 'versions' / '20261101_0002_auth.py'
+    def test_migracion_postgresql_encadena_sobre_c03(self):
+        ruta = Path(__file__).parents[1] / 'alembic' / 'versions' / '20261101_0003_audit.py'
         spec = importlib.util.spec_from_file_location('revision_auth', ruta)
         modulo = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(modulo)
 
-        self.assertEqual(modulo.revision, '20261101_0002_auth')
-        self.assertEqual(modulo.down_revision, '20261101_0001')
+        self.assertEqual(modulo.revision, '20261101_0003_audit')
+        self.assertEqual(modulo.down_revision, '20261101_0002_auth')
         self.assertTrue(callable(modulo.upgrade))
         self.assertTrue(callable(modulo.downgrade))

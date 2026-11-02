@@ -12,6 +12,7 @@ from odontologia.auth.credenciales import (
     validar_password,
 )
 from odontologia.db.models import AgendaMutex, Sesion, Usuario
+from odontologia.audit import ErrorAuditoria
 
 
 ROLES_HABILITADOS = {'administrador', 'recepcion'}
@@ -66,17 +67,25 @@ def crear_primer_administrador(engine, identificador: str, password: str) -> dic
                     'administrador_existente', 'Ya existe un Administrador activo.', 409)
             session.add(usuario)
             session.flush()
+            from odontologia.audit import registrar_evento_session
+
+            registrar_evento_session(
+                session, action='cuenta.bootstrap', resource_type='cuenta',
+                resource_id=usuario.id, result='confirmado')
             resultado = _publico(usuario)
         return resultado
     except ErrorUsuarios:
         raise
+    except ErrorAuditoria as exc:
+        raise ErrorUsuarios('almacenamiento_error', 'No se pudo guardar la cuenta.', 503) from exc
     except IntegrityError as exc:
         raise ErrorUsuarios('identificador_duplicado', 'El identificador ya existe.', 409) from exc
     except SQLAlchemyError as exc:
         raise ErrorUsuarios('almacenamiento_error', 'No se pudo guardar la cuenta.', 503) from exc
 
 
-def crear_usuario(engine, identificador: str, password: str, rol: str) -> dict[str, object]:
+def crear_usuario(engine, identificador: str, password: str, rol: str,
+                  *, actor_id: str | None = None) -> dict[str, object]:
     normalizado = normalizar_identificador(identificador)
     validar_password(password)
     if not isinstance(rol, str) or rol not in ROLES_HABILITADOS:
@@ -90,8 +99,16 @@ def crear_usuario(engine, identificador: str, password: str, rol: str) -> dict[s
             _iniciar_escritura(session)
             session.add(usuario)
             session.flush()
+            if actor_id is not None:
+                from odontologia.audit import registrar_evento_session
+
+                registrar_evento_session(
+                    session, action='cuenta.creada', resource_type='cuenta',
+                    resource_id=usuario.id, actor_id=actor_id, result='confirmado')
             resultado = _publico(usuario)
         return resultado
+    except ErrorAuditoria as exc:
+        raise ErrorUsuarios('almacenamiento_error', 'No se pudo guardar la cuenta.', 503) from exc
     except IntegrityError as exc:
         raise ErrorUsuarios('identificador_duplicado', 'El identificador ya existe.', 409) from exc
     except SQLAlchemyError as exc:
@@ -108,7 +125,8 @@ def listar_usuarios(engine) -> list[dict[str, object]]:
 
 
 def actualizar_usuario(engine, usuario_id: str, *, rol: str | None = None,
-                       activo: bool | None = None, ahora: int | None = None) -> dict[str, object]:
+                       activo: bool | None = None, ahora: int | None = None,
+                       actor_id: str | None = None) -> dict[str, object]:
     if rol is not None and (not isinstance(rol, str) or rol not in ROLES_HABILITADOS):
         raise ErrorUsuarios('rol_invalido', 'El rol solicitado no está habilitado.', 422)
     if activo is not None and not isinstance(activo, bool):
@@ -145,10 +163,18 @@ def actualizar_usuario(engine, usuario_id: str, *, rol: str | None = None,
                         Sesion.revocada_en.is_(None),
                     ).values(revocada_en=instante)
                 )
+                if actor_id is not None:
+                    from odontologia.audit import registrar_evento_session
+
+                    registrar_evento_session(
+                        session, action='cuenta.actualizada', resource_type='cuenta',
+                        resource_id=usuario.id, actor_id=actor_id, result='confirmado')
             session.flush()
             resultado = _publico(usuario)
         return resultado
     except ErrorUsuarios:
         raise
+    except ErrorAuditoria as exc:
+        raise ErrorUsuarios('almacenamiento_error', 'No se pudo actualizar la cuenta.', 503) from exc
     except SQLAlchemyError as exc:
         raise ErrorUsuarios('almacenamiento_error', 'No se pudo actualizar la cuenta.', 503) from exc

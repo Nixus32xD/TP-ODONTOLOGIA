@@ -1,6 +1,8 @@
 """Modelo PostgreSQL del contrato de agenda C-01."""
 
-from sqlalchemy import BigInteger, CheckConstraint, ForeignKey, Identity, Index, Integer, SmallInteger, String
+from datetime import datetime
+
+from sqlalchemy import BigInteger, CheckConstraint, DateTime, ForeignKey, Identity, Index, Integer, SmallInteger, String
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
 
@@ -77,3 +79,45 @@ class Sesion(Base):
     expira_en: Mapped[int] = mapped_column(BigInteger, nullable=False)
     revocada_en: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
     creado_en: Mapped[int] = mapped_column(BigInteger, nullable=False)
+
+
+class EventoAuditoria(Base):
+    __tablename__ = 'eventos_auditoria'
+    __table_args__ = (
+        CheckConstraint(
+            "action IN ('turno.creado', 'cuenta.bootstrap', 'cuenta.creada', "
+            "'cuenta.actualizada', 'sesion.iniciada', 'sesion.cerrada', 'sesion.rechazada')",
+            name='ck_eventos_auditoria_action'),
+        CheckConstraint(
+            "resource_type IN ('turno', 'cuenta', 'sesion')",
+            name='ck_eventos_auditoria_resource_type'),
+        CheckConstraint(
+            "result IN ('confirmado', 'rechazado')",
+            name='ck_eventos_auditoria_result'),
+        CheckConstraint(
+            "(action = 'turno.creado' AND resource_type = 'turno' AND result = 'confirmado') OR "
+            "(action = 'cuenta.bootstrap' AND resource_type = 'cuenta' AND result = 'confirmado') OR "
+            "(action = 'cuenta.creada' AND resource_type = 'cuenta' AND result = 'confirmado') OR "
+            "(action = 'cuenta.actualizada' AND resource_type = 'cuenta' AND result = 'confirmado') OR "
+            "(action = 'sesion.iniciada' AND resource_type = 'sesion' AND result = 'confirmado') OR "
+            "(action = 'sesion.cerrada' AND resource_type = 'sesion' AND result = 'confirmado') OR "
+            "(action = 'sesion.rechazada' AND resource_type = 'sesion' AND result = 'rechazado')",
+            name='ck_eventos_auditoria_combinacion'),
+        CheckConstraint(
+            "resource_type != 'sesion' OR resource_id IS NULL",
+            name='ck_eventos_auditoria_sin_id_sesion'),
+        CheckConstraint(
+            "action != 'sesion.rechazada' OR (actor_id IS NULL AND resource_id IS NULL)",
+            name='ck_eventos_auditoria_rechazo_generico'),
+        Index('ix_eventos_auditoria_fecha_id', 'created_at', 'id'),
+    )
+
+    id: Mapped[int] = mapped_column(BigInteger().with_variant(Integer, 'sqlite'),
+                                    Identity(), primary_key=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    actor_id: Mapped[str | None] = mapped_column(
+        String(36), ForeignKey('usuarios.id', ondelete='RESTRICT'), nullable=True)
+    action: Mapped[str] = mapped_column(String(32), nullable=False)
+    resource_type: Mapped[str] = mapped_column(String(16), nullable=False)
+    resource_id: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    result: Mapped[str] = mapped_column(String(12), nullable=False)
