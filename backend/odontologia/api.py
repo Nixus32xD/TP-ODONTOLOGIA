@@ -6,7 +6,7 @@ import os
 
 from fastapi import Depends, FastAPI, Header, Query, Request
 from fastapi.exceptions import RequestValidationError
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, Response
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from pydantic import BaseModel, ConfigDict, Field, StrictBool, StrictInt, StrictStr, field_validator
 
@@ -66,6 +66,12 @@ from odontologia.portal_paciente import (
 )
 from odontologia.finanzas_ledger import (
     ErrorFinanzas, consultar_cuenta, crear_cargo, registrar_cobro, revertir_cobro,
+)
+from odontologia.reportes import (
+    consultar_reporte_agenda,
+    consultar_reporte_financiero,
+    serializar_reporte_agenda_csv,
+    serializar_reporte_financiero_csv,
 )
 
 
@@ -1282,6 +1288,86 @@ def crear_app(ruta_db: str | Path | None = None, *, timeout_segundos: float = 5.
         asegurar_esquema()
         eliminar_bloqueo(auth_engine, bloqueo_id, actor_id=_identidad['usuario_id'])
         return None
+
+    @app.get('/reportes/agenda', responses={
+        401: respuestas_auth[401], 403: respuestas_auth[403],
+        422: {'model': ErrorHTTP}, 503: respuestas_auth[503],
+    })
+    def reporte_agenda(
+            desde: str = Query(..., description='Fecha local inclusiva, YYYY-MM-DD.'),
+            hasta: str = Query(..., description='Fecha local exclusiva, YYYY-MM-DD; máximo 31 días.'),
+            _identidad=Depends(personal_operativo)):
+        asegurar_esquema()
+        try:
+            return consultar_reporte_agenda(auth_engine, desde, hasta)
+        except ValueError:
+            return JSONResponse(status_code=422, content={
+                'codigo': 'entrada_invalida', 'campo': 'desde/hasta',
+                'mensaje': 'El rango local no es válido o excede 31 días.'})
+
+    @app.get('/reportes/agenda.csv', response_class=Response, responses={
+        200: {'description': 'CSV agregado de agenda en UTF-8.',
+              'content': {'text/csv': {'schema': {'type': 'string'}}}},
+        401: respuestas_auth[401], 403: respuestas_auth[403],
+        422: {'model': ErrorHTTP}, 503: respuestas_auth[503],
+    })
+    def exportar_reporte_agenda(
+            desde: str = Query(..., description='Fecha local inclusiva, YYYY-MM-DD.'),
+            hasta: str = Query(..., description='Fecha local exclusiva, YYYY-MM-DD; máximo 31 días.'),
+            _identidad=Depends(personal_operativo)):
+        asegurar_esquema()
+        try:
+            reporte = consultar_reporte_agenda(auth_engine, desde, hasta)
+        except ValueError:
+            return JSONResponse(status_code=422, content={
+                'codigo': 'entrada_invalida', 'campo': 'desde/hasta',
+                'mensaje': 'El rango local no es válido o excede 31 días.'})
+        return Response(
+            content=serializar_reporte_agenda_csv(reporte),
+            media_type='text/csv; charset=utf-8',
+            headers={'Content-Disposition':
+                     f'attachment; filename="agenda-operativa-{desde}-{hasta}.csv"'},
+        )
+
+    @app.get('/reportes/finanzas', responses={
+        401: respuestas_auth[401], 403: respuestas_auth[403],
+        422: {'model': ErrorHTTP}, 503: respuestas_auth[503],
+    })
+    def reporte_financiero(
+            desde: str = Query(..., description='Fecha local inclusiva, YYYY-MM-DD.'),
+            hasta: str = Query(..., description='Fecha local exclusiva, YYYY-MM-DD; máximo 31 días.'),
+            _identidad=Depends(administrador)):
+        asegurar_esquema()
+        try:
+            return consultar_reporte_financiero(auth_engine, desde, hasta)
+        except ValueError:
+            return JSONResponse(status_code=422, content={
+                'codigo': 'entrada_invalida', 'campo': 'desde/hasta',
+                'mensaje': 'El rango local no es válido o excede 31 días.'})
+
+    @app.get('/reportes/finanzas.csv', response_class=Response, responses={
+        200: {'description': 'CSV agregado de finanzas en UTF-8.',
+              'content': {'text/csv': {'schema': {'type': 'string'}}}},
+        401: respuestas_auth[401], 403: respuestas_auth[403],
+        422: {'model': ErrorHTTP}, 503: respuestas_auth[503],
+    })
+    def exportar_reporte_financiero(
+            desde: str = Query(..., description='Fecha local inclusiva, YYYY-MM-DD.'),
+            hasta: str = Query(..., description='Fecha local exclusiva, YYYY-MM-DD; máximo 31 días.'),
+            _identidad=Depends(administrador)):
+        asegurar_esquema()
+        try:
+            reporte = consultar_reporte_financiero(auth_engine, desde, hasta)
+        except ValueError:
+            return JSONResponse(status_code=422, content={
+                'codigo': 'entrada_invalida', 'campo': 'desde/hasta',
+                'mensaje': 'El rango local no es válido o excede 31 días.'})
+        return Response(
+            content=serializar_reporte_financiero_csv(reporte),
+            media_type='text/csv; charset=utf-8',
+            headers={'Content-Disposition':
+                     f'attachment; filename="finanzas-{desde}-{hasta}.csv"'},
+        )
 
     @app.get('/finanzas/pacientes/{paciente_id}', responses={
         401: respuestas_auth[401], 403: respuestas_auth[403], 404: {'model': ErrorHTTP},

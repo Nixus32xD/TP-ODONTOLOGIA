@@ -1,4 +1,5 @@
 from concurrent.futures import ThreadPoolExecutor
+from datetime import datetime, timezone
 import os
 from pathlib import Path
 from tempfile import TemporaryDirectory
@@ -11,7 +12,9 @@ from sqlalchemy import create_engine, text
 from sqlalchemy.engine import make_url
 from sqlalchemy.orm import Session
 
+from odontologia.db.models import CargoFinanciero, CobroFinanciero, ReversionCobro
 from odontologia.finanzas_ledger import ErrorFinanzas, crear_cargo, registrar_cobro, revertir_cobro
+from odontologia.reportes import consultar_reporte_financiero
 from odontologia.backup.postgresql import crear_bundle_postgresql
 from odontologia.backup.restauracion_postgresql import restaurar_bundle_postgresql
 
@@ -163,6 +166,34 @@ class FinanzasPostgreSQLIntegracionTests(unittest.TestCase):
                         connection.exec_driver_sql(f'DROP DATABASE IF EXISTS "{destino}"')
                 finally:
                     admin.dispose()
+
+    def test_reporte_financiero_agrupa_por_fecha_local_y_calcula_cierre(self):
+        cargo_prev = str(uuid4())
+        cargo_actual = str(uuid4())
+        cobro_prev = str(uuid4())
+        cobro_actual = str(uuid4())
+        fecha = lambda valor: datetime.fromisoformat(valor).astimezone(timezone.utc)
+        with Session(self.engine) as session, session.begin():
+            session.add_all([
+                CargoFinanciero(id=cargo_prev, paciente_id='p-c19', monto_centavos=800,
+                                concepto='Privado', created_at=fecha('2020-01-01T22:00:00+00:00')),
+                CobroFinanciero(id=cobro_prev, cargo_id=cargo_prev, monto_centavos=100,
+                                created_at=fecha('2020-01-01T22:10:00+00:00')),
+                CargoFinanciero(id=cargo_actual, paciente_id='p-c19', monto_centavos=200,
+                                concepto='No exportar', created_at=fecha('2020-01-02T13:00:00+00:00')),
+                CobroFinanciero(id=cobro_actual, cargo_id=cargo_actual, monto_centavos=50,
+                                created_at=fecha('2020-01-02T14:00:00+00:00')),
+                ReversionCobro(id=str(uuid4()), cobro_id=cobro_actual, monto_centavos=25,
+                               motivo='No exportar tampoco', created_at=fecha('2020-01-02T15:00:00+00:00')),
+            ])
+        reporte = consultar_reporte_financiero(self.engine, '2020-01-02', '2020-01-03')
+        self.assertEqual(reporte['saldo_apertura_ars'], '7.00')
+        self.assertEqual(reporte['dias'][0]['cargos']['importe_ars'], '2.00')
+        self.assertEqual(reporte['dias'][0]['cobros']['importe_ars'], '0.50')
+        self.assertEqual(reporte['dias'][0]['reversiones']['importe_ars'], '0.25')
+        self.assertEqual(reporte['dias'][0]['saldo_cierre_ars'], '8.75')
+        self.assertNotIn('Privado', str(reporte))
+        self.assertNotIn('p-c19', str(reporte))
 
 
 if __name__ == '__main__':

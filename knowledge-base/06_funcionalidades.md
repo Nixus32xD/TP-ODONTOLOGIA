@@ -68,4 +68,11 @@ La consigna exige escenarios dado/cuando/entonces de caso feliz, error y borde, 
 
 ## Funcionalidades postergadas
 
-Editar/cancelar turnos, autoservicio, notificaciones WhatsApp, pagos, facturación, historia clínica, multisede, autenticación de producción y UI completa no se convierten en historias obligatorias por aparecer en el relevamiento. Ver [01](01_vision_y_objetivos.md) y [10](10_preguntas_abiertas.md).
+Editar/cancelar turnos, autoservicio, notificaciones WhatsApp, pagos, facturación, historia clínica, multisede, autenticación de producción y UI completa no se convierten en historias obligatorias por aparecer en el relevamiento. C-20 incorpora sólo reportes operativos agregados de agenda y ledger; no agrega analítica clínica ni recomendaciones. Ver [01](01_vision_y_objetivos.md) y [10](10_preguntas_abiertas.md).
+
+## Reportes operativos — C-20 (Apply)
+
+- `GET /reportes/agenda` y `GET /reportes/agenda.csv` consultan un rango local semiabierto de 1 a 31 días en `America/Argentina/Mendoza`. Administrador/Recepción ven conteos y minutos planificados por estado, además de capacidad/ocupación de profesionales y boxes derivadas de horarios, excepciones y bloqueos.
+- `GET /reportes/finanzas` y `GET /reportes/finanzas.csv` están restringidos a Administrador; agrupan cargos, cobros y reversiones por fecha de creación local y calculan neto y saldo exactos a partir del ledger C-19.
+- JSON y CSV parten de la misma consulta agregada. Las descargas no incluyen pacientes, cuentas, conceptos, motivos ni datos clínicos; el CSV tiene columnas estables UTF-8 y neutraliza IDs de recursos que empiecen con `=`, `+`, `-` o `@`.
+- El panel React usa la sesión actual, muestra reportes de agenda al personal operativo y finanzas sólo a Administrador. La integración PostgreSQL y el cierre/Archive de C-20 siguen pendientes de validación.

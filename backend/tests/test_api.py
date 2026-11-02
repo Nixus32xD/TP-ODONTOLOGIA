@@ -168,7 +168,9 @@ class ApiTests(unittest.TestCase):
             '/finanzas/pacientes/{paciente_id}',
             '/finanzas/pacientes/{paciente_id}/cargos',
             '/finanzas/cargos/{cargo_id}/cobros',
-            '/finanzas/cobros/{cobro_id}/reversiones'})
+            '/finanzas/cobros/{cobro_id}/reversiones',
+            '/reportes/agenda', '/reportes/agenda.csv',
+            '/reportes/finanzas', '/reportes/finanzas.csv'})
         self.assertEqual(set(rutas['/turnos']), {'get', 'post'})
         self.assertEqual(set(rutas['/turnos']['post']['responses']),
                          {'201', '401', '403', '422', '404', '409', '503', '500'})
