@@ -32,7 +32,7 @@ class MigracionAutenticacionSQLiteTests(unittest.TestCase):
         with closing(sqlite3.connect(self.ruta)) as conexion:
             self.assertEqual(conexion.execute('SELECT COUNT(*) FROM pacientes').fetchone()[0], 2)
             self.assertEqual(conexion.execute('SELECT COUNT(*) FROM turnos').fetchone()[0], 0)
-            self.assertEqual(conexion.execute('SELECT version FROM auth_schema_version').fetchone()[0], 9)
+            self.assertEqual(conexion.execute('SELECT version FROM auth_schema_version').fetchone()[0], 10)
 
     def test_migracion_repetida_no_modifica_la_agenda(self):
         migrar_sqlite(self.ruta)
@@ -68,7 +68,7 @@ class MigracionAutenticacionSQLiteTests(unittest.TestCase):
                 conexion.execute('SELECT id, paciente_id FROM turnos').fetchone(),
                 (turno.id, 'paciente-A'))
             self.assertEqual(conexion.execute(
-                'SELECT version FROM auth_schema_version').fetchone(), (9,))
+                'SELECT version FROM auth_schema_version').fetchone(), (10,))
             with self.assertRaises(sqlite3.IntegrityError):
                 conexion.execute(
                     "INSERT INTO pacientes(id, nombre, telefono, activo) "
@@ -146,7 +146,7 @@ class MigracionAutenticacionSQLiteTests(unittest.TestCase):
             columnas = {fila[1] for fila in conexion.execute('PRAGMA table_info(usuarios)')}
             self.assertIn('profesional_id', columnas)
             self.assertEqual(conexion.execute(
-                'SELECT version FROM auth_schema_version').fetchone(), (9,))
+                'SELECT version FROM auth_schema_version').fetchone(), (10,))
             self.assertEqual(conexion.execute(
                 "SELECT id, rol, profesional_id FROM usuarios WHERE id='usuario-admin'"
             ).fetchone(), ('usuario-admin', 'administrador', None))
@@ -186,7 +186,7 @@ class MigracionAutenticacionSQLiteTests(unittest.TestCase):
                 rol TEXT NOT NULL CHECK (rol IN ('administrador', 'recepcion')),
                 activo INTEGER NOT NULL CHECK (activo IN (0, 1))
             )''')
-            conexion.execute('UPDATE auth_schema_version SET version=9')
+            conexion.execute('UPDATE auth_schema_version SET version=10')
             conexion.commit()
         engine = crear_engine_autenticacion('sqlite', None, self.ruta)
         self.addCleanup(engine.dispose)
@@ -210,4 +210,17 @@ class MigracionAutenticacionSQLiteTests(unittest.TestCase):
         self.addCleanup(engine.dispose)
 
         with self.assertRaisesRegex(RuntimeError, 'versión'):
+            validar_esquema_autenticacion(engine, 'sqlite', self.ruta)
+
+    def test_validador_falla_cerrado_si_falta_tabla_clinica_c16(self):
+        migrar_sqlite(self.ruta)
+        with closing(sqlite3.connect(self.ruta)) as conexion:
+            conexion.execute('PRAGMA foreign_keys=OFF')
+            conexion.execute('DROP TABLE etapas_plan_tratamiento')
+            conexion.execute('DROP TABLE planes_tratamiento')
+            conexion.commit()
+        engine = crear_engine_autenticacion('sqlite', None, self.ruta)
+        self.addCleanup(engine.dispose)
+
+        with self.assertRaisesRegex(RuntimeError, 'odontograma y planes'):
             validar_esquema_autenticacion(engine, 'sqlite', self.ruta)

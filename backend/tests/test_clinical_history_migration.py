@@ -48,12 +48,12 @@ class MigracionHistoriaClinicaSQLiteTests(unittest.TestCase):
             box_id='box-A', inicio=datetime.fromisoformat('2026-11-02T09:00:00-03:00'),
             fin=datetime.fromisoformat('2026-11-02T09:30:00-03:00'))
 
-    def test_esquema_vigente_v9_crea_evoluciones_inmutables(self):
+    def test_esquema_vigente_v10_conserva_evoluciones_inmutables(self):
         migrar_sqlite(self.ruta)
 
         with closing(sqlite3.connect(self.ruta)) as conexion:
             self.assertEqual(conexion.execute(
-                'SELECT version FROM auth_schema_version').fetchone(), (9,))
+                'SELECT version FROM auth_schema_version').fetchone(), (10,))
             tablas = {fila[0] for fila in conexion.execute(
                 "SELECT name FROM sqlite_master WHERE type='table'")}
             self.assertIn('evoluciones_clinicas', tablas)
@@ -85,7 +85,7 @@ class MigracionHistoriaClinicaSQLiteTests(unittest.TestCase):
 
         with closing(sqlite3.connect(self.ruta)) as conexion:
             self.assertEqual(conexion.execute(
-                'SELECT version FROM auth_schema_version').fetchone(), (9,))
+                'SELECT version FROM auth_schema_version').fetchone(), (10,))
             self.assertEqual(conexion.execute(
                 'SELECT COUNT(*) FROM turnos WHERE id=?', (self.turno.id,)).fetchone(), (1,))
             self.assertEqual(conexion.execute(

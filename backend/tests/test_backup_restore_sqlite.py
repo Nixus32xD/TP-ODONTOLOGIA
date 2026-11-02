@@ -44,6 +44,24 @@ class RestauracionSQLiteTests(unittest.TestCase):
                 (created_at, actor_id, action, resource_type, resource_id, result)
                 VALUES (?, NULL, 'evolucion.creada', 'evolucion', ?, 'confirmado')''',
                 ('2026-11-02T12:00:00+00:00', 'evolucion-demo'))
+            conexion.execute('''INSERT INTO versiones_odontograma
+                (id, paciente_id, profesional_id, version, created_at)
+                VALUES ('version-demo', 'paciente-A', 'profesional-A', 1,
+                        '2026-11-02T12:00:00+00:00')''')
+            conexion.execute('''INSERT INTO hallazgos_odontograma
+                (id, version_id, pieza_fdi, superficie_fdi, observacion)
+                VALUES ('hallazgo-demo', 'version-demo', '16', 'O',
+                        'Hallazgo odontológico sintético.')''')
+            conexion.execute('''INSERT INTO prestaciones
+                (id, nombre, duracion_minutos, activo)
+                VALUES ('prestacion-demo', 'Prestación sintética', 30, 1)''')
+            conexion.execute('''INSERT INTO planes_tratamiento
+                (id, paciente_id, profesional_id, estado, created_at)
+                VALUES ('plan-demo', 'paciente-A', 'profesional-A', 'propuesto',
+                        '2026-11-02T12:00:00+00:00')''')
+            conexion.execute('''INSERT INTO etapas_plan_tratamiento
+                (id, plan_id, prestacion_id, orden)
+                VALUES ('etapa-demo', 'plan-demo', 'prestacion-demo', 1)''')
             conexion.commit()
         crear_bundle_sqlite(self.origen, self.bundle)
 
@@ -120,10 +138,16 @@ class RestauracionSQLiteTests(unittest.TestCase):
         resultado = restaurar_bundle_sqlite(
             self.bundle, destino, origen_activo=self.origen)
         self.assertTrue(resultado['restored'])
-        self.assertEqual(resultado['schema_version'], '9')
+        self.assertEqual(resultado['schema_version'], '10')
         manifiesto = leer_manifiesto(self.bundle / 'manifest.json')
         self.assertEqual(manifiesto['table_counts']['evoluciones_clinicas'], 1)
+        self.assertEqual({tabla: manifiesto['table_counts'][tabla] for tabla in (
+            'versiones_odontograma', 'hallazgos_odontograma',
+            'planes_tratamiento', 'etapas_plan_tratamiento')}, {
+                'versiones_odontograma': 1, 'hallazgos_odontograma': 1,
+                'planes_tratamiento': 1, 'etapas_plan_tratamiento': 1})
         self.assertNotIn('Nota clínica ficticia de respaldo.', str(manifiesto))
+        self.assertNotIn('Hallazgo odontológico sintético.', str(manifiesto))
 
         with closing(sqlite3.connect(destino)) as conexion:
             self.assertEqual(
@@ -136,6 +160,19 @@ class RestauracionSQLiteTests(unittest.TestCase):
                 'FROM evoluciones_clinicas WHERE id=?', ('evolucion-demo',)).fetchone(),
                 ('paciente-A', 'profesional-A', self.turno.id,
                  'Nota clínica ficticia de respaldo.', None))
+            self.assertEqual(conexion.execute(
+                'SELECT paciente_id, profesional_id, version FROM versiones_odontograma '
+                "WHERE id='version-demo'").fetchone(), ('paciente-A', 'profesional-A', 1))
+            self.assertEqual(conexion.execute(
+                "SELECT pieza_fdi, superficie_fdi, observacion FROM hallazgos_odontograma "
+                "WHERE id='hallazgo-demo'").fetchone(),
+                ('16', 'O', 'Hallazgo odontológico sintético.'))
+            self.assertEqual(conexion.execute(
+                "SELECT estado FROM planes_tratamiento WHERE id='plan-demo'"
+            ).fetchone(), ('propuesto',))
+            self.assertEqual(conexion.execute(
+                "SELECT prestacion_id, orden FROM etapas_plan_tratamiento WHERE id='etapa-demo'"
+            ).fetchone(), ('prestacion-demo', 1))
             conexion.execute(
                 "INSERT INTO pacientes(id, nombre, telefono, activo) VALUES (?, ?, NULL, 1)",
                 ('paciente-alta-despues-de-restaurar', 'Alta ficticia posterior'),

@@ -3,6 +3,7 @@ import { SessionProvider, useSession } from './auth/session'
 import Agenda from './agenda/Agenda'
 import Catalogos from './pages/Catalogos'
 import Disponibilidad from './pages/Disponibilidad'
+import AtencionesClinicas from './pages/AtencionesClinicas'
 
 function InicioSesionActiva() {
   const { identidad, cerrar, token } = useSession()
@@ -28,6 +29,7 @@ function InicioSesionActiva() {
         </p>
       </section>
       <Agenda identidad={identidad} token={token} />
+      {esProfesional && <AtencionesClinicas token={token} />}
       {identidad.rol !== 'profesional' && <>
         <Catalogos rol={identidad.rol} token={token} />
         <Disponibilidad token={token} />

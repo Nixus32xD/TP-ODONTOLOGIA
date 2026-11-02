@@ -19,7 +19,8 @@ class EsquemaPostgreSQLTests(unittest.TestCase):
             {'pacientes', 'profesionales', 'boxes', 'prestaciones', 'turnos', 'agenda_mutex',
              'usuarios', 'sesiones', 'eventos_auditoria', 'horarios_semanales',
              'excepciones_horario', 'tramos_excepcion', 'bloqueos_agenda',
-             'evoluciones_clinicas'},
+             'evoluciones_clinicas', 'versiones_odontograma', 'hallazgos_odontograma',
+             'planes_tratamiento', 'etapas_plan_tratamiento'},
         )
         self.assertEqual(
             set(Turno.__table__.columns.keys()),
@@ -78,7 +79,7 @@ class EsquemaPostgreSQLTests(unittest.TestCase):
         self.assertEqual(modulo.down_revision, '20261102_0009_turn_rescheduling')
         self.assertTrue(callable(modulo.upgrade))
         self.assertTrue(callable(modulo.downgrade))
-        self.assertEqual(REVISION_ESQUEMA_ACTUAL, modulo.revision)
+        self.assertEqual(REVISION_ESQUEMA_ACTUAL, '20261102_0011_odontogram_treatment_plans')
 
 
 if __name__ == '__main__':

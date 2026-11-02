@@ -104,8 +104,8 @@ El sistema SHALL mantener los artefactos en una ruta local explícita, informar 
 - **WHEN** se ejecuta otro backup o restauración
 - **THEN** las copias previas permanecen intactas y no se activa borrado por antigüedad
 
-### Requirement: Incluir evoluciones clínicas en copias y restauraciones
-El sistema SHALL incluir las evoluciones clínicas y sus referencias en cada copia completa de una base con el esquema C-15. El manifiesto SHALL contar la tabla clínica y la restauración SHALL validar su integridad y claves foráneas antes de declarar éxito.
+### Requirement: Incluir registros clínicos en copias y restauraciones
+El sistema SHALL incluir evoluciones clínicas, versiones de odontograma, hallazgos y planes con sus referencias en cada copia completa de una base con esquema C-15 o posterior. El manifiesto SHALL contar las nuevas tablas sin exponer contenido clínico y la restauración SHALL validar integridad y claves foráneas antes de declarar éxito.
 
 #### Scenario: Backup local conserva evoluciones
 - **GIVEN** una base compatible con evoluciones ficticias confirmadas
@@ -121,3 +121,13 @@ El sistema SHALL incluir las evoluciones clínicas y sus referencias en cada cop
 - **GIVEN** un backup de demostración cuyas referencias clínicas no coinciden con paciente, profesional o turno
 - **WHEN** se valida o restaura la copia
 - **THEN** se rechaza antes de publicar el destino y el artefacto original permanece intacto
+
+#### Scenario: Backup y restauración preservan odontogramas y planes
+- **GIVEN** una base compatible con versiones de odontograma y planes ficticios confirmados
+- **WHEN** se crea un bundle y se restaura en un destino nuevo explícito
+- **THEN** el snapshot conserva versiones, hallazgos, etapas, estados y referencias; los recuentos coinciden y el manifiesto no contiene notas ni valores clínicos
+
+#### Scenario: Rechazar referencias clínicas inválidas de C-16
+- **GIVEN** un bundle con hallazgos, versiones o etapas que referencian piezas, pacientes, profesionales o prestaciones inexistentes
+- **WHEN** se verifica o restaura el bundle
+- **THEN** se rechaza antes de publicar el destino y se mantiene intacta la fuente

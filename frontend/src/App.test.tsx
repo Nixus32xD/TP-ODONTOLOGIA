@@ -32,6 +32,8 @@ describe('aplicación por rol', () => {
 
       expect(await screen.findByRole('heading', { name: 'Operación de agenda' })).toBeInTheDocument()
       expect(screen.getByRole('button', { name: 'Cerrar sesión' })).toBeInTheDocument()
+      expect(api.mock.calls.some(([ruta]) => String(ruta).includes('/profesional/atenciones-atendidas')))
+        .toBe(false)
     },
   )
 
@@ -52,5 +54,8 @@ describe('aplicación por rol', () => {
     for (const accion of ['Crear turno', 'Confirmar', 'Cancelar', 'Marcar atendido', 'Registrar ausencia', 'Reprogramar']) {
       expect(screen.queryByRole('button', { name: accion })).not.toBeInTheDocument()
     }
+    expect(await screen.findByRole('heading', { name: 'Atenciones clínicas' })).toBeInTheDocument()
+    expect(api.mock.calls.some(([ruta]) => String(ruta).startsWith('/profesional/atenciones-atendidas')))
+      .toBe(true)
   })
 })

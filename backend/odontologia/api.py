@@ -47,6 +47,14 @@ from odontologia.historia_clinica import (
     corregir_evolucion,
     crear_evolucion,
 )
+from odontologia.odontograma import (
+    cambiar_estado_plan_tratamiento,
+    consultar_odontograma,
+    consultar_planes_tratamiento,
+    crear_odontograma,
+    crear_plan_tratamiento,
+    listar_atenciones_atendidas,
+)
 from odontologia.turnos import transicionar_estado_turno
 
 
@@ -224,6 +232,89 @@ class RespuestaListaEvoluciones(BaseModel):
     items: list[RespuestaEvolucion]
     limit: int
     offset: int
+
+
+class RespuestaAtencionAtendida(BaseModel):
+    turno_id: StrictInt
+    paciente_id: StrictStr
+    paciente_nombre: StrictStr
+    inicio: datetime
+    fin: datetime
+
+
+class RespuestaListaAtencionesAtendidas(BaseModel):
+    items: list[RespuestaAtencionAtendida]
+    limit: int
+    offset: int
+
+
+class SolicitudHallazgoOdontograma(BaseModel):
+    model_config = ConfigDict(extra='forbid')
+    pieza_fdi: StrictStr = Field(min_length=2, max_length=2)
+    superficies: list[StrictStr] = Field(min_length=1)
+    observacion: StrictStr | None = Field(default=None, max_length=500)
+
+
+class SolicitudOdontograma(BaseModel):
+    model_config = ConfigDict(extra='forbid', json_schema_extra={
+        'examples': [{
+            'hallazgos': [
+                {'pieza_fdi': '11', 'superficies': ['M', 'V'],
+                 'observacion': 'Observación sintética de ejemplo.'},
+            ],
+        }],
+    })
+    hallazgos: list[SolicitudHallazgoOdontograma]
+
+
+class RespuestaHallazgoOdontograma(BaseModel):
+    pieza_fdi: StrictStr
+    superficie_fdi: StrictStr
+    observacion: StrictStr | None
+
+
+class RespuestaVersionOdontograma(BaseModel):
+    id: StrictStr
+    paciente_id: StrictStr
+    profesional_id: StrictStr
+    version: StrictInt
+    created_at: datetime
+    hallazgos: list[RespuestaHallazgoOdontograma]
+
+
+class RespuestaListaVersionesOdontograma(BaseModel):
+    items: list[RespuestaVersionOdontograma]
+    version_vigente: StrictInt | None
+
+
+class SolicitudPlanTratamiento(BaseModel):
+    model_config = ConfigDict(extra='forbid', json_schema_extra={
+        'examples': [{'prestaciones_ids': ['prestacion-sintetica-A', 'prestacion-sintetica-B']}],
+    })
+    prestaciones_ids: list[StrictStr] = Field(min_length=1)
+
+
+class SolicitudEstadoPlan(BaseModel):
+    model_config = ConfigDict(extra='forbid')
+    estado: StrictStr
+
+
+class RespuestaEtapaPlan(BaseModel):
+    orden: StrictInt
+    prestacion_id: StrictStr
+
+
+class RespuestaPlanTratamiento(BaseModel):
+    id: StrictStr
+    paciente_id: StrictStr
+    profesional_id: StrictStr
+    estado: StrictStr
+    created_at: datetime
+    etapas: list[RespuestaEtapaPlan]
+
+
+class RespuestaListaPlanesTratamiento(BaseModel):
+    items: list[RespuestaPlanTratamiento]
 
 
 class SolicitudRecurso(BaseModel):
@@ -736,6 +827,75 @@ def crear_app(ruta_db: str | Path | None = None, *, timeout_segundos: float = 5.
         return corregir_evolucion(
             auth_engine, evolucion_id=evolucion_id, nota=solicitud.nota,
             identidad=identidad)
+
+    @app.get('/profesional/atenciones-atendidas',
+             response_model=RespuestaListaAtencionesAtendidas,
+             responses={401: respuestas_auth[401], 403: respuestas_auth[403],
+                        422: {'model': ErrorHTTP}, 503: respuestas_auth[503]})
+    def consulta_atenciones_atendidas(
+            limit: int = Query(default=25, ge=1, le=100),
+            offset: int = Query(default=0, ge=0), identidad=Depends(identidad_actual)):
+        asegurar_esquema()
+        return listar_atenciones_atendidas(
+            auth_engine, identidad=identidad, limit=limit, offset=offset)
+
+    @app.get('/pacientes/{paciente_id}/odontograma',
+             response_model=RespuestaListaVersionesOdontograma,
+             responses={401: respuestas_auth[401], 403: respuestas_auth[403],
+                        404: {'model': ErrorHTTP}, 422: {'model': ErrorHTTP},
+                        503: respuestas_auth[503]})
+    def consulta_odontograma(
+            paciente_id: str, identidad=Depends(identidad_actual)):
+        asegurar_esquema()
+        return consultar_odontograma(auth_engine, paciente_id, identidad=identidad)
+
+    @app.post('/pacientes/{paciente_id}/odontograma', status_code=201,
+              response_model=RespuestaVersionOdontograma,
+              responses={401: respuestas_auth[401], 403: respuestas_auth[403],
+                         404: {'model': ErrorHTTP}, 422: {'model': ErrorHTTP},
+                         503: respuestas_auth[503]})
+    def alta_version_odontograma(
+            paciente_id: str, solicitud: SolicitudOdontograma,
+            identidad=Depends(identidad_actual)):
+        asegurar_esquema()
+        return crear_odontograma(
+            auth_engine, paciente_id=paciente_id,
+            hallazgos=[hallazgo.model_dump() for hallazgo in solicitud.hallazgos],
+            identidad=identidad)
+
+    @app.get('/pacientes/{paciente_id}/planes',
+             response_model=RespuestaListaPlanesTratamiento,
+             responses={401: respuestas_auth[401], 403: respuestas_auth[403],
+                        404: {'model': ErrorHTTP}, 422: {'model': ErrorHTTP},
+                        503: respuestas_auth[503]})
+    def consulta_planes_tratamiento(
+            paciente_id: str, identidad=Depends(identidad_actual)):
+        asegurar_esquema()
+        return consultar_planes_tratamiento(auth_engine, paciente_id, identidad=identidad)
+
+    @app.post('/pacientes/{paciente_id}/planes', status_code=201,
+              response_model=RespuestaPlanTratamiento,
+              responses={401: respuestas_auth[401], 403: respuestas_auth[403],
+                         404: {'model': ErrorHTTP}, 422: {'model': ErrorHTTP},
+                         503: respuestas_auth[503]})
+    def alta_plan_tratamiento(
+            paciente_id: str, solicitud: SolicitudPlanTratamiento,
+            identidad=Depends(identidad_actual)):
+        asegurar_esquema()
+        return crear_plan_tratamiento(
+            auth_engine, paciente_id=paciente_id,
+            prestaciones_ids=solicitud.prestaciones_ids, identidad=identidad)
+
+    @app.patch('/planes/{plan_id}/estado', response_model=RespuestaPlanTratamiento,
+               responses={401: respuestas_auth[401], 403: respuestas_auth[403],
+                          404: {'model': ErrorHTTP}, 409: {'model': ErrorHTTP},
+                          422: {'model': ErrorHTTP}, 503: respuestas_auth[503]})
+    def cambio_estado_plan(
+            plan_id: str, solicitud: SolicitudEstadoPlan,
+            identidad=Depends(identidad_actual)):
+        asegurar_esquema()
+        return cambiar_estado_plan_tratamiento(
+            auth_engine, plan_id=plan_id, estado=solicitud.estado, identidad=identidad)
 
     @app.get('/profesionales', response_model=RespuestaListaRecursos, responses={
         401: respuestas_auth[401], 403: respuestas_auth[403], 422: {'model': ErrorHTTP},

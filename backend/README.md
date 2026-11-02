@@ -80,7 +80,7 @@ El bootstrap pide identificador y contraseña de forma interactiva y oculta; no 
 ..\.venv\Scripts\python.exe -m odontologia.auth.bootstrap_admin
 ```
 
-Alembic aplica las revisiones consecutivas hasta la revisión vigente (`20261102_0010_clinical_history`), incluida la ficha mínima, catálogos, auditoría, disponibilidad, estados, vínculo de cuenta Profesional, versión de turnos e historia clínica sintética. Aplicar migraciones y bootstrap explícitamente desde el entorno local de Python cuando se necesiten para una prueba; no usar la API ni `GET /health` como comando de migración.
+Alembic aplica las revisiones consecutivas hasta la revisión vigente (`20261102_0011_odontogram_treatment_plans`), incluida la ficha mínima, catálogos, auditoría, disponibilidad, estados, vínculo de cuenta Profesional, versión de turnos, historia clínica sintética, odontogramas y planes manuales. Aplicar migraciones y bootstrap explícitamente desde el entorno local de Python cuando se necesiten para una prueba; no usar la API ni `GET /health` como comando de migración.
 
 `POST /sesiones` recibe `identificador` y `password`; su respuesta contiene `access_token`, `token_type` y `expires_in`. En Swagger, usar **Authorize** con `Bearer <token>`. `/sesiones/actual` permite consultar y cerrar la sesión propia. El Administrador puede consultar/crear usuarios y cambiar rol/estado; Recepción puede crear turnos y operar fichas mínimas de pacientes; sólo Administrador cambia el estado activo de pacientes. Desactivar una cuenta, cambiarle el rol o cerrar sesión revoca sus tokens persistidos. Los fallos de credenciales devuelven un mensaje genérico. Las fichas contienen sólo nombre y teléfono opcional ficticios; no usar datos reales ni añadir historia clínica. Los eventos guardan sólo actor/acción/recurso/resultado/fecha; no incluyen cuerpos, nombres, teléfonos, contraseñas, hashes, JWT, datos clínicos ni el identificador de un login rechazado. `GET /auditoria?limit=50&offset=0` es sólo Administrador, admite límite 1–100 y no ofrece edición, borrado ni purga automática. Si el evento falla, la mutación se revierte y la API no informa éxito. Sin secreto o esquema migrado, las operaciones protegidas fallan cerradas con 503 mientras `/health` continúa pública.
 
@@ -177,7 +177,7 @@ Si la variable no está definida, las pruebas PostgreSQL se omiten; esa ejecuci�
 
 ## Copias locales de agenda (C-12)
 
-El bundle de backup es un directorio nuevo con el payload completo (`agenda.sqlite3` o `agenda.dump`) y `manifest.json`. El manifiesto v1 incluye `created_at_utc` (ISO 8601 en UTC), `backend`, `application_version`, `schema_version`, `payload_name`, `payload_size_bytes`, `payload_sha256` (SHA-256 hexadecimal) y `table_counts` (nombre de cada tabla vigente y cantidad de filas como entero no negativo). Los conteos son agregados y no incluyen valores ni identificadores de filas. La versión del backend se define en `odontologia.version`; el esquema aceptado actualmente es SQLite `9` o PostgreSQL `20261102_0010_clinical_history`. El hash detecta corrupción/cambios accidentales del payload, no autentica el manifiesto si un atacante reemplaza ambos; los conteos no prometen confidencialidad. El manifiesto no guarda URL, ruta de origen, credenciales ni datos personales.
+El bundle de backup es un directorio nuevo con el payload completo (`agenda.sqlite3` o `agenda.dump`) y `manifest.json`. El manifiesto v1 incluye `created_at_utc` (ISO 8601 en UTC), `backend`, `application_version`, `schema_version`, `payload_name`, `payload_size_bytes`, `payload_sha256` (SHA-256 hexadecimal) y `table_counts` (nombre de cada tabla vigente y cantidad de filas como entero no negativo). Los conteos son agregados y no incluyen valores ni identificadores de filas. La versión del backend se define en `odontologia.version`; el esquema aceptado actualmente es SQLite `10` o PostgreSQL `20261102_0011_odontogram_treatment_plans`. El hash detecta corrupción/cambios accidentales del payload, no autentica el manifiesto si un atacante reemplaza ambos; los conteos no prometen confidencialidad. El manifiesto no guarda URL, ruta de origen, credenciales ni datos personales.
 
 Los comandos C-12 son manuales y locales; la API y el arranque no crean ni restauran copias. Los bundles contienen la base completa, incluidas fichas, cuentas/sesiones y auditoría, por lo que deben tratarse como datos sensibles. No contienen `.env` ni el secreto JWT. No se suben automáticamente, no tienen cifrado gestionado ni política de purga automática. Las pruebas usan bases temporales y datos ficticios; no demuestran recuperación humana ni preparación de producción.
 
@@ -195,7 +195,7 @@ $env:ODONTOLOGIA_DB = 'C:\ruta\agenda.sqlite3'
 
 El adapter SQLite abre el origen en sólo lectura y usa la Online Backup API, que produce un snapshot coherente aunque haya conexiones concurrentes y contempla la base en modo WAL. Luego calcula `table_counts` leyendo el archivo ya copiado, no la base activa. No se usa `copy`/`Copy-Item` sobre el archivo activo. La operación no confirma transacciones ajenas ni modifica agenda, versión de esquema o auditoría.
 
-Antes de copiar, la base debe declarar `auth_schema_version=9`, incluir `turnos.version` y `evoluciones_clinicas`, superar `PRAGMA integrity_check` y no tener filas en `PRAGMA foreign_key_check`. No se migra ni repara el origen. El bundle se prepara en un directorio temporal exclusivo dentro del mismo padre y sólo se publica en un destino que todavía no existe; si la copia falla se elimina ese staging y se conserva intacto cualquier destino previo. La comprobación puede rechazar bases C-01 standalone sin migrar, archivos ausentes/corruptos o una revisión incompatible.
+Antes de copiar, la base debe declarar `auth_schema_version=10`, incluir `turnos.version` y `evoluciones_clinicas`, superar `PRAGMA integrity_check` y no tener filas en `PRAGMA foreign_key_check`. No se migra ni repara el origen. El bundle se prepara en un directorio temporal exclusivo dentro del mismo padre y sólo se publica en un destino que todavía no existe; si la copia falla se elimina ese staging y se conserva intacto cualquier destino previo. La comprobación puede rechazar bases C-01 standalone sin migrar, archivos ausentes/corruptos o una revisión incompatible.
 
 Los rechazos usan códigos estables internos: `origen_ausente`, `origen_invalido`, `esquema_incompatible`, `integridad_invalida`, `referencias_invalidas`, `destino_existente`, `configuracion_invalida`, `bundle_invalido`, `herramienta_ausente`, `herramienta_invalida`, `version_incompatible`, `servidor_no_disponible` y `operacion_fallida`. La CLI presenta un mensaje breve; el detalle del motor no debe revelar rutas o secretos. Los estados son: bundle creado y verificado, rechazo previo sin salida, o fallo sin destino publicado. Esto no constituye evidencia de una restauración real.
 
@@ -214,7 +214,7 @@ La restauración SQLite requiere que la carpeta destino exista y que el archivo 
 
 La suite usa fixtures ficticios: restaura a archivo nuevo, abre una conexión SQLite nueva, comprueba una fila y permite una inserción ficticia posterior. Eso acredita el flujo técnico automatizado en temporales; no acredita una recuperación de datos reales ni una revisión humana. En este host Windows no se pudo crear un symlink en la prueba (WinError 1314); el rechazo se implementa, pero esa ruta específica quedó sin prueba de ejecución.
 
-Para PostgreSQL, seleccionar el motor ya configurado y pasar un nombre de base nuevo (no una URL ni un path). El usuario de conexión necesita `CREATEDB` y permiso para conectarse a `postgres`. El adapter consulta primero que el destino no exista, crea una base temporal aleatoria, ejecuta `pg_restore --exit-on-error`, compara revision, constraints y los 14 recuentos contra el manifiesto, cierra sólo las conexiones que abrió y renombra el staging únicamente si el nombre final sigue libre. En cualquier error limpia sólo la base temporal propia; no termina conexiones ajenas ni borra una base existente. Los nombres se restringen a minúsculas, dígitos y guion bajo (máximo 63 caracteres).
+Para PostgreSQL, seleccionar el motor ya configurado y pasar un nombre de base nuevo (no una URL ni un path). El usuario de conexión necesita `CREATEDB` y permiso para conectarse a `postgres`. El adapter consulta primero que el destino no exista, crea una base temporal aleatoria, ejecuta `pg_restore --exit-on-error`, compara revisión, constraints y los 19 recuentos contra el manifiesto, cierra sólo las conexiones que abrió y renombra el staging únicamente si el nombre final sigue libre. En cualquier error limpia sólo la base temporal propia; no termina conexiones ajenas ni borra una base existente. Los nombres se restringen a minúsculas, dígitos y guion bajo (máximo 63 caracteres).
 
 ```powershell
 $env:ODONTOLOGIA_PERSISTENCIA = 'postgresql'
@@ -235,7 +235,7 @@ $env:DATABASE_URL = 'postgresql+psycopg://usuario:clave@127.0.0.1:55432/odontolo
 ..\.venv\Scripts\python.exe -m odontologia.backup crear 'N:\copias\agenda-postgresql-2026-11-02'
 ```
 
-El proceso espera PostgreSQL en la revisión vigente `20261102_0010_clinical_history`, servidor/clientes de la misma major y un destino nuevo. La contraseña de ejemplo se reemplaza sólo en el entorno local; no guardarla en documentos ni en el manifiesto. Sin PostgreSQL local de prueba compatible, no ejecutar esta orden contra una agenda real.
+El proceso espera PostgreSQL en la revisión vigente `20261102_0011_odontogram_treatment_plans`, servidor/clientes de la misma major y un destino nuevo. La contraseña de ejemplo se reemplaza sólo en el entorno local; no guardarla en documentos ni en el manifiesto. Sin PostgreSQL local de prueba compatible, no ejecutar esta orden contra una agenda real.
 
 La creación prepara y valida payload y manifiesto en un directorio privado del mismo volumen y publica el directorio completo con una operación atómica que no reemplaza destinos. En Windows usa `os.rename`; en Linux exige `renameat2(RENAME_NOREPLACE)` y falla cerrado si no está disponible. Una colisión que aparezca durante la publicación, incluso un directorio POSIX vacío, se conserva sin cambios; una excepción previa deja el destino final ausente y limpia sólo el staging propio. El staging, payload y manifiesto mantienen permisos POSIX `0700`/`0600`; Windows conserva ACL heredadas. La copia contiene datos sensibles y debe guardarse fuera del repositorio.
 
@@ -247,7 +247,7 @@ C-15 separa las evoluciones de la ficha básica del paciente. En SQLite el esque
 
 La API expone `GET /pacientes/{paciente_id}/historia`, `POST /pacientes/{paciente_id}/evoluciones` y `POST /evoluciones/{evolucion_id}/correcciones`. Sólo un Profesional activo con cuenta vigente vinculada puede consultar o agregar evoluciones de un paciente si tiene un turno propio en estado `atendido`. Recepción y Administrador no reciben contenido clínico. Las notas son texto narrativo de 1 a 5000 caracteres; no hay diagnóstico estructurado, recetas, adjuntos ni odontograma. Una corrección crea otra evolución que referencia la original; no se editan ni borran evoluciones. Las lecturas y escrituras producen auditoría de metadatos sin nombres ni contenido clínico y fallan cerradas si no se puede registrar.
 
-Usar únicamente pacientes, cuentas y turnos ficticios de la suite o del demo local. Esta función no admite datos reales y no constituye preparación para uso clínico o productivo. No hay purga automática. El respaldo conserva la nueva tabla y las relaciones al restaurar SQLite en un archivo destino nuevo; el flujo PostgreSQL tiene contratos y pruebas, pero su aplicación/restauración real requiere un cluster PostgreSQL de prueba disponible.
+Usar únicamente pacientes, cuentas y turnos ficticios de la suite o del demo local. Esta función no admite datos reales y no constituye preparación para uso clínico o productivo. No hay purga automática. El respaldo conserva la tabla y relaciones al restaurar SQLite en un archivo destino nuevo. Las pruebas PostgreSQL de C-15/C-16 verifican bundle y restore real en un cluster local de prueba, sin demostrar recuperación humana o producción.
 
 Para ejecutar localmente en Windows, desde `backend/`, con el entorno ya instalado y `.env.example` ajustado sólo para datos de demostración:
 
@@ -257,3 +257,56 @@ Para ejecutar localmente en Windows, desde `backend/`, con el entorno ya instala
 ```
 
 La suite clínica usa bases temporales y datos sintéticos. En el entorno de esta verificación no estaban disponibles `initdb`, `pg_ctl` ni `psql`: PostgreSQL se comprobó con pruebas estructurales y generación de SQL Alembic offline, no mediante migración contra un servidor. No se requieren Docker, Redis, servicios externos ni una instancia PostgreSQL para mostrar la demo SQLite.
+
+## C-16 — Odontograma y plan manual (demo ficticia)
+
+C-16 agrega de forma aditiva el odontograma versionado y los planes manuales. La versión vigente de SQLite pasa a `auth_schema_version=10`; PostgreSQL usa Alembic `20261102_0011_odontogram_treatment_plans`, encadenada a `20261102_0010_clinical_history`. Las migraciones son explícitas: iniciar o importar FastAPI no cambia el esquema. Ejecutar la suite de migración SQLite sobre una base sintética C-15 comprueba el upgrade v9→v10:
+
+```powershell
+..\.venv\Scripts\python.exe -m unittest discover -s tests -p 'test_odontograma_migracion.py' -v
+```
+
+Para PostgreSQL, se requiere servidor y cliente Alembic compatibles, `DATABASE_URL` configurada localmente y privilegios para aplicar las migraciones. Primero revisar que `ODONTOLOGIA_PERSISTENCIA=postgresql` y que `DATABASE_URL` apunte al entorno deseado; después ejecutar desde `backend/`:
+
+```powershell
+..\.venv\Scripts\python.exe -m alembic upgrade head
+```
+
+La migración añade tablas para snapshots, hallazgos, planes y etapas, con FK restrictivas, límites de códigos/estados y triggers append-only para versiones, hallazgos y etapas. No se cambia la ficha de paciente ni se enlazan automáticamente planes a turnos o precios. Una reversión automática no está disponible porque podría destruir el historial.
+
+La prueba PostgreSQL C-16 aplicada desde Alembic 0010 hasta `head` se ejecutó en un cluster temporal local PostgreSQL 18 sobre `127.0.0.1:55432`, con base sintética `odontologia_c16_test`. El puerto `5432` no se usó. El detalle de comandos, resultados y límites está en `backend/evidence/C-16-verificacion.md`. No se requieren Docker ni Redis para iniciar o mostrar la demo SQLite.
+
+La API clínica local permite al Profesional autenticado consultar `GET /pacientes/{paciente_id}/odontograma` y registrar una nueva versión completa con `POST /pacientes/{paciente_id}/odontograma`. El backend comprueba en cada solicitud la cuenta profesional activa y vinculada y la existencia de una atención propia `atendido`; Administrador y Recepción reciben denegación genérica. La UI no sustituye estas reglas de autorización.
+
+Para elegir la ficha sin ampliar el contrato archivado de agenda de C-08, la UI consulta `GET /profesional/atenciones-atendidas?limit=25&offset=0`. El backend toma el Profesional de la sesión y devuelve sólo `turno_id`, `paciente_id`, `paciente_nombre`, `inicio` y `fin` para atenciones `atendido` propias; no expone teléfono ni acepta un profesional indicado por el cliente. La respuesta se pagina y se audita sin identificadores de paciente. La UI sólo realiza consultas clínicas después de seleccionar una atención; la API valida rol y atención nuevamente.
+
+Ejemplo sintético de alta (incluye el estado completo que se desea guardar; una lista vacía registra una versión sin hallazgos):
+
+```json
+{
+  "hallazgos": [
+    {
+      "pieza_fdi": "11",
+      "superficies": ["M", "V"],
+      "observacion": "Observación sintética de ejemplo."
+    }
+  ]
+}
+```
+
+La respuesta incluye id, número de versión generado, profesional, fecha y hallazgos. La consulta devuelve `items` en orden histórico y `version_vigente`; si la versión no contiene hallazgos, se presenta literalmente como “sin registros de hallazgo”. Cada alta crea una versión append-only, incluso si reemplaza el contenido visible; no existe operación de editar o borrar versiones. Se rechazan con 422 los códigos inválidos, superficies repetidas o incompatibles, observaciones mayores a 500 caracteres y campos adicionales. Los ejemplos y pruebas usan sólo datos ficticios; no se registran diagnósticos, nombres ni recomendaciones.
+
+Los planes manuales usan las prestaciones activas existentes; no amplían el catálogo ni agregan importes o turnos. El Profesional autorizado puede consultar `GET /pacientes/{paciente_id}/planes`, crear con `POST /pacientes/{paciente_id}/planes` y cambiar estado con `PATCH /planes/{plan_id}/estado`.
+
+Ejemplo de creación sintético:
+
+```json
+{
+  "prestaciones_ids": ["prestacion-sintetica-A", "prestacion-sintetica-B"]
+}
+```
+
+El alta devuelve etapas en el orden enviado y comienza en `propuesto`. Las únicas transiciones son `propuesto → en_curso`, `propuesto → cancelado`, `en_curso → completado` y `en_curso → cancelado`; estados terminales o transiciones inválidas responden 409 y mantienen el estado previo. La respuesta contiene identificadores de prestaciones, pero no precios, diagnósticos, turnos ni datos de consentimiento. Recepción y Administrador no reciben contenido clínico.
+
+
+El backup C-16 admite sólo SQLite v10 y PostgreSQL 0011. Incluye recuentos de snapshots, hallazgos, planes y etapas; el manifiesto no incluye observaciones, nombres ni valores de prestaciones. La prueba focal SQLite crea un bundle y restaura a un archivo nuevo, valida filas y recuentos y comprueba que origen/bundle no cambian. La integración PostgreSQL ejecuta pg_dump/pg_restore en la base sintética local, restaura a una base destino nueva terminada en _test y valida datos y todos los recuentos. El restore rechaza la base activa; no se hizo backup ni restore de datos reales.

@@ -38,12 +38,17 @@ class HistoriaClinicaPostgreSQLIntegracionTests(unittest.TestCase):
                 'C-15 requiere una DB *_test en loopback y puerto 55432.')
 
         cls.schema = f'c15_integracion_{uuid4().hex}'
+        cls.schema_c15 = f'c15_migracion_{uuid4().hex}'
         cls.root_engine = create_engine(raw_url)
         with cls.root_engine.begin() as conexion:
             conexion.execute(text(f'CREATE SCHEMA {cls.schema}'))
+            conexion.execute(text(f'CREATE SCHEMA {cls.schema_c15}'))
         cls.database_url = str(base_url.update_query_dict(
             {'options': f'-csearch_path={cls.schema}'}))
+        cls.database_url_c15 = str(base_url.update_query_dict(
+            {'options': f'-csearch_path={cls.schema_c15}'}))
         cls.engine = create_engine(cls.database_url, pool_pre_ping=True)
+        cls.engine_c15 = create_engine(cls.database_url_c15, pool_pre_ping=True)
         cls.previous_database_url = os.environ.get('DATABASE_URL')
         cls.previous_persistence = os.environ.get('ODONTOLOGIA_PERSISTENCIA')
         os.environ['DATABASE_URL'] = cls.database_url
@@ -53,7 +58,10 @@ class HistoriaClinicaPostgreSQLIntegracionTests(unittest.TestCase):
             'script_location', str(Path(__file__).parents[1] / 'alembic'))
         config.config_file_name = None
         try:
-            command.upgrade(config, 'head')
+            command.upgrade(config, '20261102_0010_clinical_history')
+            os.environ['DATABASE_URL'] = cls.database_url_c15
+            command.upgrade(config, '20261102_0010_clinical_history')
+            os.environ['DATABASE_URL'] = cls.database_url
         except Exception:
             cls.engine.dispose()
             with cls.root_engine.begin() as conexion:
@@ -77,8 +85,10 @@ class HistoriaClinicaPostgreSQLIntegracionTests(unittest.TestCase):
         if not hasattr(cls, 'root_engine'):
             return
         cls.engine.dispose()
+        cls.engine_c15.dispose()
         with cls.root_engine.begin() as conexion:
             conexion.execute(text(f'DROP SCHEMA {cls.schema} CASCADE'))
+            conexion.execute(text(f'DROP SCHEMA {cls.schema_c15} CASCADE'))
         cls.root_engine.dispose()
         if cls.previous_database_url is None:
             os.environ.pop('DATABASE_URL', None)
@@ -121,6 +131,8 @@ class HistoriaClinicaPostgreSQLIntegracionTests(unittest.TestCase):
             return paciente_id, profesional_id, box_id, turno.id, evolucion_id
 
     def test_migracion_0010_y_restricciones_fk_append_only_en_postgresql(self):
+        engine_actual = self.engine
+        self.engine = self.engine_c15
         referencias = self._crear_evolucion_ficticia('constraints')
         paciente_id, profesional_id, _box_id, turno_id, evolucion_id = referencias
 
@@ -173,15 +185,22 @@ class HistoriaClinicaPostgreSQLIntegracionTests(unittest.TestCase):
             with self.subTest(statement=statement), self.assertRaises(IntegrityError):
                 with self.engine.begin() as conexion:
                     conexion.execute(text(statement), parametros)
+        self.engine = engine_actual
 
     def test_bundle_y_restore_postgresql_conservan_evolucion_y_recuentos(self):
         paciente_id, profesional_id, _box_id, turno_id, evolucion_id = (
             self._crear_evolucion_ficticia('backup'))
+        config = Config(str(Path(__file__).parents[1] / 'alembic.ini'))
+        config.set_main_option(
+            'script_location', str(Path(__file__).parents[1] / 'alembic'))
+        config.config_file_name = None
+        command.upgrade(config, 'head')
         destino = f'c15_restore_{uuid4().hex}'
         with TemporaryDirectory() as temporal:
             bundle = Path(temporal) / 'bundle-c15'
             manifiesto = crear_bundle_postgresql(self.engine, bundle)
-            self.assertEqual(manifiesto['schema_version'], '20261102_0010_clinical_history')
+            self.assertEqual(
+                manifiesto['schema_version'], '20261102_0011_odontogram_treatment_plans')
             self.assertEqual(manifiesto['table_counts']['evoluciones_clinicas'], 1)
             self.assertNotIn('Nota clínica sintética de integración C-15.',
                              (bundle / 'manifest.json').read_text(encoding='utf-8'))

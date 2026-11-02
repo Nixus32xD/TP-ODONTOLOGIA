@@ -73,6 +73,25 @@ test('recepción consulta, crea, reprograma, confirma, cancela y revoca sesión'
   await api.dispose()
 })
 
+test('Profesional selecciona una atención sintética y consulta su odontograma y plan', async ({ page }) => {
+  await page.goto('/')
+  await page.getByLabel('Usuario').fill('profesional.e2e')
+  await page.getByLabel('Contraseña').fill('Clave-E2E-profesional-2026!')
+  await page.getByRole('button', { name: 'Iniciar sesión' }).click()
+  await expect(page.getByRole('heading', { name: 'Atenciones clínicas' })).toBeVisible()
+
+  const seleccion = page.getByLabel('Atención atendida')
+  await expect(seleccion.locator('option').nth(1)).toContainText('Paciente Ficticio E2E')
+  await seleccion.selectOption({ index: 1 })
+
+  await expect(page.getByRole('heading', { name: 'Odontograma' })).toBeVisible()
+  await expect(page.getByText('Versión vigente: 1')).toBeVisible()
+  await expect(page.getByText('sin registros de hallazgo')).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Planes manuales' })).toBeVisible()
+  await expect(page.getByText('Plan plan-e2e — propuesto')).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Crear turno' })).toHaveCount(0)
+})
+
 test('un solapamiento agregado por API se muestra como conflicto y no como alta exitosa', async ({ page }) => {
   const token = await ingresarRecepcion(page)
   const fecha = fechaEnMendoza(5)

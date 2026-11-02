@@ -1,6 +1,7 @@
 from pathlib import Path
 from contextlib import closing
 import sqlite3
+import json
 from tempfile import TemporaryDirectory
 from threading import Thread
 import unittest
@@ -27,6 +28,24 @@ class BackupSQLiteTests(unittest.TestCase):
                 'INSERT INTO pacientes(id, nombre, telefono, activo) VALUES (?, ?, NULL, 1)',
                 [(f'paciente-prueba-{i:04}', 'Nombre inicial ficticio') for i in range(800)],
             )
+            conexion.execute(
+                "INSERT INTO versiones_odontograma "
+                "(id, paciente_id, profesional_id, version, created_at) "
+                "VALUES ('version-c16', 'paciente-A', 'profesional-A', 1, '2026-11-02T10:00:00Z')")
+            conexion.execute(
+                "INSERT INTO hallazgos_odontograma "
+                "(id, version_id, pieza_fdi, superficie_fdi, observacion) "
+                "VALUES ('hallazgo-c16', 'version-c16', '16', 'O', 'observación clínica sintética')")
+            conexion.execute(
+                "INSERT INTO prestaciones(id, nombre, duracion_minutos, activo) "
+                "VALUES ('prestacion-c16', 'Prestación sintética', 30, 1)")
+            conexion.execute(
+                "INSERT INTO planes_tratamiento "
+                "(id, paciente_id, profesional_id, estado, created_at) "
+                "VALUES ('plan-c16', 'paciente-A', 'profesional-A', 'propuesto', '2026-11-02T10:00:00Z')")
+            conexion.execute(
+                "INSERT INTO etapas_plan_tratamiento(id, plan_id, prestacion_id, orden) "
+                "VALUES ('etapa-c16', 'plan-c16', 'prestacion-c16', 1)")
             conexion.commit()
 
     def tearDown(self):
@@ -104,6 +123,33 @@ class BackupSQLiteTests(unittest.TestCase):
                 resultado['table_counts']['pacientes'],
                 conexion.execute('SELECT count(*) FROM pacientes').fetchone()[0],
             )
+
+    def test_bundle_preserva_conteos_clinicos_sinteticos_sin_exponerlos_en_manifiesto(self):
+        resultado = crear_bundle_sqlite(self.origen, self.bundle, pages=2)
+
+        tablas_clinicas = (
+            'versiones_odontograma', 'hallazgos_odontograma',
+            'planes_tratamiento', 'etapas_plan_tratamiento',
+        )
+        self.assertEqual({tabla: resultado['table_counts'][tabla] for tabla in tablas_clinicas},
+                         {tabla: 1 for tabla in tablas_clinicas})
+        with closing(sqlite3.connect(self.bundle / 'agenda.sqlite3')) as conexion:
+            self.assertEqual(
+                conexion.execute(
+                    "SELECT observacion FROM hallazgos_odontograma WHERE id='hallazgo-c16'"
+                ).fetchone(),
+                ('observación clínica sintética',),
+            )
+            self.assertEqual(
+                conexion.execute(
+                    "SELECT prestacion_id FROM etapas_plan_tratamiento WHERE id='etapa-c16'"
+                ).fetchone(),
+                ('prestacion-c16',),
+            )
+        manifiesto = (self.bundle / 'manifest.json').read_text(encoding='utf-8')
+        self.assertNotIn('observación clínica sintética', manifiesto)
+        self.assertNotIn('Prestación sintética', manifiesto)
+        self.assertEqual(json.loads(manifiesto)['table_counts']['hallazgos_odontograma'], 1)
 
     def test_manifest_counts_se_deriva_del_mismo_snapshot_wal(self):
         bundle = self.directorio / 'bundle-concurrente'

@@ -153,6 +153,8 @@ class ApiTests(unittest.TestCase):
             '/usuarios/{usuario_id}', '/auditoria', '/pacientes', '/pacientes/{paciente_id}',
             '/pacientes/{paciente_id}/historia', '/pacientes/{paciente_id}/evoluciones',
             '/evoluciones/{evolucion_id}/correcciones',
+            '/profesional/atenciones-atendidas', '/pacientes/{paciente_id}/odontograma',
+            '/pacientes/{paciente_id}/planes', '/planes/{plan_id}/estado',
             '/profesionales', '/profesionales/{profesional_id}', '/boxes', '/boxes/{box_id}',
             '/prestaciones', '/prestaciones/{prestacion_id}',
             '/horarios/{tipo_recurso}/{recurso_id}',

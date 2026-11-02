@@ -111,6 +111,86 @@ class EvolucionClinica(Base):
         String(36), ForeignKey('evoluciones_clinicas.id', ondelete='RESTRICT'), nullable=True)
 
 
+class OdontogramaVersion(Base):
+    __tablename__ = 'versiones_odontograma'
+    __table_args__ = (
+        CheckConstraint('version > 0', name='ck_versiones_odontograma_version_positiva'),
+        UniqueConstraint(
+            'paciente_id', 'profesional_id', 'version',
+            name='uq_versiones_odontograma_paciente_profesional_version'),
+        Index('ix_versiones_odontograma_paciente_profesional_version',
+              'paciente_id', 'profesional_id', 'version'),
+    )
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    paciente_id: Mapped[str] = mapped_column(
+        String(64), ForeignKey('pacientes.id', ondelete='RESTRICT'), nullable=False)
+    profesional_id: Mapped[str] = mapped_column(
+        String(64), ForeignKey('profesionales.id', ondelete='RESTRICT'), nullable=False)
+    version: Mapped[int] = mapped_column(Integer, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+
+
+class HallazgoOdontograma(Base):
+    __tablename__ = 'hallazgos_odontograma'
+    __table_args__ = (
+        CheckConstraint('length(pieza_fdi) = 2', name='ck_hallazgos_odontograma_pieza_largo'),
+        CheckConstraint(
+            "superficie_fdi IN ('M', 'D', 'O', 'I', 'B', 'V', 'L')",
+            name='ck_hallazgos_odontograma_superficie'),
+        CheckConstraint(
+            'observacion IS NULL OR length(observacion) <= 500',
+            name='ck_hallazgos_odontograma_observacion_largo'),
+        UniqueConstraint(
+            'version_id', 'pieza_fdi', 'superficie_fdi',
+            name='uq_hallazgos_odontograma_version_pieza_superficie'),
+        Index('ix_hallazgos_odontograma_version_pieza', 'version_id', 'pieza_fdi'),
+    )
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    version_id: Mapped[str] = mapped_column(
+        String(36), ForeignKey('versiones_odontograma.id', ondelete='RESTRICT'), nullable=False)
+    pieza_fdi: Mapped[str] = mapped_column(String(2), nullable=False)
+    superficie_fdi: Mapped[str] = mapped_column(String(1), nullable=False)
+    observacion: Mapped[str | None] = mapped_column(Text, nullable=True)
+
+
+class PlanTratamiento(Base):
+    __tablename__ = 'planes_tratamiento'
+    __table_args__ = (
+        CheckConstraint(
+            "estado IN ('propuesto', 'en_curso', 'completado', 'cancelado')",
+            name='ck_planes_tratamiento_estado'),
+        Index('ix_planes_tratamiento_paciente_profesional_creacion',
+              'paciente_id', 'profesional_id', 'created_at', 'id'),
+    )
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    paciente_id: Mapped[str] = mapped_column(
+        String(64), ForeignKey('pacientes.id', ondelete='RESTRICT'), nullable=False)
+    profesional_id: Mapped[str] = mapped_column(
+        String(64), ForeignKey('profesionales.id', ondelete='RESTRICT'), nullable=False)
+    estado: Mapped[str] = mapped_column(
+        String(16), default='propuesto', server_default='propuesto', nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+
+
+class EtapaPlanTratamiento(Base):
+    __tablename__ = 'etapas_plan_tratamiento'
+    __table_args__ = (
+        CheckConstraint('orden > 0', name='ck_etapas_plan_tratamiento_orden_positiva'),
+        UniqueConstraint('plan_id', 'orden', name='uq_etapas_plan_tratamiento_plan_orden'),
+        Index('ix_etapas_plan_tratamiento_plan_orden', 'plan_id', 'orden'),
+    )
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    plan_id: Mapped[str] = mapped_column(
+        String(36), ForeignKey('planes_tratamiento.id', ondelete='RESTRICT'), nullable=False)
+    prestacion_id: Mapped[str] = mapped_column(
+        String(64), ForeignKey('prestaciones.id', ondelete='RESTRICT'), nullable=False)
+    orden: Mapped[int] = mapped_column(Integer, nullable=False)
+
+
 class AgendaMutex(Base):
     __tablename__ = 'agenda_mutex'
     __table_args__ = (CheckConstraint('id = 1', name='ck_agenda_mutex_singleton'),)
@@ -247,11 +327,14 @@ class EventoAuditoria(Base):
             "'prestacion.creada', 'prestacion.actualizada', 'prestacion.desactivada', "
             "'prestacion.reactivada', 'cuenta.bootstrap', 'cuenta.creada', "
             "'cuenta.actualizada', 'sesion.iniciada', 'sesion.cerrada', 'sesion.rechazada', "
-            "'historia.consultada', 'historia.denegada', 'evolucion.creada', 'evolucion.corregida')",
+            "'historia.consultada', 'historia.denegada', 'historia.atenciones_listadas', "
+            "'evolucion.creada', 'evolucion.corregida', "
+            "'odontograma.consultada', 'odontograma.denegada', 'odontograma.version_creada', "
+            "'plan.consultado', 'plan.denegado', 'plan.creado', 'plan.estado_actualizado')",
             name='ck_eventos_auditoria_action'),
         CheckConstraint(
             "resource_type IN ('turno', 'paciente', 'profesional', 'box', 'prestacion', "
-            "'cuenta', 'sesion', 'historia', 'evolucion')",
+            "'cuenta', 'sesion', 'historia', 'evolucion', 'odontograma', 'plan')",
             name='ck_eventos_auditoria_resource_type'),
         CheckConstraint(
             "result IN ('confirmado', 'rechazado')",
@@ -284,8 +367,16 @@ class EventoAuditoria(Base):
             "(action = 'sesion.rechazada' AND resource_type = 'sesion' AND result = 'rechazado') OR "
             "(action = 'historia.consultada' AND resource_type = 'historia' AND result = 'confirmado') OR "
             "(action = 'historia.denegada' AND resource_type = 'historia' AND result = 'rechazado') OR "
+            "(action = 'historia.atenciones_listadas' AND resource_type = 'historia' AND result = 'confirmado') OR "
             "(action = 'evolucion.creada' AND resource_type = 'evolucion' AND result = 'confirmado') OR "
-            "(action = 'evolucion.corregida' AND resource_type = 'evolucion' AND result = 'confirmado')",
+            "(action = 'evolucion.corregida' AND resource_type = 'evolucion' AND result = 'confirmado') OR "
+            "(action = 'odontograma.consultada' AND resource_type = 'odontograma' AND result = 'confirmado') OR "
+            "(action = 'odontograma.denegada' AND resource_type = 'odontograma' AND result = 'rechazado') OR "
+            "(action = 'odontograma.version_creada' AND resource_type = 'odontograma' AND result = 'confirmado') OR "
+            "(action = 'plan.consultado' AND resource_type = 'plan' AND result = 'confirmado') OR "
+            "(action = 'plan.denegado' AND resource_type = 'plan' AND result = 'rechazado') OR "
+            "(action = 'plan.creado' AND resource_type = 'plan' AND result = 'confirmado') OR "
+            "(action = 'plan.estado_actualizado' AND resource_type = 'plan' AND result = 'confirmado')",
             name='ck_eventos_auditoria_combinacion'),
         CheckConstraint(
             "resource_type != 'sesion' OR resource_id IS NULL",

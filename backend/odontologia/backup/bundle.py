@@ -9,6 +9,8 @@ from tempfile import mkdtemp
 from odontologia.backup.errors import ErrorBackup
 from odontologia.backup.manifest import (
     ErrorManifiesto,
+    ESQUEMAS_SOPORTADOS,
+    TABLAS_ESQUEMA_ACTUAL,
     crear_manifiesto,
     guardar_manifiesto,
     leer_manifiesto,
@@ -51,7 +53,8 @@ def crear_bundle_sqlite(origen: str | Path, destino: str | Path, *, pages: int =
         _validar_sqlite(payload)
         table_counts = contar_tablas_sqlite(payload)
         manifiesto = crear_manifiesto(
-            payload, backend='sqlite', schema_version='9', table_counts=table_counts)
+            payload, backend='sqlite', schema_version=ESQUEMAS_SOPORTADOS['sqlite'],
+            table_counts=table_counts)
         guardar_manifiesto(manifiesto, staging / _MANIFIESTO)
         # Volver a leer desde el disco antes de hacer visible el bundle.
         leer_manifiesto(staging / _MANIFIESTO, payload)
@@ -90,14 +93,15 @@ def _validar_sqlite(ruta: Path) -> None:
             if conexion.execute('PRAGMA foreign_key_check').fetchone() is not None:
                 raise ErrorBackup('referencias_invalidas')
             tablas = {fila[0] for fila in conexion.execute(
-                "SELECT name FROM sqlite_master WHERE type='table'")}
+                "SELECT name FROM sqlite_master WHERE type='table' "
+                "AND name NOT LIKE 'sqlite_%'")}
+            if tablas != TABLAS_ESQUEMA_ACTUAL['sqlite']:
+                raise ErrorBackup('esquema_incompatible')
             if 'auth_schema_version' not in tablas:
                 raise ErrorBackup('esquema_incompatible')
             revision = conexion.execute(
                 'SELECT version FROM auth_schema_version').fetchone()
-            if revision != (9,):
-                raise ErrorBackup('esquema_incompatible')
-            if 'evoluciones_clinicas' not in tablas:
+            if revision != (10,):
                 raise ErrorBackup('esquema_incompatible')
             columnas_turnos = {fila[1] for fila in conexion.execute(
                 'PRAGMA table_info(turnos)')}

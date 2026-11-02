@@ -66,7 +66,7 @@ class MigracionCicloVidaSQLiteTests(unittest.TestCase):
             with closing(sqlite3.connect(ruta)) as conexion:
                 self.assertEqual(
                     conexion.execute('SELECT version FROM auth_schema_version').fetchone(),
-                    (9,),
+                    (10,),
                 )
                 columnas = {fila[1] for fila in conexion.execute('PRAGMA table_info(turnos)')}
                 self.assertIn('estado', columnas)
@@ -91,10 +91,10 @@ class MigracionCicloVidaSQLiteTests(unittest.TestCase):
             migrar_sqlite(ruta)
 
             with closing(sqlite3.connect(ruta)) as conexion:
-                self.assertEqual(VERSION_ESQUEMA_AUTENTICACION, 9)
+                self.assertEqual(VERSION_ESQUEMA_AUTENTICACION, 10)
                 self.assertEqual(
                     conexion.execute('SELECT version FROM auth_schema_version').fetchone(),
-                    (9,),
+                    (10,),
                 )
 
     def test_upgrade_desde_v7_inicializa_version_1_y_preserva_turno(self):
@@ -119,7 +119,7 @@ class MigracionCicloVidaSQLiteTests(unittest.TestCase):
 
             with closing(sqlite3.connect(ruta)) as conexion:
                 self.assertEqual(conexion.execute(
-                    'SELECT version FROM auth_schema_version').fetchone(), (9,))
+                    'SELECT version FROM auth_schema_version').fetchone(), (10,))
                 self.assertEqual(conexion.execute(
                     'SELECT id, paciente_id, profesional_id, box_id, estado, version '
                     'FROM turnos').fetchone(),

@@ -2,7 +2,7 @@
 
 ## MODIFIED Requirements
 
-### Requirement: Incluir evoluciones clínicas en copias y restauraciones
+### Requirement: Incluir registros clínicos en copias y restauraciones
 El sistema SHALL incluir las evoluciones clínicas, versiones de odontograma, hallazgos y planes con sus referencias en cada copia completa de una base con esquema C-15 o posterior. El manifiesto SHALL contar las nuevas tablas sin exponer contenido clínico y la restauración SHALL validar integridad y claves foráneas antes de declarar éxito.
 
 #### Scenario: Backup local conserva evoluciones

@@ -42,8 +42,16 @@ _MATRIZ_EVENTOS = {
     'sesion.rechazada': ('sesion', 'rechazado'),
     'historia.consultada': ('historia', 'confirmado'),
     'historia.denegada': ('historia', 'rechazado'),
+    'historia.atenciones_listadas': ('historia', 'confirmado'),
     'evolucion.creada': ('evolucion', 'confirmado'),
     'evolucion.corregida': ('evolucion', 'confirmado'),
+    'odontograma.consultada': ('odontograma', 'confirmado'),
+    'odontograma.denegada': ('odontograma', 'rechazado'),
+    'odontograma.version_creada': ('odontograma', 'confirmado'),
+    'plan.consultado': ('plan', 'confirmado'),
+    'plan.denegado': ('plan', 'rechazado'),
+    'plan.creado': ('plan', 'confirmado'),
+    'plan.estado_actualizado': ('plan', 'confirmado'),
 }
 
 

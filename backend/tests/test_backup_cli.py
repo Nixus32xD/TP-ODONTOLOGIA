@@ -9,6 +9,7 @@ from unittest.mock import patch
 from odontologia.backup.cli import main
 from odontologia.backup.errors import ErrorBackup
 from odontologia.backup.manifest import (
+    ESQUEMAS_SOPORTADOS,
     TABLAS_ESQUEMA_ACTUAL,
     crear_manifiesto,
     guardar_manifiesto,
@@ -26,7 +27,7 @@ class SuperficieBackupCliTests(unittest.TestCase):
                 encoding='utf-8',
             )
             manifiesto = crear_manifiesto(
-                payload, backend='sqlite', schema_version='9',
+                payload, backend='sqlite', schema_version=ESQUEMAS_SOPORTADOS['sqlite'],
                 table_counts={tabla: 0 for tabla in TABLAS_ESQUEMA_ACTUAL['sqlite']})
             ruta_manifest = Path(temporal) / 'manifest.json'
             guardar_manifiesto(manifiesto, ruta_manifest)
@@ -120,7 +121,8 @@ class SuperficieBackupCliTests(unittest.TestCase):
     def test_verificar_cli_delega_sin_consultar_configuracion_activa(self):
         salida = StringIO()
         with patch('odontologia.backup.cli.verificar_bundle',
-                   return_value={'verified': True, 'backend': 'sqlite', 'schema_version': '9'}) as verificar, \
+                   return_value={'verified': True, 'backend': 'sqlite',
+                                 'schema_version': ESQUEMAS_SOPORTADOS['sqlite']}) as verificar, \
                 patch('odontologia.backup.cli.cargar_configuracion',
                       side_effect=AssertionError('verificar no debe abrir la agenda activa')), \
                 patch('sys.stdout', salida):
