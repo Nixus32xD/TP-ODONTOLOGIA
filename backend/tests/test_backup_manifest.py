@@ -35,17 +35,21 @@ class ManifiestoBackupTests(unittest.TestCase):
         self.assertIn('evoluciones_clinicas', TABLAS_ESQUEMA_ACTUAL['sqlite'])
         self.assertIn('evoluciones_clinicas', TABLAS_ESQUEMA_ACTUAL['postgresql'])
 
-    def test_schema_c16_incluye_tablas_clinicas_y_revision_actual(self):
+    def test_schema_c16_conserva_tablas_clinicas_en_schema_vigente(self):
         tablas_c16 = {
             'versiones_odontograma', 'hallazgos_odontograma',
             'planes_tratamiento', 'etapas_plan_tratamiento',
         }
-        self.assertEqual(ESQUEMAS_SOPORTADOS['sqlite'], '10')
-        self.assertEqual(
-            ESQUEMAS_SOPORTADOS['postgresql'],
-            '20261102_0011_odontogram_treatment_plans')
         self.assertTrue(tablas_c16 <= TABLAS_ESQUEMA_ACTUAL['sqlite'])
         self.assertTrue(tablas_c16 <= TABLAS_ESQUEMA_ACTUAL['postgresql'])
+
+    def test_schema_c17_incluye_outbox_y_revision_actual(self):
+        self.assertEqual(ESQUEMAS_SOPORTADOS['sqlite'], '11')
+        self.assertEqual(
+            ESQUEMAS_SOPORTADOS['postgresql'],
+            '20261102_0012_appointment_reminders')
+        self.assertIn('recordatorios_outbox', TABLAS_ESQUEMA_ACTUAL['sqlite'])
+        self.assertIn('recordatorios_outbox', TABLAS_ESQUEMA_ACTUAL['postgresql'])
 
     def test_manifiesto_registra_utc_versiones_y_hash_del_payload(self):
         manifiesto = self._crear()

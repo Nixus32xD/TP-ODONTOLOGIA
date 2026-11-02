@@ -1,7 +1,7 @@
 # CHANGES — Secuencia de Implementación
 
 > Índice canónico del proyecto **TP-ODONTOLOGIA**, actualizado el 2026-11-02.
-> **Plan del producto completo; C-01-C-13 y C-15-C-16 están implementados, validados y archivados localmente. C-14 es opcional y queda fuera de la entrega; C-17-C-20 siguen planificados.**
+> **Plan del producto completo; C-01-C-13 y C-15-C-17 están implementados, validados y archivados localmente. C-14 es opcional y queda fuera de la entrega; C-18-C-20 siguen planificados.**
 > **Leer este archivo antes de ejecutar cualquier `/opsx:propose`.**
 
 ---
@@ -20,7 +20,7 @@ La aclaración del usuario del 2026-10-28 corrige el índice anterior: **hacer s
 
 - **Entrega académica archivada:** C-01 `crear-turno-sin-solapamientos`, con 18/18 tareas completas y Archive confirmado el 2026-10-28; la spec principal es [alta-turnos](openspec/specs/alta-turnos/spec.md). No se cambia su nombre, su spec, su código ni su contrato. C-02, C-03 y C-04 también están implementados, validados y archivados localmente.
 - **MVP académico demostrable:** C-03 a C-13 completan una agenda de recepción administrable, con cambios revisables, pruebas y demostración local. C-02 ya aporta el backend PostgreSQL optativo y está archivado; la seguridad, auditoría y recuperación usan datos ficticios. No se requiere desplegar el sistema ni levantar contenedores.
-- **Evolución del producto:** C-15 a C-20 agregan clínica, odontograma/plan de tratamiento, recordatorios, reserva del paciente, cobros y reportes. C-15 y C-16 quedaron implementados, validados y archivados; C-17 a C-20 siguen planificados, con contratos propios.
+- **Evolución del producto:** C-15 a C-20 agregan clínica, odontograma/plan de tratamiento, recordatorios, reserva del paciente, cobros y reportes. C-15 a C-17 quedaron implementados, validados y archivados; C-18 a C-20 siguen planificados, con contratos propios.
 - **Opciones no comprometidas:** multisede/SaaS multitenant, IA, obras sociales y facturación electrónica ARCA no se vuelven obligatorias por aparecer en productos comparados. Si se eligen, se agregarán changes posteriores con investigación y aprobación específicas. C-19 no incluye emisión fiscal ni conexión con pagos reales.
 
 La KB y las instrucciones existentes documentan principalmente la porción académica C-01. Sus exclusiones siguen vigentes para esa implementación; las capacidades futuras del roadmap no amplían retroactivamente las US-001 a US-004. C-02 concreta la migración a PostgreSQL conservando la fuente SQLite; C-03/C-04 autenticación, permisos y auditoría; C-05 la ficha mínima; C-06 catálogos; C-07 disponibilidad; C-08 consultas de agenda; C-09 estados; y C-10 reprogramación atómica. C-01 standalone conserva compatibilidad. Se mantienen datos ficticios y ninguna integración externa real.
@@ -394,12 +394,12 @@ Secuencia compatible con dependencias, sin prometer una optimización temporal n
 
 ### [C-17] `programar-recordatorios`
 
-- **Estado**: `[ ]` planificado; canal real pendiente de decisión.
+- **Estado**: implementado, validado y archivado localmente el 2026-11-02; ver [change archivado](openspec/changes/archive/2026-11-02-programar-recordatorios/) y [evidencia C-17](backend/evidence/C-17-verificacion.md). Sin push.
 - **Scope**:
-  - Modelar preferencia de contacto y `Recordatorio`/outbox ligada al turno; definir anticipación, zona horaria, consentimiento y contenido mínimo sin datos clínicos. Preparar adaptador simulado antes de evaluar email o WhatsApp.
-  - Persistir el outbox de recordatorios en PostgreSQL y procesarlo de forma explícita con un worker local y canal simulado; no incorporar una cola externa como dependencia. Redis puede mencionarse como alternativa futura si luego se justifica y aprueba.
-  - Programar sólo turnos elegibles; invalidar recordatorios anteriores al cancelar/reprogramar. Persistir estado/intentos y clave de deduplicación para evitar envíos repetidos; fallar el aviso no debe duplicar ni borrar el turno.
-  - Tests: envío simulado, rechazo/fallo de canal, reintento acotado, petición repetida, cancelación y cambio horario; no afirmar entrega por aceptar un trabajo en cola.
+  - SQLite v11 y Alembic `20261102_0012_appointment_reminders`; consentimiento `acepta_recordatorios=false` por defecto, gestionable por Administrador/Recepción.
+  - Outbox en el motor seleccionado (SQLite/PostgreSQL); un recordatorio simulado para turno confirmado con consentimiento y más de 24 h en `America/Argentina/Mendoza`; clave por turno/versión/tipo, revalidación e invalidación transaccional ante cambio de turno o retiro del consentimiento.
+  - Worker local sólo con `--once --limit 1..100`, canal sin I/O externo y máximo tres intentos sintéticos; no usar Redis, Docker, email, WhatsApp ni registrar datos de contacto.
+  - Backup/restore preserva el outbox sin incluir filas ni identificadores en el manifiesto. Validación final tras el fix de reconsentimiento: backend 517 OK/3 skips, frontend 58 OK, build, backup 71 OK/3 skips y OpenSpec strict; ver evidencia C-17.
 - **Dependencias**: C-08, C-09, C-10, C-13.
 - **Governance**: ALTO — notificaciones y datos de contacto.
 - **Leer antes**:

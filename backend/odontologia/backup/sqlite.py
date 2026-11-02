@@ -45,6 +45,10 @@ def crear_snapshot_sqlite(origen: str | Path, destino: str | Path, *, pages: int
         conexion_destino = sqlite3.connect(ruta_destino, autocommit=True)
         conexion_origen.backup(
             conexion_destino, pages=pages, progress=progress, sleep=float(sleep))
+        # Un bundle debe ser autocontenido: no publicar sidecars WAL junto al archivo.
+        journal_mode = conexion_destino.execute('PRAGMA journal_mode=DELETE').fetchone()
+        if journal_mode is None or journal_mode[0].lower() != 'delete':
+            raise ErrorBackup('operacion_fallida')
         restringir_modo_posix(ruta_destino, MODO_ARCHIVO_PRIVADO)
         completado = True
     except ErrorBackup:

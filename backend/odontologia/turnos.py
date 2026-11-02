@@ -1,5 +1,6 @@
 """Operaciones de ciclo de vida para turnos ya migrados."""
 from dataclasses import dataclass
+from datetime import datetime
 from math import ceil
 import sqlite3
 
@@ -28,7 +29,8 @@ class ResultadoEstadoTurno:
 
 
 def transicionar_estado_turno(engine: Engine, turno_id: int, destino: str, *,
-                              actor_id: str, timeout_segundos: float = 5.0) -> ResultadoEstadoTurno:
+                              actor_id: str, timeout_segundos: float = 5.0,
+                              ahora: datetime | None = None) -> ResultadoEstadoTurno:
     """Persistir una transición permitida con versión y auditoría atómicas."""
     try:
         with Session(engine) as session, session.begin():
@@ -53,6 +55,16 @@ def transicionar_estado_turno(engine: Engine, turno_id: int, destino: str, *,
             turno.estado = destino
             turno.version += 1
             session.flush()
+            if destino == 'confirmado':
+                from odontologia.recordatorios import programar_recordatorio_confirmacion
+
+                programar_recordatorio_confirmacion(
+                    session, turno, actor_id=actor_id, ahora=ahora)
+            elif destino == 'cancelado':
+                from odontologia.recordatorios import invalidar_recordatorios_pendientes
+
+                invalidar_recordatorios_pendientes(
+                    session, turno, actor_id=actor_id, ahora=ahora)
             registrar_evento_session(
                 session, action='turno.estado_actualizado', resource_type='turno',
                 resource_id=str(turno.id), actor_id=actor_id, result='confirmado')

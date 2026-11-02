@@ -46,7 +46,7 @@ El ciclo SHALL permitir `reservado` a `confirmado` o `cancelado`, y `confirmado`
 - **THEN** se responde HTTP 409 con `transicion_invalida` y se conserva el turno sin nuevo evento de transición
 
 ### Requirement: Exponer operaciones de ciclo de vida protegidas
-El sistema SHALL permitir a Administrador y Recepción confirmar, cancelar, marcar atendido o registrar ausencia mediante las operaciones `POST /turnos/{id}/confirmacion`, `/cancelacion`, `/atencion` y `/ausencia`. Las operaciones SHALL devolver HTTP 200 con ID y estado resultante; un turno ausente SHALL responder 404 y Profesional SHALL permanecer sin acceso.
+Administrador y Recepción SHALL usar `POST /turnos/{id}/confirmacion`, `/cancelacion`, `/atencion` y `/ausencia`; las operaciones SHALL devolver HTTP 200 con ID y estado, y un turno inexistente SHALL responder 404. Profesional SHALL permanecer sin acceso. Confirmar SHALL programar recordatorio sólo con consentimiento y más de 24 horas; cancelar SHALL invalidar los pendientes en la misma transacción.
 
 #### Scenario: Personal autorizado transiciona un turno
 - **GIVEN** una sesión válida de Administrador o Recepción y una transición permitida
@@ -63,6 +63,15 @@ El sistema SHALL permitir a Administrador y Recepción confirmar, cancelar, marc
 - **WHEN** se solicita una transición
 - **THEN** responde 404 sin crear un evento
 
+#### Scenario: Confirmación programa sólo si es elegible
+- **GIVEN** un turno reservado, consentimiento vigente y más de 24 horas hasta su inicio
+- **WHEN** Administrador o Recepción confirma el turno
+- **THEN** el cambio de estado, su auditoría y un recordatorio pendiente para el vencimiento de 24 horas se confirman conjuntamente
+
+#### Scenario: Cancelación invalida el recordatorio pendiente
+- **GIVEN** un turno confirmado con un recordatorio pendiente
+- **WHEN** Administrador o Recepción cancela el turno
+- **THEN** el estado, la auditoría y la invalidación del recordatorio se confirman en la misma transacción
 ### Requirement: Hacer idempotente la cancelación repetida
 Cancelar un turno ya `cancelado` SHALL devolver HTTP 200 con su estado actual y no SHALL crear otro evento de mutación ni modificar historial.
 

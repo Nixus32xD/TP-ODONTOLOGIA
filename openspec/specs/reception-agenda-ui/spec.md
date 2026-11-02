@@ -88,7 +88,7 @@ Administrador y Recepción SHALL crear turnos y usar las cuatro transiciones C-0
 - **THEN** se muestra el error del servidor, no se sustituye el turno local y se vuelve a consultar la agenda
 
 ### Requirement: Exponer formularios mínimos sobre catálogos y disponibilidad
-La interfaz SHALL permitir usar las rutas existentes para consultar y administrar fichas, catálogos y horarios ya habilitados al rol. SHALL conservar las respuestas y errores de API y SHALL dejar las decisiones de validez al backend.
+La interfaz SHALL permitir usar las rutas existentes para consultar y administrar fichas, catálogos y horarios ya habilitados al rol, incluyendo el consentimiento `acepta_recordatorios` por Administrador o Recepción. SHALL conservar las respuestas y errores de API y SHALL dejar las decisiones de validez al backend.
 
 #### Scenario: Seleccionar o crear paciente
 - **GIVEN** una sesión de Administrador o Recepción y el formulario de alta de turno
@@ -105,6 +105,15 @@ La interfaz SHALL permitir usar las rutas existentes para consultar y administra
 - **WHEN** se listan o editan campos permitidos de catálogos
 - **THEN** se respetan las acciones habilitadas para el rol y la respuesta del backend, incluida la restricción de estados activos exclusiva de Administrador
 
+#### Scenario: Mostrar y actualizar consentimiento de recordatorios
+- **GIVEN** una sesión de Administrador o Recepción que crea o edita una ficha
+- **WHEN** consulta o cambia la opción `acepta_recordatorios`
+- **THEN** la interfaz muestra el valor confirmado por la API y no afirma que un recordatorio fue enviado
+
+#### Scenario: Profesional no gestiona preferencias de contacto
+- **GIVEN** una sesión Profesional
+- **WHEN** consulta la interfaz
+- **THEN** no ve controles para consultar o modificar consentimiento de recordatorios
 ### Requirement: Comunicar estados de interfaz con controles accesibles
 Las vistas SHALL permitir navegación por teclado, mantener foco visible y anunciar estados relevantes de carga, vacío, resultado y error sin depender sólo del color.
 

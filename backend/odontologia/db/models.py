@@ -15,12 +15,16 @@ class Paciente(Base):
     __table_args__ = (
         CheckConstraint('length(nombre) BETWEEN 1 AND 120', name='ck_pacientes_nombre'),
         CheckConstraint('activo IN (true, false)', name='ck_pacientes_activo'),
+        CheckConstraint('acepta_recordatorios IN (true, false)',
+                        name='ck_pacientes_acepta_recordatorios'),
     )
 
     id: Mapped[str] = mapped_column(String(64), primary_key=True)
     nombre: Mapped[str] = mapped_column(String(120), nullable=False)
     telefono: Mapped[str | None] = mapped_column(String(32), nullable=True)
     activo: Mapped[bool] = mapped_column(default=True, nullable=False)
+    acepta_recordatorios: Mapped[bool] = mapped_column(
+        default=False, server_default='false', nullable=False)
 
 
 class Profesional(Base):
@@ -85,6 +89,38 @@ class Turno(Base):
         String(16), default='reservado', server_default='reservado', nullable=False)
     version: Mapped[int] = mapped_column(
         Integer, default=1, server_default='1', nullable=False)
+
+
+class RecordatorioOutbox(Base):
+    __tablename__ = 'recordatorios_outbox'
+    __table_args__ = (
+        CheckConstraint('turno_version > 0', name='ck_recordatorios_turno_version'),
+        CheckConstraint('generation > 0', name='ck_recordatorios_generation'),
+        CheckConstraint("tipo = 'turno_24h'", name='ck_recordatorios_tipo'),
+        CheckConstraint(
+            "estado IN ('pendiente', 'procesado_simulado', 'invalidado', 'fallido')",
+            name='ck_recordatorios_estado'),
+        CheckConstraint('intentos BETWEEN 0 AND 3', name='ck_recordatorios_intentos'),
+        UniqueConstraint(
+            'turno_id', 'turno_version', 'tipo', 'generation',
+            name='uq_recordatorios_turno_version_tipo_generation'),
+        Index('ix_recordatorios_estado_programacion', 'estado', 'programado_para'),
+    )
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    turno_id: Mapped[int] = mapped_column(
+        BigInteger().with_variant(Integer, 'sqlite'),
+        ForeignKey('turnos.id', ondelete='RESTRICT'), nullable=False)
+    turno_version: Mapped[int] = mapped_column(Integer, nullable=False)
+    generation: Mapped[int] = mapped_column(
+        Integer, default=1, server_default='1', nullable=False)
+    tipo: Mapped[str] = mapped_column(String(32), nullable=False)
+    programado_para: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    estado: Mapped[str] = mapped_column(String(32), nullable=False)
+    intentos: Mapped[int] = mapped_column(Integer, default=0, server_default='0', nullable=False)
+    idempotency_key: Mapped[str] = mapped_column(String(160), unique=True, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
 
 
 class EvolucionClinica(Base):
@@ -330,11 +366,13 @@ class EventoAuditoria(Base):
             "'historia.consultada', 'historia.denegada', 'historia.atenciones_listadas', "
             "'evolucion.creada', 'evolucion.corregida', "
             "'odontograma.consultada', 'odontograma.denegada', 'odontograma.version_creada', "
-            "'plan.consultado', 'plan.denegado', 'plan.creado', 'plan.estado_actualizado')",
+            "'plan.consultado', 'plan.denegado', 'plan.creado', 'plan.estado_actualizado', "
+            "'recordatorio.programado', 'recordatorio.invalidado', "
+            "'recordatorio.procesado', 'recordatorio.fallo')",
             name='ck_eventos_auditoria_action'),
         CheckConstraint(
             "resource_type IN ('turno', 'paciente', 'profesional', 'box', 'prestacion', "
-            "'cuenta', 'sesion', 'historia', 'evolucion', 'odontograma', 'plan')",
+            "'cuenta', 'sesion', 'historia', 'evolucion', 'odontograma', 'plan', 'recordatorio')",
             name='ck_eventos_auditoria_resource_type'),
         CheckConstraint(
             "result IN ('confirmado', 'rechazado')",
@@ -376,7 +414,11 @@ class EventoAuditoria(Base):
             "(action = 'plan.consultado' AND resource_type = 'plan' AND result = 'confirmado') OR "
             "(action = 'plan.denegado' AND resource_type = 'plan' AND result = 'rechazado') OR "
             "(action = 'plan.creado' AND resource_type = 'plan' AND result = 'confirmado') OR "
-            "(action = 'plan.estado_actualizado' AND resource_type = 'plan' AND result = 'confirmado')",
+            "(action = 'plan.estado_actualizado' AND resource_type = 'plan' AND result = 'confirmado') OR "
+            "(action = 'recordatorio.programado' AND resource_type = 'recordatorio' AND result = 'confirmado') OR "
+            "(action = 'recordatorio.invalidado' AND resource_type = 'recordatorio' AND result = 'confirmado') OR "
+            "(action = 'recordatorio.procesado' AND resource_type = 'recordatorio' AND result = 'confirmado') OR "
+            "(action = 'recordatorio.fallo' AND resource_type = 'recordatorio' AND result = 'rechazado')",
             name='ck_eventos_auditoria_combinacion'),
         CheckConstraint(
             "resource_type != 'sesion' OR resource_id IS NULL",

@@ -58,7 +58,7 @@ class HistoriaClinicaPostgreSQLIntegracionTests(unittest.TestCase):
             'script_location', str(Path(__file__).parents[1] / 'alembic'))
         config.config_file_name = None
         try:
-            command.upgrade(config, '20261102_0010_clinical_history')
+            command.upgrade(config, 'head')
             os.environ['DATABASE_URL'] = cls.database_url_c15
             command.upgrade(config, '20261102_0010_clinical_history')
             os.environ['DATABASE_URL'] = cls.database_url
@@ -104,6 +104,41 @@ class HistoriaClinicaPostgreSQLIntegracionTests(unittest.TestCase):
         profesional_id = f'profesional-c15-{sufijo}'
         box_id = f'box-c15-{sufijo}'
         evolucion_id = str(uuid4())
+        if self.engine is self.engine_c15:
+            with self.engine.begin() as conexion:
+                conexion.execute(text(
+                    'INSERT INTO pacientes(id, nombre, telefono, activo) '
+                    'VALUES (:id, :nombre, NULL, true)'), {
+                        'id': paciente_id, 'nombre': 'Paciente sintético C-15'})
+                conexion.execute(text(
+                    'INSERT INTO profesionales(id, nombre, activo) '
+                    'VALUES (:id, :nombre, true)'), {
+                        'id': profesional_id, 'nombre': 'Profesional sintético C-15'})
+                conexion.execute(text(
+                    'INSERT INTO boxes(id, nombre, activo) VALUES (:id, :nombre, true)'), {
+                        'id': box_id, 'nombre': 'Box sintético C-15'})
+                turno_id = conexion.execute(text(
+                    "INSERT INTO turnos(paciente_id, profesional_id, box_id, inicio_minuto, "
+                    "fin_minuto, estado, version) VALUES (:paciente, :profesional, :box, "
+                    "29700000, 29700030, 'atendido', 1) RETURNING id"), {
+                        'paciente': paciente_id, 'profesional': profesional_id, 'box': box_id,
+                    }).scalar_one()
+                conexion.execute(text(
+                    'INSERT INTO evoluciones_clinicas '
+                    '(id, paciente_id, profesional_id, turno_id, nota, created_at, corrige_a_id) '
+                    'VALUES (:id, :paciente, :profesional, :turno, :nota, :fecha, NULL)'), {
+                        'id': evolucion_id, 'paciente': paciente_id,
+                        'profesional': profesional_id, 'turno': turno_id,
+                        'nota': 'Nota clínica sintética de integración C-15.',
+                        'fecha': datetime.now(timezone.utc),
+                    })
+                conexion.execute(text(
+                    "INSERT INTO eventos_auditoria(created_at, actor_id, action, "
+                    "resource_type, resource_id, result) VALUES (:fecha, NULL, "
+                    "'evolucion.creada', 'evolucion', :id, 'confirmado')"), {
+                        'fecha': datetime.now(timezone.utc), 'id': evolucion_id,
+                    })
+            return paciente_id, profesional_id, box_id, turno_id, evolucion_id
         with Session(self.engine) as session, session.begin():
             session.add_all([
                 Paciente(id=paciente_id, nombre='Paciente sintético C-15', telefono=None,
@@ -200,7 +235,7 @@ class HistoriaClinicaPostgreSQLIntegracionTests(unittest.TestCase):
             bundle = Path(temporal) / 'bundle-c15'
             manifiesto = crear_bundle_postgresql(self.engine, bundle)
             self.assertEqual(
-                manifiesto['schema_version'], '20261102_0011_odontogram_treatment_plans')
+                manifiesto['schema_version'], '20261102_0012_appointment_reminders')
             self.assertEqual(manifiesto['table_counts']['evoluciones_clinicas'], 1)
             self.assertNotIn('Nota clínica sintética de integración C-15.',
                              (bundle / 'manifest.json').read_text(encoding='utf-8'))

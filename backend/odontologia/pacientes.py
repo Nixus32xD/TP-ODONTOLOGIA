@@ -2,13 +2,14 @@
 import re
 import unicodedata
 from uuid import uuid4
+from datetime import datetime
 
 from sqlalchemy import select, text
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 
 from odontologia.audit import ErrorAuditoria, registrar_evento_session
-from odontologia.db.models import AgendaMutex, Paciente
+from odontologia.db.models import AgendaMutex, Paciente, Turno
 
 
 class ErrorPacientes(RuntimeError):
@@ -56,6 +57,7 @@ def _publico(paciente: Paciente) -> dict[str, object]:
         'nombre': paciente.nombre,
         'telefono': paciente.telefono,
         'activo': paciente.activo,
+        'acepta_recordatorios': paciente.acepta_recordatorios,
     }
 
 
@@ -68,9 +70,13 @@ def _registrar(session: Session, accion: str, paciente: Paciente,
 
 
 def crear_paciente(engine, nombre: object, telefono: object = None,
+                   acepta_recordatorios: object = False,
                    *, actor_id: str | None = None) -> dict[str, object]:
+    if type(acepta_recordatorios) is not bool:
+        raise ErrorPacientes('entrada_invalida', 'El consentimiento no es válido.', 422)
     paciente = Paciente(
-        id=str(uuid4()), nombre=_nombre(nombre), telefono=_telefono(telefono), activo=True)
+        id=str(uuid4()), nombre=_nombre(nombre), telefono=_telefono(telefono), activo=True,
+        acepta_recordatorios=acepta_recordatorios)
     try:
         with Session(engine) as session, session.begin():
             _iniciar_escritura(session)
@@ -118,8 +124,9 @@ def obtener_paciente(engine, paciente_id: str) -> dict[str, object]:
 
 
 def actualizar_paciente(engine, paciente_id: str, cambios: dict[str, object],
-                        *, actor_id: str | None = None) -> dict[str, object]:
-    permitidos = {'nombre', 'telefono', 'activo'}
+                        *, actor_id: str | None = None,
+                        ahora: datetime | None = None) -> dict[str, object]:
+    permitidos = {'nombre', 'telefono', 'activo', 'acepta_recordatorios'}
     if (not isinstance(cambios, dict) or not cambios or not set(cambios) <= permitidos):
         raise ErrorPacientes('entrada_invalida', 'Debe indicar cambios válidos.', 422)
     normalizados = dict(cambios)
@@ -129,6 +136,9 @@ def actualizar_paciente(engine, paciente_id: str, cambios: dict[str, object],
         normalizados['telefono'] = _telefono(normalizados['telefono'])
     if 'activo' in normalizados and type(normalizados['activo']) is not bool:
         raise ErrorPacientes('entrada_invalida', 'El estado no es válido.', 422)
+    if ('acepta_recordatorios' in normalizados
+            and type(normalizados['acepta_recordatorios']) is not bool):
+        raise ErrorPacientes('entrada_invalida', 'El consentimiento no es válido.', 422)
     if not isinstance(paciente_id, str) or not paciente_id or len(paciente_id) > 64:
         raise ErrorPacientes('entrada_invalida', 'El ID no es válido.', 422)
 
@@ -142,11 +152,32 @@ def actualizar_paciente(engine, paciente_id: str, cambios: dict[str, object],
             for campo, valor in normalizados.items():
                 setattr(paciente, campo, valor)
             session.flush()
+            consentimiento_cambio = (
+                'acepta_recordatorios' in normalizados
+                and paciente.acepta_recordatorios != anteriores['acepta_recordatorios'])
+            if consentimiento_cambio:
+                from odontologia.recordatorios import (
+                    invalidar_recordatorios_pendientes,
+                    programar_recordatorio_confirmacion,
+                )
+
+                turnos_confirmados = session.scalars(select(Turno).where(
+                    Turno.paciente_id == paciente.id,
+                    Turno.estado == 'confirmado',
+                ).order_by(Turno.id)).all()
+                for turno in turnos_confirmados:
+                    if paciente.acepta_recordatorios:
+                        programar_recordatorio_confirmacion(
+                            session, turno, actor_id=actor_id, ahora=ahora)
+                    else:
+                        invalidar_recordatorios_pendientes(
+                            session, turno, actor_id=actor_id, ahora=ahora)
             actualizado = _publico(paciente)
             if actualizado != anteriores:
                 cambio_estado = (
                     'activo' in normalizados and paciente.activo != anteriores['activo'])
-                if any(campo in normalizados for campo in ('nombre', 'telefono')):
+                if any(campo in normalizados for campo in (
+                        'nombre', 'telefono', 'acepta_recordatorios')):
                     _registrar(session, 'paciente.actualizado', paciente, actor_id)
                 if cambio_estado:
                     accion = 'paciente.reactivado' if paciente.activo else 'paciente.desactivado'

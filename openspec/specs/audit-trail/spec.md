@@ -38,7 +38,7 @@ El sistema SHALL confirmar cada mutación auditable y su evento en la misma tran
 - **THEN** la operación termina con error 503 genérico y no expone si la cuenta existe
 
 ### Requirement: Operaciones incluidas en auditoría
-El sistema SHALL auditar altas de turno confirmadas y reprogramaciones confirmadas; creación, cambio de rol y cambio de estado de cuentas; bootstrap del Administrador; y aperturas, cierres y rechazos de sesión.
+El sistema SHALL auditar altas de turno confirmadas y reprogramaciones confirmadas; creación, cambio de rol y cambio de estado de cuentas; bootstrap del Administrador; aperturas, cierres y rechazos de sesión; cambios de consentimiento de recordatorios; y programación, invalidación, procesamiento y fallos sintéticos del outbox.
 
 #### Scenario: Cuenta actualizada
 - **GIVEN** un Administrador crea una cuenta o cambia su rol o estado
@@ -60,6 +60,20 @@ El sistema SHALL auditar altas de turno confirmadas y reprogramaciones confirmad
 - **WHEN** se registra el evento `turno.reprogramado`
 - **THEN** contiene actor, recurso `turno`, ID opaco y resultado `confirmado`, sin paciente, recursos, intervalo ni cuerpo
 
+#### Scenario: Cambio de consentimiento
+- **GIVEN** Administrador o Recepción cambia la preferencia de recordatorios de un paciente
+- **WHEN** la mutación se confirma
+- **THEN** queda un evento metadata-only con actor, acción, recurso e ID opaco, sin nombre, teléfono ni valor del consentimiento
+
+#### Scenario: Procesamiento simulado del outbox
+- **GIVEN** el worker programa, invalida, procesa o marca un fallo sintético de un recordatorio
+- **WHEN** la operación y su evento terminan
+- **THEN** se registran sólo actor cuando corresponda, acción, tipo e ID opaco del recurso y resultado, sin teléfono, nombre, mensaje ni contenido clínico
+
+#### Scenario: Fallo al auditar el outbox
+- **GIVEN** una operación del outbox cuya auditoría no puede persistirse
+- **WHEN** termina la transacción
+- **THEN** se revierten el cambio de estado del recordatorio y el evento, sin cambiar ni borrar el turno
 ### Requirement: Consulta de auditoría protegida y paginada
 El sistema SHALL exponer una consulta paginada de eventos sólo para Administrador, con límite predeterminado de 50 y máximo de 100, desplazamiento no negativo y orden estable por fecha UTC descendente e identificador descendente.
 

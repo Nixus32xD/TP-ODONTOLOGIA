@@ -83,6 +83,80 @@ describe('consulta de agenda', () => {
     expect(screen.queryByRole('option', { name: 'Paciente inactivo' })).not.toBeInTheDocument()
   })
 
+  it('permite a Recepción cambiar el consentimiento y muestra el cambio sólo tras confirmación', async () => {
+    const paciente = {
+      id: 'paciente-consentimiento', nombre: 'Paciente sintético', telefono: null,
+      activo: true, acepta_recordatorios: false,
+    }
+    let confirmarCambio: ((respuesta: typeof paciente) => void) | undefined
+    const cambioPendiente = new Promise<typeof paciente>((resolve) => { confirmarCambio = resolve })
+    api.mockImplementation(async (ruta, opciones = {}) => {
+      const rutaBase = String(ruta)
+      if (rutaBase.startsWith('/turnos?')) return { items: [], limit: 50, offset: 0 } as never
+      if (rutaBase.startsWith('/profesionales?')) return listaProfesionales as never
+      if (rutaBase.startsWith('/boxes?')) return listaBoxes as never
+      if (rutaBase.startsWith('/pacientes?')) return { items: [paciente] } as never
+      if (rutaBase === `/pacientes/${paciente.id}` && opciones.method === 'PATCH') return cambioPendiente as never
+      return undefined as never
+    })
+    render(<Agenda identidad={{ ...identidadBase, rol: 'recepcion' }} token="token-recepcion" />)
+
+    fireEvent.change(await screen.findByLabelText('Paciente para consentimiento'), {
+      target: { value: paciente.id },
+    })
+    fireEvent.click(screen.getByRole('button', { name: 'Habilitar recordatorios' }))
+    await waitFor(() => expect(api).toHaveBeenCalledWith(
+      `/pacientes/${paciente.id}`,
+      expect.objectContaining({
+        method: 'PATCH', token: 'token-recepcion',
+        body: JSON.stringify({ acepta_recordatorios: true }),
+      }),
+    ))
+    expect(screen.getByRole('button', { name: 'Guardando preferencia…' })).toBeDisabled()
+    expect(screen.queryByRole('button', { name: 'Deshabilitar recordatorios' })).not.toBeInTheDocument()
+
+    confirmarCambio?.({ ...paciente, acepta_recordatorios: true })
+    expect(await screen.findByText('Preferencia de recordatorios actualizada.')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Deshabilitar recordatorios' })).toBeInTheDocument()
+  })
+
+  it('no carga ni presenta gestión de consentimiento a Profesional', async () => {
+    api.mockResolvedValueOnce({ items: [], limit: 50, offset: 0 })
+    render(<Agenda identidad={{ ...identidadBase, rol: 'profesional' }} token="token-profesional" />)
+
+    await screen.findByText('No hay turnos para este período.')
+    expect(screen.queryByLabelText('Paciente para consentimiento')).not.toBeInTheDocument()
+    expect(api).toHaveBeenCalledTimes(1)
+  })
+
+  it('permite a Administrador gestionar consentimiento de forma confirmada', async () => {
+    const paciente = {
+      id: 'paciente-admin', nombre: 'Paciente para Admin', telefono: null,
+      activo: true, acepta_recordatorios: true,
+    }
+    api.mockImplementation(async (ruta, opciones = {}) => {
+      const rutaBase = String(ruta)
+      if (rutaBase.startsWith('/turnos?')) return { items: [], limit: 50, offset: 0 } as never
+      if (rutaBase.startsWith('/profesionales?')) return listaProfesionales as never
+      if (rutaBase.startsWith('/boxes?')) return listaBoxes as never
+      if (rutaBase.startsWith('/pacientes?')) return { items: [paciente] } as never
+      if (rutaBase === `/pacientes/${paciente.id}` && opciones.method === 'PATCH') {
+        return { ...paciente, acepta_recordatorios: false } as never
+      }
+      return undefined as never
+    })
+    render(<Agenda identidad={{ ...identidadBase, rol: 'administrador' }} token="token-admin" />)
+
+    await screen.findByLabelText('Paciente para consentimiento')
+    fireEvent.click(screen.getByRole('button', { name: 'Deshabilitar recordatorios' }))
+
+    expect(await screen.findByText('Preferencia de recordatorios actualizada.')).toBeInTheDocument()
+    expect(api).toHaveBeenCalledWith(`/pacientes/${paciente.id}`, expect.objectContaining({
+      method: 'PATCH', token: 'token-admin',
+      body: JSON.stringify({ acepta_recordatorios: false }),
+    }))
+  })
+
   it('consulta una semana de lunes a lunes', async () => {
     api.mockResolvedValueOnce({ items: [], limit: 50, offset: 0 })
       .mockResolvedValueOnce(listaProfesionales).mockResolvedValueOnce(listaBoxes).mockResolvedValueOnce(listaPacientes)
@@ -240,7 +314,10 @@ describe('consulta de agenda', () => {
   })
 
   it('crea una ficha mínima, la selecciona por el ID devuelto y no envía datos clínicos', async () => {
-    const nueva = { id: 'paciente-nuevo', nombre: 'Eva Ejemplo', telefono: '+54 261 555-0101', activo: true }
+    const nueva = {
+      id: 'paciente-nuevo', nombre: 'Eva Ejemplo', telefono: '+54 261 555-0101',
+      activo: true, acepta_recordatorios: true,
+    }
     api.mockImplementation(async (ruta, opciones = {}) => {
       if (ruta.startsWith('/turnos?')) return { items: [], limit: 50, offset: 0 } as never
       if (ruta.startsWith('/profesionales?')) return listaProfesionales as never
@@ -261,12 +338,15 @@ describe('consulta de agenda', () => {
     await screen.findByRole('option', { name: 'Paciente ejemplo' })
     fireEvent.change(screen.getByLabelText('Nombre de ficha nueva'), { target: { value: 'Eva Ejemplo' } })
     fireEvent.change(screen.getByLabelText('Teléfono de ficha nueva'), { target: { value: '+54 261 555-0101' } })
+    fireEvent.click(screen.getByLabelText('Acepta recibir recordatorios simulados'))
     fireEvent.click(screen.getByRole('button', { name: 'Crear ficha de paciente' }))
 
-    expect(await screen.findByRole('option', { name: 'Eva Ejemplo' })).toBeInTheDocument()
+    await waitFor(() => expect(screen.getByLabelText('Paciente')).toHaveValue('paciente-nuevo'))
     expect(screen.getByLabelText('Paciente')).toHaveValue('paciente-nuevo')
     const solicitud = api.mock.calls.find(([ruta, opciones]) => ruta === '/pacientes' && opciones?.method === 'POST')
-    expect(JSON.parse(String(solicitud?.[1]?.body))).toEqual({ nombre: 'Eva Ejemplo', telefono: '+54 261 555-0101' })
+    expect(JSON.parse(String(solicitud?.[1]?.body))).toEqual({
+      nombre: 'Eva Ejemplo', telefono: '+54 261 555-0101', acepta_recordatorios: true,
+    })
   })
 
   it('Recepción confirma un turno vigente por el endpoint de estado y recarga el resultado', async () => {
@@ -309,7 +389,7 @@ describe('consulta de agenda', () => {
     render(<Agenda identidad={{ ...identidadBase, rol: 'recepcion' }} token="token-recepcion" />)
 
     fireEvent.click(await screen.findByRole('button', { name: 'Confirmar' }))
-    expect(await screen.findByRole('status')).toHaveTextContent('Actualizando estado del turno…')
+    expect(await screen.findByText('Actualizando estado del turno…')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Confirmar' })).toBeDisabled()
     expect(screen.getByRole('list', { name: 'Turnos de la agenda' })).toHaveTextContent('reservado')
 

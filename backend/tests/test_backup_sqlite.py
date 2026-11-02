@@ -5,12 +5,14 @@ import json
 from tempfile import TemporaryDirectory
 from threading import Thread
 import unittest
+from uuid import uuid4
 
 from odontologia import inicializar_agenda
 from odontologia.auth.migraciones import migrar_sqlite
 from odontologia.backup.errors import ErrorBackup
 from odontologia.backup.bundle import crear_bundle_sqlite
 from odontologia.backup.sqlite import crear_snapshot_sqlite
+from odontologia.backup.restauracion_sqlite import restaurar_bundle_sqlite
 
 
 class BackupSQLiteTests(unittest.TestCase):
@@ -150,6 +152,56 @@ class BackupSQLiteTests(unittest.TestCase):
         self.assertNotIn('observación clínica sintética', manifiesto)
         self.assertNotIn('Prestación sintética', manifiesto)
         self.assertEqual(json.loads(manifiesto)['table_counts']['hallazgos_odontograma'], 1)
+
+    def test_bundle_y_restore_preservan_estados_outbox_sin_datos_personales_en_manifest(self):
+        filas = []
+        with closing(sqlite3.connect(self.origen)) as conexion:
+            for indice, estado in enumerate(
+                    ('pendiente', 'procesado_simulado', 'invalidado'), start=1):
+                turno_id = conexion.execute(
+                    "INSERT INTO turnos(paciente_id, profesional_id, box_id, inicio_minuto, "
+                    "fin_minuto, estado, version) VALUES ('paciente-A', 'profesional-A', "
+                    "'box-A', ?, ?, 'confirmado', 1) RETURNING id",
+                    (30000000 + indice * 60, 30000030 + indice * 60),
+                ).fetchone()[0]
+                recordatorio_id = str(uuid4())
+                clave = f'turno:{turno_id}:version:1:tipo:turno_24h:generacion:1'
+                fecha = '2026-11-02 12:00:00.000000'
+                conexion.execute(
+                    'INSERT INTO recordatorios_outbox(id, turno_id, turno_version, generation, tipo, '
+                    'programado_para, estado, intentos, idempotency_key, created_at, updated_at) '
+                    'VALUES (?, ?, 1, 1, \'turno_24h\', ?, ?, 0, ?, ?, ?)',
+                    (recordatorio_id, turno_id, fecha, estado, clave, fecha, fecha),
+                )
+                filas.append((turno_id, 1, estado, clave))
+            turno_id = filas[0][0]
+            fecha = '2026-11-02 12:01:00.000000'
+            clave = f'turno:{turno_id}:version:1:tipo:turno_24h:generacion:2'
+            conexion.execute(
+                'INSERT INTO recordatorios_outbox(id, turno_id, turno_version, generation, tipo, '
+                'programado_para, estado, intentos, idempotency_key, created_at, updated_at) '
+                'VALUES (?, ?, 1, 2, \'turno_24h\', ?, \'pendiente\', 0, ?, ?, ?)',
+                (str(uuid4()), turno_id, fecha, clave, fecha, fecha),
+            )
+            filas.append((turno_id, 2, 'pendiente', clave))
+            conexion.commit()
+
+        bytes_origen = self.origen.read_bytes()
+        resultado = crear_bundle_sqlite(self.origen, self.bundle, pages=2)
+        destino = self.directorio / 'restaurada.sqlite3'
+        restaurado = restaurar_bundle_sqlite(
+            self.bundle, destino, origen_activo=self.origen)
+        self.assertEqual(resultado['table_counts']['recordatorios_outbox'], 4)
+        self.assertEqual(restaurado['row_counts']['recordatorios_outbox'], 4)
+        manifiesto = (self.bundle / 'manifest.json').read_text(encoding='utf-8')
+        self.assertNotIn('+54', manifiesto)
+        self.assertNotIn('Nombre inicial ficticio', manifiesto)
+        with closing(sqlite3.connect(destino)) as conexion:
+            filas_restauradas = conexion.execute(
+                'SELECT turno_id, generation, estado, idempotency_key FROM recordatorios_outbox '
+                'ORDER BY turno_id, generation').fetchall()
+        self.assertEqual(filas_restauradas, sorted(filas))
+        self.assertEqual(self.origen.read_bytes(), bytes_origen)
 
     def test_manifest_counts_se_deriva_del_mismo_snapshot_wal(self):
         bundle = self.directorio / 'bundle-concurrente'

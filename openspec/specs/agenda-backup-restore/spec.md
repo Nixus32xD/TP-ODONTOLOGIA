@@ -105,7 +105,7 @@ El sistema SHALL mantener los artefactos en una ruta local explícita, informar 
 - **THEN** las copias previas permanecen intactas y no se activa borrado por antigüedad
 
 ### Requirement: Incluir registros clínicos en copias y restauraciones
-El sistema SHALL incluir evoluciones clínicas, versiones de odontograma, hallazgos y planes con sus referencias en cada copia completa de una base con esquema C-15 o posterior. El manifiesto SHALL contar las nuevas tablas sin exponer contenido clínico y la restauración SHALL validar integridad y claves foráneas antes de declarar éxito.
+El sistema SHALL incluir evoluciones clínicas, versiones de odontograma, hallazgos, planes y outbox de recordatorios con sus referencias en cada copia completa de una base con esquema C-15 o posterior. El manifiesto SHALL contar las nuevas tablas sin exponer contenido clínico ni datos de contacto y la restauración SHALL validar integridad y claves foráneas antes de declarar éxito.
 
 #### Scenario: Backup local conserva evoluciones
 - **GIVEN** una base compatible con evoluciones ficticias confirmadas
@@ -131,3 +131,8 @@ El sistema SHALL incluir evoluciones clínicas, versiones de odontograma, hallaz
 - **GIVEN** un bundle con hallazgos, versiones o etapas que referencian piezas, pacientes, profesionales o prestaciones inexistentes
 - **WHEN** se verifica o restaura el bundle
 - **THEN** se rechaza antes de publicar el destino y se mantiene intacta la fuente
+
+#### Scenario: Copia y restauración preservan el outbox de recordatorios
+- **GIVEN** una base de demostración con recordatorios pendientes, procesados e invalidados asociados a turnos sintéticos
+- **WHEN** se crea y restaura una copia completa a un destino nuevo
+- **THEN** se conservan las filas, estados, claves de idempotencia y referencias, el recuento coincide y el manifiesto no expone teléfonos ni texto de contacto

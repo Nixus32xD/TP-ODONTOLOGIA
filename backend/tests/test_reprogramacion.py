@@ -1,5 +1,5 @@
 from contextlib import closing
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from tempfile import TemporaryDirectory
 from threading import Barrier, Thread
@@ -123,6 +123,108 @@ class RechazosReprogramacionTests(unittest.TestCase):
             )).one()
         self.assertEqual(tuple(auditoria), (
             'usuario-admin', 'turno.reprogramado', 'turno', str(self.turno.id), 'confirmado'))
+
+    def test_reprogramacion_invalida_version_anterior_y_programa_la_nueva(self):
+        ahora = datetime(2026, 11, 2, 12, tzinfo=timezone.utc)
+        inicio_original = datetime.fromisoformat('2026-11-09T09:00:00-03:00')
+        with self.engine.begin() as conexion:
+            conexion.execute(text(
+                "UPDATE pacientes SET acepta_recordatorios=1 WHERE id='paciente-A'"))
+            conexion.execute(text(
+                'UPDATE turnos SET inicio_minuto=:inicio, fin_minuto=:fin WHERE id=:id'), {
+                    'inicio': int(inicio_original.timestamp() // 60),
+                    'fin': int((inicio_original + timedelta(minutes=30)).timestamp() // 60),
+                    'id': self.turno.id,
+                })
+        transicionar_estado_turno(
+            self.engine, self.turno.id, 'confirmado', actor_id='usuario-admin', ahora=ahora)
+
+        from odontologia.reprogramacion import reprogramar_turno
+        nuevo_inicio = datetime.fromisoformat('2026-11-16T10:00:00-03:00')
+        resultado = reprogramar_turno(
+            self.engine, self.turno.id, version_esperada=2,
+            inicio=nuevo_inicio, fin=nuevo_inicio + timedelta(minutes=30),
+            profesional_id='profesional-A', box_id='box-A',
+            actor_id='usuario-admin', ahora=ahora)
+
+        with self.engine.connect() as conexion:
+            recordatorios = conexion.execute(text(
+                'SELECT turno_version, estado, idempotency_key FROM recordatorios_outbox '
+                'WHERE turno_id=:id ORDER BY turno_version'), {'id': self.turno.id}).all()
+            acciones = conexion.execute(text(
+                "SELECT action FROM eventos_auditoria WHERE resource_type='recordatorio' "
+                'ORDER BY created_at, id')).scalars().all()
+        self.assertEqual((resultado.estado, resultado.version), ('confirmado', 3))
+        self.assertEqual([tuple(fila[:2]) for fila in recordatorios], [
+            (2, 'invalidado'), (3, 'pendiente')])
+        self.assertTrue(recordatorios[0].idempotency_key.endswith(':generacion:1'))
+        self.assertTrue(recordatorios[1].idempotency_key.endswith(':generacion:1'))
+        self.assertEqual(acciones, ['recordatorio.programado',
+                                    'recordatorio.invalidado',
+                                    'recordatorio.programado'])
+
+    def test_reprogramacion_a_menos_de_24_horas_invalida_sin_nuevo_pendiente(self):
+        ahora = datetime(2026, 11, 8, 12, tzinfo=timezone.utc)
+        inicio_original = datetime.fromisoformat('2026-11-16T09:00:00-03:00')
+        with self.engine.begin() as conexion:
+            conexion.execute(text(
+                "UPDATE pacientes SET acepta_recordatorios=1 WHERE id='paciente-A'"))
+            conexion.execute(text(
+                'UPDATE turnos SET inicio_minuto=:inicio, fin_minuto=:fin WHERE id=:id'), {
+                    'inicio': int(inicio_original.timestamp() // 60),
+                    'fin': int((inicio_original + timedelta(minutes=30)).timestamp() // 60),
+                    'id': self.turno.id,
+                })
+        transicionar_estado_turno(
+            self.engine, self.turno.id, 'confirmado', actor_id='usuario-admin', ahora=ahora)
+
+        from odontologia.reprogramacion import reprogramar_turno
+        nuevo_inicio = datetime.fromisoformat('2026-11-09T09:00:00-03:00')
+        resultado = reprogramar_turno(
+            self.engine, self.turno.id, version_esperada=2,
+            inicio=nuevo_inicio, fin=nuevo_inicio + timedelta(minutes=30),
+            profesional_id='profesional-A', box_id='box-A',
+            actor_id='usuario-admin', ahora=ahora)
+
+        with self.engine.connect() as conexion:
+            recordatorios = conexion.execute(text(
+                'SELECT turno_version, estado FROM recordatorios_outbox '
+                'WHERE turno_id=:id ORDER BY turno_version'), {'id': self.turno.id}).all()
+        self.assertEqual((resultado.estado, resultado.version), ('confirmado', 3))
+        self.assertEqual([tuple(fila) for fila in recordatorios], [(2, 'invalidado')])
+
+    def test_fallo_de_auditoria_al_invalidar_revierte_reprogramacion(self):
+        ahora = datetime(2026, 11, 2, 12, tzinfo=timezone.utc)
+        inicio_original = datetime.fromisoformat('2026-11-09T09:00:00-03:00')
+        with self.engine.begin() as conexion:
+            conexion.execute(text(
+                "UPDATE pacientes SET acepta_recordatorios=1 WHERE id='paciente-A'"))
+            conexion.execute(text(
+                'UPDATE turnos SET inicio_minuto=:inicio, fin_minuto=:fin WHERE id=:id'), {
+                    'inicio': int(inicio_original.timestamp() // 60),
+                    'fin': int((inicio_original + timedelta(minutes=30)).timestamp() // 60),
+                    'id': self.turno.id,
+                })
+        transicionar_estado_turno(
+            self.engine, self.turno.id, 'confirmado', actor_id='usuario-admin', ahora=ahora)
+        antes = self._snapshot()
+        nuevo_inicio = datetime.fromisoformat('2026-11-16T10:00:00-03:00')
+        with patch('odontologia.recordatorios.registrar_evento_session',
+                   side_effect=ErrorAuditoria('fallo de auditoría sintético')):
+            from odontologia.reprogramacion import reprogramar_turno
+            with self.assertRaises(ErrorAgenda) as error:
+                reprogramar_turno(
+                    self.engine, self.turno.id, version_esperada=2,
+                    inicio=nuevo_inicio, fin=nuevo_inicio + timedelta(minutes=30),
+                    profesional_id='profesional-A', box_id='box-A',
+                    actor_id='usuario-admin', ahora=ahora)
+        with self.engine.connect() as conexion:
+            recordatorio_estado = conexion.execute(text(
+                'SELECT estado FROM recordatorios_outbox WHERE turno_id=:id'),
+                {'id': self.turno.id}).scalar_one()
+        self.assertEqual(error.exception.codigo, 'almacenamiento_error')
+        self.assertEqual(self._snapshot(), antes)
+        self.assertEqual(recordatorio_estado, 'pendiente')
 
     def test_reprogramacion_conflicto_por_profesional_preserva_turno(self):
         crear_turno(

@@ -20,7 +20,10 @@ type FilaOperativa = {
 type FilaProfesional = { inicio: string; fin: string; paciente_nombre: string }
 type PaginaTurnos<T> = { items: T[]; limit: number; offset: number }
 type Recurso = { id: string; nombre: string; activo: boolean }
-type Paciente = { id: string; nombre: string; telefono: string | null; activo: boolean }
+type Paciente = {
+  id: string; nombre: string; telefono: string | null; activo: boolean
+  acepta_recordatorios: boolean
+}
 type Disponibilidad = { fecha: string; items: Array<{ inicio: string; fin: string }> }
 
 type Props = { identidad: Identidad; token: string }
@@ -93,8 +96,13 @@ export default function Agenda({ identidad, token }: Props) {
   const [pacienteSeleccionado, setPacienteSeleccionado] = useState('')
   const [nombrePacienteNuevo, setNombrePacienteNuevo] = useState('')
   const [telefonoPacienteNuevo, setTelefonoPacienteNuevo] = useState('')
+  const [aceptaRecordatoriosNuevo, setAceptaRecordatoriosNuevo] = useState(false)
   const [creandoPaciente, setCreandoPaciente] = useState(false)
   const [errorPaciente, setErrorPaciente] = useState<string | null>(null)
+  const [pacienteConsentimientoId, setPacienteConsentimientoId] = useState('')
+  const [guardandoConsentimiento, setGuardandoConsentimiento] = useState(false)
+  const [errorConsentimiento, setErrorConsentimiento] = useState<string | null>(null)
+  const [consentimientoActualizado, setConsentimientoActualizado] = useState(false)
   const [horarioSeleccionado, setHorarioSeleccionado] = useState<Disponibilidad['items'][number] | null>(null)
   const [registrando, setRegistrando] = useState(false)
   const [errorAlta, setErrorAlta] = useState<string | null>(null)
@@ -140,7 +148,8 @@ export default function Agenda({ identidad, token }: Props) {
       if (!activa) return
       setProfesionales(listaProfesionales.filter((recurso) => recurso.activo))
       setBoxes(listaBoxes.filter((recurso) => recurso.activo))
-      setPacientes(listaPacientes.filter((paciente) => paciente.activo))
+      setPacientes(listaPacientes)
+      setPacienteConsentimientoId((actual) => actual || listaPacientes[0]?.id || '')
     }).catch((fallo: unknown) => {
       if (activa) setErrorDisponibilidad(mensaje(fallo))
     })
@@ -221,16 +230,40 @@ export default function Agenda({ identidad, token }: Props) {
         body: JSON.stringify({
           nombre: nombrePacienteNuevo,
           telefono: telefonoPacienteNuevo || null,
+          acepta_recordatorios: aceptaRecordatoriosNuevo,
         }),
       })
       setPacientes((actuales) => [...actuales.filter((actual) => actual.id !== paciente.id), paciente])
       setPacienteSeleccionado(paciente.id)
       setNombrePacienteNuevo('')
       setTelefonoPacienteNuevo('')
+      setAceptaRecordatoriosNuevo(false)
     } catch (fallo) {
       setErrorPaciente(mensaje(fallo))
     } finally {
       setCreandoPaciente(false)
+    }
+  }
+
+  async function cambiarConsentimientoPaciente() {
+    const paciente = pacientes.find((actual) => actual.id === pacienteConsentimientoId)
+    if (!paciente) return
+    setGuardandoConsentimiento(true)
+    setErrorConsentimiento(null)
+    setConsentimientoActualizado(false)
+    try {
+      const actualizado = await apiRequest<Paciente>(
+        `/pacientes/${encodeURIComponent(paciente.id)}`, {
+          method: 'PATCH', token,
+          body: JSON.stringify({ acepta_recordatorios: !paciente.acepta_recordatorios }),
+        })
+      setPacientes((actuales) => actuales.map((actual) =>
+        actual.id === actualizado.id ? actualizado : actual))
+      setConsentimientoActualizado(true)
+    } catch (fallo) {
+      setErrorConsentimiento(mensaje(fallo))
+    } finally {
+      setGuardandoConsentimiento(false)
     }
   }
 
@@ -384,6 +417,38 @@ export default function Agenda({ identidad, token }: Props) {
         <button type="button" disabled={pagina.items.length < pagina.limit || cargando} onClick={() => setOffset(offset + limite)}>Página siguiente</button>
       </nav>}
 
+      {operativo && <section aria-labelledby="titulo-consentimiento-recordatorios">
+        <h3 id="titulo-consentimiento-recordatorios">Preferencia de recordatorios</h3>
+        <p>Gestione la preferencia explícita de la ficha. Los avisos de esta demo son simulados.</p>
+        <label htmlFor="paciente-consentimiento">Paciente para consentimiento</label>
+        <select id="paciente-consentimiento" value={pacienteConsentimientoId}
+          disabled={guardandoConsentimiento}
+          onChange={(evento) => {
+            setPacienteConsentimientoId(evento.target.value)
+            setConsentimientoActualizado(false)
+            setErrorConsentimiento(null)
+          }}>
+          <option value="">Seleccione</option>
+          {pacientes.map((paciente) => <option key={paciente.id} value={paciente.id}>
+            {paciente.nombre}{paciente.activo ? '' : ' (inactivo)'}
+          </option>)}
+        </select>
+        {pacientes.length === 0 && <p role="status">No hay fichas de pacientes.</p>}
+        {pacientes.some((paciente) => paciente.id === pacienteConsentimientoId) && <>
+          <p role="status">Consentimiento: {pacientes.find(
+            (paciente) => paciente.id === pacienteConsentimientoId)?.acepta_recordatorios
+            ? 'habilitado' : 'deshabilitado'}</p>
+          <button type="button" disabled={guardandoConsentimiento}
+            onClick={() => void cambiarConsentimientoPaciente()}>
+            {guardandoConsentimiento ? 'Guardando preferencia…' :
+              pacientes.find((paciente) => paciente.id === pacienteConsentimientoId)
+                ?.acepta_recordatorios ? 'Deshabilitar recordatorios' : 'Habilitar recordatorios'}
+          </button>
+        </>}
+        {errorConsentimiento && <p role="alert">{errorConsentimiento}</p>}
+        {consentimientoActualizado && <p role="status">Preferencia de recordatorios actualizada.</p>}
+      </section>}
+
       {operativo && <section aria-labelledby="titulo-disponibilidad">
         <h3 id="titulo-disponibilidad">Consultar disponibilidad orientativa</h3>
         <form onSubmit={(evento) => void consultarDisponibilidad(evento)}>
@@ -417,7 +482,7 @@ export default function Agenda({ identidad, token }: Props) {
           <label htmlFor="paciente-turno">Paciente</label>
           <select id="paciente-turno" required value={pacienteSeleccionado} onChange={(evento) => setPacienteSeleccionado(evento.target.value)}>
             <option value="">Seleccione</option>
-            {pacientes.map((paciente) => <option key={paciente.id} value={paciente.id}>{paciente.nombre}</option>)}
+            {pacientes.filter((paciente) => paciente.activo).map((paciente) => <option key={paciente.id} value={paciente.id}>{paciente.nombre}</option>)}
           </select>
           {horarioSeleccionado && <p role="status">Horario seleccionado: {mostrarFechaHora(horarioSeleccionado.inicio)}</p>}
           <button type="submit" disabled={registrando || !horarioSeleccionado || !pacienteSeleccionado}>
@@ -432,6 +497,12 @@ export default function Agenda({ identidad, token }: Props) {
           <label htmlFor="telefono-paciente-nuevo">Teléfono de ficha nueva</label>
           <input id="telefono-paciente-nuevo" value={telefonoPacienteNuevo}
             onChange={(evento) => setTelefonoPacienteNuevo(evento.target.value)} />
+          <label htmlFor="consentimiento-paciente-nuevo">
+            Acepta recibir recordatorios simulados
+          </label>
+          <input id="consentimiento-paciente-nuevo" type="checkbox"
+            checked={aceptaRecordatoriosNuevo}
+            onChange={(evento) => setAceptaRecordatoriosNuevo(evento.target.checked)} />
           <button type="submit" disabled={creandoPaciente}>
             {creandoPaciente ? 'Creando ficha…' : 'Crear ficha de paciente'}
           </button>

@@ -101,7 +101,8 @@ def _validar_ocupacion(session: Session, turno_id: int,
 def reprogramar_turno(engine: Engine, turno_id: int, *,
                       version_esperada: int, inicio: datetime, fin: datetime,
                       profesional_id: str, box_id: str, actor_id: str | None,
-                      timeout_segundos: float = 5.0) -> ResultadoReprogramacion:
+                      timeout_segundos: float = 5.0,
+                      ahora: datetime | None = None) -> ResultadoReprogramacion:
     """Validar y mover una fila existente con versión y auditoría atómicas."""
     try:
         with Session(engine) as session, session.begin():
@@ -128,12 +129,23 @@ def reprogramar_turno(engine: Engine, turno_id: int, *,
                 solicitud.inicio_minuto, solicitud.fin_minuto,
                 solicitud.profesional_id, solicitud.box_id)
             _validar_ocupacion(session, turno.id, solicitud)
+            estaba_confirmado = turno.estado == 'confirmado'
+            if estaba_confirmado:
+                from odontologia.recordatorios import invalidar_recordatorios_pendientes
+
+                invalidar_recordatorios_pendientes(
+                    session, turno, actor_id=actor_id, ahora=ahora)
             turno.profesional_id = solicitud.profesional_id
             turno.box_id = solicitud.box_id
             turno.inicio_minuto = solicitud.inicio_minuto
             turno.fin_minuto = solicitud.fin_minuto
             turno.version += 1
             session.flush()
+            if estaba_confirmado:
+                from odontologia.recordatorios import programar_recordatorio_confirmacion
+
+                programar_recordatorio_confirmacion(
+                    session, turno, actor_id=actor_id, ahora=ahora)
             registrar_evento_session(
                 session, action='turno.reprogramado', resource_type='turno',
                 resource_id=str(turno.id), actor_id=actor_id, result='confirmado')

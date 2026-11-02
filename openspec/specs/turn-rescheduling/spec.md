@@ -68,7 +68,7 @@ La operación SHALL validar en una única operación serializada el estado, paci
 - **THEN** no se rechaza por identidad de paciente; se conservan las exclusiones por profesional y box de C-01
 
 ### Requirement: Confirmar la reprogramación y su auditoría conjuntamente
-El sistema SHALL actualizar asignación, versión y evento `turno.reprogramado` en la misma transacción. El evento SHALL limitarse a actor, acción, recurso `turno`, ID opaco y resultado `confirmado`; SHALL omitir paciente, recursos, intervalo y cuerpo. Si falla auditoría, SHALL revertir toda la operación.
+El sistema SHALL actualizar asignación, versión, evento `turno.reprogramado` y outbox en una transacción. El evento SHALL incluir sólo actor, acción, recurso `turno`, ID opaco y resultado; SHALL omitir paciente, recursos, intervalo y cuerpo. SHALL invalidar pendientes de la versión anterior y programar para la nueva sólo con turno confirmado, consentimiento y más de 24 horas. Cualquier fallo de auditoría u outbox SHALL revertir la operación.
 
 #### Scenario: Auditoría confirma sólo una reprogramación exitosa
 - **GIVEN** una asignación válida y auditoría disponible
@@ -80,6 +80,15 @@ El sistema SHALL actualizar asignación, versión y evento `turno.reprogramado` 
 - **WHEN** termina la operación
 - **THEN** se revierte asignación y versión, no queda evento y la API no informa éxito
 
+#### Scenario: Reprogramación invalida la versión anterior
+- **GIVEN** un turno confirmado con recordatorio pendiente y consentimiento vigente
+- **WHEN** Administrador o Recepción confirma una reprogramación válida
+- **THEN** el recordatorio anterior se invalida y se agrega a lo sumo uno para la nueva versión si conserva el plazo de 24 horas
+
+#### Scenario: Fallo del outbox revierte la reprogramación
+- **GIVEN** una reprogramación elegible cuya actualización de recordatorios no puede persistirse
+- **WHEN** termina la operación
+- **THEN** se revierte la asignación, la versión y la auditoría, y no se informa éxito
 ### Requirement: Restringir el acceso a reprogramaciones
 Sólo Administrador y Recepción SHALL reprogramar turnos. Profesional SHALL permanecer sin acceso a esta operación.
 

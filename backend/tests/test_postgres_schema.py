@@ -8,6 +8,7 @@ from sqlalchemy.dialects import postgresql
 from odontologia.db.models import (
     AgendaMutex, Base, BloqueoAgenda, EventoAuditoria, EvolucionClinica, ExcepcionHorario,
     HorarioSemanal, Paciente, Turno, TramoExcepcion,
+    RecordatorioOutbox,
 )
 from odontologia.db.postgresql import REVISION_ESQUEMA_ACTUAL
 
@@ -20,7 +21,7 @@ class EsquemaPostgreSQLTests(unittest.TestCase):
              'usuarios', 'sesiones', 'eventos_auditoria', 'horarios_semanales',
              'excepciones_horario', 'tramos_excepcion', 'bloqueos_agenda',
              'evoluciones_clinicas', 'versiones_odontograma', 'hallazgos_odontograma',
-             'planes_tratamiento', 'etapas_plan_tratamiento'},
+             'planes_tratamiento', 'etapas_plan_tratamiento', 'recordatorios_outbox'},
         )
         self.assertEqual(
             set(Turno.__table__.columns.keys()),
@@ -38,6 +39,13 @@ class EsquemaPostgreSQLTests(unittest.TestCase):
         self.assertIn('fecha_local', ExcepcionHorario.__table__.columns)
         self.assertIn('excepcion_id', TramoExcepcion.__table__.columns)
         self.assertIn('box_id', BloqueoAgenda.__table__.columns)
+        self.assertIn('generation', RecordatorioOutbox.__table__.columns)
+        self.assertIn('ck_recordatorios_generation', {
+            constraint.name for constraint in RecordatorioOutbox.__table__.constraints
+        })
+        self.assertIn('uq_recordatorios_turno_version_tipo_generation', {
+            constraint.name for constraint in RecordatorioOutbox.__table__.constraints
+        })
         self.assertEqual(
             set(EventoAuditoria.__table__.columns.keys()),
             {'id', 'created_at', 'actor_id', 'action', 'resource_type', 'resource_id', 'result'},
@@ -79,7 +87,7 @@ class EsquemaPostgreSQLTests(unittest.TestCase):
         self.assertEqual(modulo.down_revision, '20261102_0009_turn_rescheduling')
         self.assertTrue(callable(modulo.upgrade))
         self.assertTrue(callable(modulo.downgrade))
-        self.assertEqual(REVISION_ESQUEMA_ACTUAL, '20261102_0011_odontogram_treatment_plans')
+        self.assertEqual(REVISION_ESQUEMA_ACTUAL, '20261102_0012_appointment_reminders')
 
 
 if __name__ == '__main__':

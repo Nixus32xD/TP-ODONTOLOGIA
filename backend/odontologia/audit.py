@@ -52,6 +52,10 @@ _MATRIZ_EVENTOS = {
     'plan.denegado': ('plan', 'rechazado'),
     'plan.creado': ('plan', 'confirmado'),
     'plan.estado_actualizado': ('plan', 'confirmado'),
+    'recordatorio.programado': ('recordatorio', 'confirmado'),
+    'recordatorio.invalidado': ('recordatorio', 'confirmado'),
+    'recordatorio.procesado': ('recordatorio', 'confirmado'),
+    'recordatorio.fallo': ('recordatorio', 'rechazado'),
 }
 
 

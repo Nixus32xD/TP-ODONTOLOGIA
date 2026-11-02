@@ -185,6 +185,7 @@ class SolicitudPaciente(BaseModel):
     model_config = ConfigDict(extra='forbid')
     nombre: StrictStr
     telefono: StrictStr | None = None
+    acepta_recordatorios: StrictBool = False
 
 
 class ActualizacionPaciente(BaseModel):
@@ -192,6 +193,7 @@ class ActualizacionPaciente(BaseModel):
     nombre: StrictStr | None = None
     telefono: StrictStr | None = None
     activo: StrictBool | None = None
+    acepta_recordatorios: StrictBool | None = None
 
 
 class RespuestaPaciente(BaseModel):
@@ -199,6 +201,7 @@ class RespuestaPaciente(BaseModel):
     nombre: StrictStr
     telefono: StrictStr | None
     activo: StrictBool
+    acepta_recordatorios: StrictBool
 
 
 class RespuestaListaPacientes(BaseModel):
@@ -757,6 +760,7 @@ def crear_app(ruta_db: str | Path | None = None, *, timeout_segundos: float = 5.
         asegurar_esquema()
         return crear_paciente(
             auth_engine, solicitud.nombre, solicitud.telefono,
+            solicitud.acepta_recordatorios,
             actor_id=_identidad['usuario_id'])
 
     @app.get('/pacientes/{paciente_id}', response_model=RespuestaPaciente, responses={

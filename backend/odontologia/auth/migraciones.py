@@ -3,7 +3,7 @@ from pathlib import Path
 import sqlite3
 
 
-VERSION_ESQUEMA_AUTENTICACION = 10
+VERSION_ESQUEMA_AUTENTICACION = 11
 
 
 def _migrar_auditoria(conexion: sqlite3.Connection) -> None:
@@ -30,11 +30,12 @@ def _migrar_auditoria(conexion: sqlite3.Connection) -> None:
                 'evolucion.creada', 'evolucion.corregida', 'odontograma.consultada',
                 'odontograma.denegada', 'odontograma.version_creada',
                 'plan.consultado', 'plan.denegado', 'plan.creado',
-                'plan.estado_actualizado')),
+                'plan.estado_actualizado', 'recordatorio.programado',
+                'recordatorio.invalidado', 'recordatorio.procesado', 'recordatorio.fallo')),
             resource_type TEXT NOT NULL CHECK (resource_type IN (
                 'turno', 'paciente', 'profesional', 'box', 'prestacion',
                 'horario', 'excepcion', 'bloqueo', 'cuenta', 'sesion', 'historia', 'evolucion',
-                'odontograma', 'plan')),
+                'odontograma', 'plan', 'recordatorio')),
             resource_id TEXT,
             result TEXT NOT NULL CHECK (result IN ('confirmado', 'rechazado')),
             CHECK (
@@ -80,7 +81,11 @@ def _migrar_auditoria(conexion: sqlite3.Connection) -> None:
                 (action = 'plan.consultado' AND resource_type = 'plan' AND result = 'confirmado') OR
                 (action = 'plan.denegado' AND resource_type = 'plan' AND result = 'rechazado') OR
                 (action = 'plan.creado' AND resource_type = 'plan' AND result = 'confirmado') OR
-                (action = 'plan.estado_actualizado' AND resource_type = 'plan' AND result = 'confirmado')
+                (action = 'plan.estado_actualizado' AND resource_type = 'plan' AND result = 'confirmado') OR
+                (action = 'recordatorio.programado' AND resource_type = 'recordatorio' AND result = 'confirmado') OR
+                (action = 'recordatorio.invalidado' AND resource_type = 'recordatorio' AND result = 'confirmado') OR
+                (action = 'recordatorio.procesado' AND resource_type = 'recordatorio' AND result = 'confirmado') OR
+                (action = 'recordatorio.fallo' AND resource_type = 'recordatorio' AND result = 'rechazado')
             ),
             CHECK (resource_type != 'sesion' OR resource_id IS NULL),
             CHECK (action != 'sesion.rechazada' OR (actor_id IS NULL AND resource_id IS NULL))
@@ -105,7 +110,9 @@ def _migrar_fichas_pacientes(conexion: sqlite3.Connection) -> None:
             'ALTER TABLE pacientes ADD COLUMN activo INTEGER NOT NULL DEFAULT 1 CHECK (activo IN (0, 1))')
         conexion.execute(
             "UPDATE pacientes SET nombre='Paciente de demostración ' || id WHERE nombre='' ")
-    elif columnas != {'id', 'nombre', 'telefono', 'activo'}:
+    elif columnas not in (
+            {'id', 'nombre', 'telefono', 'activo'},
+            {'id', 'nombre', 'telefono', 'activo', 'acepta_recordatorios'}):
         raise MigracionAutenticacionError('El esquema de pacientes no es compatible.')
     conexion.execute('''CREATE TRIGGER IF NOT EXISTS pacientes_validar_insert
         BEFORE INSERT ON pacientes BEGIN
@@ -432,6 +439,24 @@ def _actualizar_auditoria_odontograma(conexion: sqlite3.Connection) -> None:
     conexion.execute('DROP TABLE eventos_auditoria_v9')
 
 
+def _actualizar_auditoria_recordatorios(conexion: sqlite3.Connection) -> None:
+    triggers = {'eventos_auditoria_no_update', 'eventos_auditoria_no_delete'}
+    existentes = {fila[0] for fila in conexion.execute(
+        "SELECT name FROM sqlite_master WHERE type='trigger'")}
+    for trigger in triggers & existentes:
+        conexion.execute(f'DROP TRIGGER {trigger}')
+    conexion.execute('DROP INDEX IF EXISTS ix_eventos_auditoria_fecha_id')
+    conexion.execute('ALTER TABLE eventos_auditoria RENAME TO eventos_auditoria_v10')
+    _migrar_auditoria(conexion)
+    conexion.execute('''
+        INSERT INTO eventos_auditoria
+            (id, created_at, actor_id, action, resource_type, resource_id, result)
+        SELECT id, created_at, actor_id, action, resource_type, resource_id, result
+        FROM eventos_auditoria_v10
+    ''')
+    conexion.execute('DROP TABLE eventos_auditoria_v10')
+
+
 def _migrar_odontograma_y_planes(conexion: sqlite3.Connection) -> None:
     conexion.execute('''
         CREATE TABLE IF NOT EXISTS versiones_odontograma (
@@ -490,6 +515,61 @@ def _migrar_odontograma_y_planes(conexion: sqlite3.Connection) -> None:
             SELECT RAISE(ABORT, '{tabla} es append-only'); END''')
 
 
+def _migrar_recordatorios(conexion: sqlite3.Connection) -> None:
+    columnas = {fila[1] for fila in conexion.execute('PRAGMA table_info(pacientes)')}
+    if 'acepta_recordatorios' not in columnas:
+        conexion.execute('''ALTER TABLE pacientes ADD COLUMN acepta_recordatorios
+            INTEGER NOT NULL DEFAULT 0 CHECK (acepta_recordatorios IN (0, 1))''')
+
+    def crear_outbox() -> None:
+        conexion.execute('''
+        CREATE TABLE recordatorios_outbox (
+            id TEXT PRIMARY KEY,
+            turno_id INTEGER NOT NULL REFERENCES turnos(id) ON DELETE RESTRICT,
+            turno_version INTEGER NOT NULL CHECK (
+                typeof(turno_version) = 'integer' AND turno_version > 0),
+            generation INTEGER NOT NULL DEFAULT 1 CHECK (
+                typeof(generation) = 'integer' AND generation > 0),
+            tipo TEXT NOT NULL CHECK (tipo IN ('turno_24h')),
+            programado_para TEXT NOT NULL,
+            estado TEXT NOT NULL CHECK (estado IN (
+                'pendiente', 'procesado_simulado', 'invalidado', 'fallido')),
+            intentos INTEGER NOT NULL DEFAULT 0 CHECK (
+                typeof(intentos) = 'integer' AND intentos BETWEEN 0 AND 3),
+            idempotency_key TEXT NOT NULL UNIQUE,
+            created_at TEXT NOT NULL,
+            updated_at TEXT NOT NULL,
+            UNIQUE (turno_id, turno_version, tipo, generation)
+        )
+    ''')
+
+    tablas = {fila[0] for fila in conexion.execute(
+        "SELECT name FROM sqlite_master WHERE type='table'")}
+    if 'recordatorios_outbox' not in tablas:
+        crear_outbox()
+    else:
+        outbox_columnas = {fila[1] for fila in conexion.execute(
+            'PRAGMA table_info(recordatorios_outbox)')}
+        if 'generation' not in outbox_columnas:
+            legacy = 'recordatorios_outbox_legacy_generation'
+            if legacy in tablas:
+                raise MigracionAutenticacionError(
+                    'La migración del outbox encontró una tabla temporal existente.')
+            conexion.execute(
+                f'ALTER TABLE recordatorios_outbox RENAME TO {legacy}')
+            crear_outbox()
+            conexion.execute(f'''
+                INSERT INTO recordatorios_outbox (
+                    id, turno_id, turno_version, generation, tipo, programado_para,
+                    estado, intentos, idempotency_key, created_at, updated_at)
+                SELECT id, turno_id, turno_version, 1, tipo, programado_para,
+                    estado, intentos, idempotency_key, created_at, updated_at
+                FROM {legacy}
+            ''')
+            conexion.execute(f'DROP TABLE {legacy}')
+    conexion.execute('''CREATE INDEX IF NOT EXISTS
+        ix_recordatorios_outbox_estado_programacion
+        ON recordatorios_outbox(estado, programado_para)''')
 class MigracionAutenticacionError(RuntimeError):
     """Error público y genérico al preparar el almacenamiento de autenticación."""
 
@@ -534,7 +614,7 @@ def migrar_sqlite(ruta_db: str | Path) -> None:
                 conexion.execute('UPDATE auth_schema_version SET version=2')
                 tablas.add('eventos_auditoria')
                 version = (2,)
-            if version not in ((2,), (3,), (4,), (5,), (6,), (7,), (8,), (9,),
+            if version not in ((2,), (3,), (4,), (5,), (6,), (7,), (8,), (9,), (10,),
                                (VERSION_ESQUEMA_AUTENTICACION,)):
                 raise MigracionAutenticacionError('La versión de autenticación no es compatible.')
             if not {'usuarios', 'sesiones', 'eventos_auditoria'} <= tablas:
@@ -549,7 +629,7 @@ def migrar_sqlite(ruta_db: str | Path) -> None:
                 _actualizar_auditoria_catalogos(conexion)
                 conexion.execute('UPDATE auth_schema_version SET version=4')
                 version = (4,)
-            elif version in ((4,), (8,), (VERSION_ESQUEMA_AUTENTICACION,)):
+            elif version in ((4,), (8,), (10,), (VERSION_ESQUEMA_AUTENTICACION,)):
                 _migrar_catalogos(conexion)
             if version == (4,):
                 _migrar_disponibilidad(conexion)
@@ -588,8 +668,15 @@ def migrar_sqlite(ruta_db: str | Path) -> None:
                 _actualizar_auditoria_odontograma(conexion)
                 _migrar_odontograma_y_planes(conexion)
                 conexion.execute('UPDATE auth_schema_version SET version=10')
+                version = (10,)
             else:
                 _migrar_odontograma_y_planes(conexion)
+            if version == (10,):
+                _actualizar_auditoria_recordatorios(conexion)
+                _migrar_recordatorios(conexion)
+                conexion.execute('UPDATE auth_schema_version SET version=11')
+            else:
+                _migrar_recordatorios(conexion)
             if conexion.execute('PRAGMA foreign_key_check').fetchone() is not None:
                 raise MigracionAutenticacionError(
                     'La migración produciría referencias incompletas.')
@@ -636,6 +723,7 @@ def migrar_sqlite(ruta_db: str | Path) -> None:
         _migrar_version_turnos(conexion)
         _migrar_evoluciones_clinicas(conexion)
         _migrar_odontograma_y_planes(conexion)
+        _migrar_recordatorios(conexion)
         if conexion.execute('PRAGMA foreign_key_check').fetchone() is not None:
             raise MigracionAutenticacionError(
                 'La migración produciría referencias incompletas.')

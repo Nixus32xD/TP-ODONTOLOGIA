@@ -89,6 +89,56 @@ class ApiPacientesTests(unittest.TestCase):
         self.assertEqual(self.client.get('/pacientes/no-existe', headers=self.admin).status_code, 404)
         self.assertEqual(self.client.get('/pacientes?limit=101', headers=self.admin).status_code, 422)
 
+    def test_consentimiento_paciente_por_admin_y_recepcion_y_denegacion_profesional(self):
+        creada = self.client.post('/pacientes', headers=self.recepcion,
+                                  json={'nombre': 'Paciente sintético C17'})
+        self.assertEqual(creada.status_code, 201, creada.text)
+        paciente = creada.json()
+        self.assertFalse(paciente['acepta_recordatorios'])
+
+        habilitada = self.client.patch(
+            f"/pacientes/{paciente['id']}", headers=self.recepcion,
+            json={'acepta_recordatorios': True})
+        self.assertEqual(habilitada.status_code, 200, habilitada.text)
+        self.assertTrue(habilitada.json()['acepta_recordatorios'])
+        deshabilitada = self.client.patch(
+            f"/pacientes/{paciente['id']}", headers=self.admin,
+            json={'acepta_recordatorios': False})
+        self.assertEqual(deshabilitada.status_code, 200, deshabilitada.text)
+        self.assertFalse(deshabilitada.json()['acepta_recordatorios'])
+
+        crear_usuario(
+            self.engine, 'profesional.c17', 'frase-larga-profesional-2026',
+            'profesional', profesional_id='profesional-A', actor_id=None)
+        profesional = self._login('profesional.c17', 'frase-larga-profesional-2026')
+        denegada = self.client.patch(
+            f"/pacientes/{paciente['id']}", headers=profesional,
+            json={'acepta_recordatorios': True})
+        self.assertEqual(denegada.status_code, 403, denegada.text)
+        self.assertEqual(self.client.patch(
+            f"/pacientes/{paciente['id']}", headers=self.admin,
+            json={'acepta_recordatorios': 'sí'}).status_code, 422)
+        self.assertEqual(self.client.patch(
+            f"/pacientes/{paciente['id']}", headers=self.admin,
+            json={'acepta_recordatorios': True, 'canal': 'whatsapp'}).status_code, 422)
+
+        with closing(sqlite3.connect(self.ruta)) as conexion:
+            eventos = conexion.execute(
+                "SELECT action, resource_type, resource_id FROM eventos_auditoria "
+                "WHERE resource_id=? ORDER BY id", (paciente['id'],)).fetchall()
+        self.assertEqual([evento[0] for evento in eventos], [
+            'paciente.creado', 'paciente.actualizado', 'paciente.actualizado'])
+        self.assertTrue(all(evento[1:] == ('paciente', paciente['id']) for evento in eventos))
+
+    def test_openapi_publica_consentimiento_en_ficha_con_default_false(self):
+        esquema = self.client.get('/openapi.json').json()['components']['schemas']
+
+        self.assertIn('acepta_recordatorios', esquema['RespuestaPaciente']['properties'])
+        self.assertEqual(
+            esquema['SolicitudPaciente']['properties']['acepta_recordatorios']['default'], False)
+        self.assertIn(
+            'acepta_recordatorios', esquema['ActualizacionPaciente']['properties'])
+
     def test_turnos_rechaza_paciente_inactivo_y_conserva_historial(self):
         creada = self.client.post('/pacientes', headers=self.admin,
                                   json={'nombre': 'Paciente de prueba'})
