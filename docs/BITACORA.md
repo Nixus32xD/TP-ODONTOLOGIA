@@ -190,3 +190,14 @@ Se actualizan enlaces y estado técnico de C-01 en la documentación vigente; lo
 - `docker-compose.yml` con PostgreSQL 16, Redis 7, backend y frontend, puertos sólo en 127.0.0.1 y secretos en `.env` (no versionado).
 
 **Verificación en el entorno del agente:** 43 tests del dominio OK desde `backend/`; `docker compose config` válido; sintaxis de los archivos TypeScript comprobada. El entorno no tenía acceso a PyPI ni a npm, por lo que la instalación de dependencias, los 10 tests HTTP, `npm run build` y el arranque con Docker quedan para el script de comprobación en el equipo del estudiante. No se modificaron el contrato, la spec principal ni el archivo de C-01.
+
+
+## 2026-11-01 — C-02: PostgreSQL y migración explícita
+
+Se implementó C-02 dentro del change `evolucionar-esquema-y-configuracion`: persistencia PostgreSQL optativa con SQLAlchemy, versión Alembic y CLI manual para importar agendas C-01 SQLite. SQLite continúa como backend predeterminado; crear/importar la app no ejecuta DDL ni importa datos. La importación abre SQLite en sólo lectura, usa una transacción de lectura coherente, valida su esquema e integridad, rechaza solapamientos por profesional o box, exige esquema vigente y destino de agenda vacío, conserva IDs/secuencia y confirma la copia dentro de una transacción PostgreSQL. Un conflicto doble conserva prioridad profesional.
+
+La verificación completa pasó 89 tests (incluye 8 tests de integración PostgreSQL) contra un clúster temporal PostgreSQL 18.6 aislado, `127.0.0.1:55432`, base `odontologia_test`; la instancia preexistente de 5432 no se utilizó. También se ejecutaron validaciones estrictas de OpenSpec, `pip check` y `git diff --check`. La fuente de test era ficticia y temporal; no se migraron agendas del usuario ni se conectaron servicios externos. El guard de integración requiere nombre `test` o sufijo `_test`, host loopback y puerto diferente de 5432.
+
+La guía de operación y recuperación quedó en [backend/README.md](../backend/README.md); la [evidencia reproducible](evidencia/implementacion-turnos.md#c-02) registra comandos, resultados y límites. Cambiar de PostgreSQL a SQLite reabre la fuente pre-migración, no incorpora las altas hechas después en PostgreSQL: no existe doble escritura ni exportación inversa. Por eso la fuente se conserva y una vuelta de motor tras nuevas escrituras requiere una estrategia aparte.
+
+C-02 está técnicamente implementado y validado, con sus tareas completas, pero sigue activo en OpenSpec y pendiente de Archive. No se hizo commit ni push. C-03 a C-20 permanecen planificados. No se modificaron `docs/discovery/informe-discovery.md` ni su PDF.

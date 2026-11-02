@@ -144,3 +144,40 @@ Este cierre no crea ni implementa C-02 a C-20, no cambia código o tests y no ac
 ## 2026-10-29 — Reubicación en backend/ por la estructura de la cátedra
 
 El código y las pruebas de C-01 se movieron sin modificaciones a `backend/odontologia/` y `backend/tests/` (con `git mv`), junto con los archivos `requirements*.txt`. Los comandos de esta evidencia se ejecutan ahora desde `backend/`. Comprobación tras el movimiento, en Linux con Python 3.12: `python -m unittest tests.test_agenda tests.test_concurrencia tests.test_demo` → **43 tests OK** (incluye los 14 procesos spawn). Los 10 tests HTTP requieren FastAPI instalado y se verifican en el equipo Windows con el script de comprobación; el resultado se registra en la bitácora.
+
+
+## C-02
+
+### PostgreSQL optativo y migración de agenda
+
+### Alcance verificado
+
+- SQLite conserva el default y el contrato C-01. PostgreSQL sólo se selecciona con `ODONTOLOGIA_PERSISTENCIA=postgresql` y `DATABASE_URL`; crear la app no abre conexión ni aplica cambios de esquema.
+- Alembic versiona el esquema PostgreSQL. `python -m alembic upgrade head` es explícito y repetible.
+- `python -m odontologia.db.migrar_sqlite` lee la agenda indicada por `ODONTOLOGIA_DB` y requiere una revisión Alembic vigente y tablas de negocio vacías en destino. La fuente se abre de sólo lectura y se conserva.
+- El lector inicia una transacción de lectura antes de las consultas, valida integridad, claves foráneas, estructura y referencias; rechaza solapamientos previos por profesional o box y permite adyacencia `[inicio, fin)`. Si coinciden ambos conflictos, prioriza profesional.
+- La importación conserva catálogos, turnos, IDs y secuencia dentro de una única transacción PostgreSQL. Los errores intermedios revierten todos los datos insertados.
+- PostgreSQL valida referencias y serializa altas mediante una fila mutex transaccional; errores de timeout se mapean al contrato público de C-01.
+
+### Verificación realizada
+
+Comandos ejecutados desde `backend/` con el entorno `.venv` del repositorio:
+
+```powershell
+..\.venv\Scripts\python.exe -m unittest discover -s tests -v
+..\.venv\Scripts\python.exe -m pip check
+openspec validate --all --strict
+git diff --check
+```
+
+La suite completa pasó **89 tests**, incluidos **8 tests de integración PostgreSQL**, sobre una instancia temporal PostgreSQL **18.6**, bind `127.0.0.1`, puerto `55432`, base `odontologia_test`. Se verificaron upgrade inicial/repetido, preservación de IDs y secuencia, API, concurrencia multiproceso por profesional y box, timeout, rollback y rechazo de revisión desconocida. La validación OpenSpec estricta, `pip check` y `git diff --check` también pasaron. Starlette/HTTPX todavía emite un aviso de deprecación; no afecta el resultado.
+
+Los casos de seguridad del test runner aceptan solamente DB llamada `test` o con sufijo `_test`, host loopback y puerto distinto de 5432; se rechazaron nombres parecidos (`contest`, `odontologia_test_backup`), host externo, puerto 5432 y puerto implícito. No se conectó a la instancia preexistente de 5432. El clúster temporal se detuvo por su PGDATA exacto; `pg_ctl status` confirmó `no server running` y el puerto 55432 quedó sin listener. La herramienta rechazó la eliminación recursiva del directorio temporal, por lo que el PGDATA detenido queda pendiente de limpieza; no se intentó otro método.
+
+### Límites y recuperación
+
+La verificación usó exclusivamente filas ficticias temporales; no se migró la base del usuario ni se conectaron servicios externos. El cluster de prueba fue PostgreSQL 18.6 local; no es validación del servicio PostgreSQL 16 de Docker Compose ni de un entorno productivo.
+
+La migración es una copia unidireccional: la agenda SQLite original queda preservada y puede seleccionarse de nuevo antes de que PostgreSQL reciba nuevas escrituras. Si ya se confirmaron altas sólo en PostgreSQL, volver a la SQLite original deja esas altas fuera; el proyecto no implementa doble escritura, exportación inversa ni reconciliación. Hacer respaldo del destino y acordar una migración de retorno antes de cambiar el backend después de operar. No se modificó el default SQLite.
+
+C-02 está implementado y sus tareas técnicas están completas; el change sigue activo en OpenSpec, pendiente de Archive. No se hizo commit ni push y no se editó Discovery.

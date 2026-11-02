@@ -1,6 +1,6 @@
 """Adaptador HTTP local de C-01; el dominio conserva reglas y transacciones."""
+from contextlib import asynccontextmanager
 from datetime import datetime
-import os
 from pathlib import Path
 
 from fastapi import FastAPI, Request
@@ -9,6 +9,7 @@ from fastapi.responses import JSONResponse
 from pydantic import BaseModel, ConfigDict, Field, StrictStr, field_validator
 
 from odontologia import ErrorAgenda, Turno, crear_turno
+from odontologia.core.config import cargar_configuracion
 
 
 class SolicitudTurno(BaseModel):
@@ -40,9 +41,30 @@ ESTADOS_ERROR = {'entrada_invalida': 422, 'recurso_desconocido': 404,
 
 
 def crear_app(ruta_db: str | Path | None = None, *, timeout_segundos: float = 5.0) -> FastAPI:
-    """No crea DB ni abre conexiones; inicializar_agenda es un paso explícito."""
-    ruta = ruta_db if ruta_db is not None else os.environ.get('ODONTOLOGIA_DB', 'agenda.sqlite3')
-    app = FastAPI(title='Agenda odontológica — C-01', version='1.0.0')
+    """Crear la API sin abrir conexiones; SQLite sigue siendo el valor predeterminado."""
+    engine = None
+    if ruta_db is not None:
+        persistencia = 'sqlite'
+        ruta = ruta_db
+    else:
+        configuracion = cargar_configuracion()
+        persistencia = configuracion.persistencia
+        ruta = configuracion.odontologia_db
+        if persistencia == 'postgresql':
+            from odontologia.db.postgresql import crear_engine
+
+            engine = crear_engine(configuracion.database_url)
+
+    @asynccontextmanager
+    async def lifespan(_app):
+        try:
+            yield
+        finally:
+            if engine is not None:
+                engine.dispose()
+
+    app = FastAPI(title='Agenda odontológica — C-01', version='1.0.0', lifespan=lifespan)
+    app.state.persistencia = persistencia
 
     @app.exception_handler(ErrorAgenda)
     async def error_dominio(request: Request, exc: ErrorAgenda):
@@ -60,6 +82,11 @@ def crear_app(ruta_db: str | Path | None = None, *, timeout_segundos: float = 5.
     @app.post('/turnos', status_code=201, response_model=Turno,
               responses={estado: {'model': ErrorHTTP} for estado in set(ESTADOS_ERROR.values())})
     def alta(solicitud: SolicitudTurno):
+        if engine is not None:
+            from odontologia.db.postgresql import crear_turno_postgresql
+
+            return crear_turno_postgresql(
+                engine, **solicitud.model_dump(), timeout_segundos=timeout_segundos)
         return crear_turno(ruta, **solicitud.model_dump(), timeout_segundos=timeout_segundos)
 
     @app.get('/health')

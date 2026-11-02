@@ -36,6 +36,18 @@ class Turno:
     fin: datetime
 
 
+@dataclass(frozen=True)
+class SolicitudTurnoValidada:
+    paciente_id: str
+    profesional_id: str
+    box_id: str
+    inicio: datetime
+    fin: datetime
+    inicio_minuto: int
+    fin_minuto: int
+    timeout_segundos: float
+
+
 def _minutos(fecha: datetime) -> int:
     delta = fecha - datetime(1970, 1, 1, tzinfo=timezone.utc)
     return delta.days * 1440 + delta.seconds // 60
@@ -53,6 +65,40 @@ def _fecha_utc(fecha: datetime, campo: str) -> datetime:
         return normalizada
     except (TypeError, ValueError, OverflowError) as exc:
         raise ErrorAgenda('entrada_invalida', campo) from exc
+
+
+def validar_solicitud_turno(*, paciente_id: str, profesional_id: str, box_id: str,
+                            inicio: datetime, fin: datetime,
+                            timeout_segundos: float = 5.0) -> SolicitudTurnoValidada:
+    """Validar y normalizar campos compartidos por los adapters de agenda."""
+    recursos = [('paciente', paciente_id), ('profesional', profesional_id), ('box', box_id)]
+    for campo, identificador in recursos:
+        if (not isinstance(identificador, str) or not identificador
+                or len(identificador) > 64 or identificador.strip() != identificador):
+            raise ErrorAgenda('entrada_invalida', campo)
+
+    inicio_utc = _fecha_utc(inicio, 'inicio')
+    fin_utc = _fecha_utc(fin, 'fin')
+    if inicio_utc >= fin_utc:
+        raise ErrorAgenda('entrada_invalida', 'intervalo')
+    try:
+        valido = (type(timeout_segundos) in (int, float)
+                  and math.isfinite(timeout_segundos) and timeout_segundos > 0)
+    except OverflowError:
+        valido = False
+    if not valido:
+        raise ErrorAgenda('entrada_invalida', 'timeout')
+
+    return SolicitudTurnoValidada(
+        paciente_id=paciente_id,
+        profesional_id=profesional_id,
+        box_id=box_id,
+        inicio=inicio_utc,
+        fin=fin_utc,
+        inicio_minuto=_minutos(inicio_utc),
+        fin_minuto=_minutos(fin_utc),
+        timeout_segundos=float(timeout_segundos),
+    )
 
 
 def _cerrar(conexion: sqlite3.Connection | None) -> None:
@@ -113,24 +159,14 @@ def crear_turno(ruta_db: str | Path, *, paciente_id: str, profesional_id: str,
                 box_id: str, inicio: datetime, fin: datetime,
                 timeout_segundos: float = 5.0) -> Turno:
     """Registrar una ocupación ficticia en una agenda local existente."""
+    solicitud = validar_solicitud_turno(
+        paciente_id=paciente_id, profesional_id=profesional_id, box_id=box_id,
+        inicio=inicio, fin=fin, timeout_segundos=timeout_segundos,
+    )
     recursos = [('paciente', paciente_id, 'pacientes'),
                 ('profesional', profesional_id, 'profesionales'), ('box', box_id, 'boxes')]
-    for campo, identificador, _ in recursos:
-        if (not isinstance(identificador, str) or not identificador
-                or len(identificador) > 64 or identificador.strip() != identificador):
-            raise ErrorAgenda('entrada_invalida', campo)
-    inicio_utc = _fecha_utc(inicio, 'inicio')
-    fin_utc = _fecha_utc(fin, 'fin')
-    if inicio_utc >= fin_utc:
-        raise ErrorAgenda('entrada_invalida', 'intervalo')
-    try:
-        valido = (type(timeout_segundos) in (int, float)
-                  and math.isfinite(timeout_segundos) and timeout_segundos > 0)
-    except OverflowError:
-        valido = False
-    if not valido:
-        raise ErrorAgenda('entrada_invalida', 'timeout')
-    inicio_minuto, fin_minuto = _minutos(inicio_utc), _minutos(fin_utc)
+    inicio_utc, fin_utc = solicitud.inicio, solicitud.fin
+    inicio_minuto, fin_minuto = solicitud.inicio_minuto, solicitud.fin_minuto
     conexion = None
     try:
         conexion = sqlite3.connect(Path(ruta_db).resolve().as_uri() + '?mode=rw',

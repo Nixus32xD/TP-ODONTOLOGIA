@@ -1,7 +1,7 @@
 # CHANGES — Secuencia de Implementación
 
-> Índice canónico del proyecto **TP-ODONTOLOGIA**, actualizado el 2026-10-29 (stack de la cátedra).
-> **Plan del producto completo; implementación actual limitada a C-01.** C-02 a C-20 son changes futuros propuestos, no funcionalidades entregadas ni autorizaciones para ejecutarlas.
+> Índice canónico del proyecto **TP-ODONTOLOGIA**, actualizado el 2026-11-01.
+> **Plan del producto completo; C-01 está archivado y C-02 implementado/validado localmente, con Archive pendiente. C-03 a C-20 son propuestas futuras, no funcionalidades entregadas ni autorizaciones para ejecutarlas.**
 > **Leer este archivo antes de ejecutar cualquier `/opsx:propose`.**
 
 ---
@@ -18,22 +18,22 @@
 
 La aclaración del usuario del 2026-10-28 corrige el índice anterior: **hacer sólo C-01 ahora no significa planificar sólo C-01**. El producto futuro es un sistema para un consultorio odontológico pequeño, con recepción, profesionales y boxes: agenda operativa, catálogos, acceso seguro, interfaz de recepción, recuperación de datos y, después, módulos clínicos, comunicación con pacientes y administración.
 
-- **Entrega actual:** C-01 `crear-turno-sin-solapamientos`, con 18/18 tareas completas y Archive confirmado el 2026-10-28; la spec principal es [alta-turnos](openspec/specs/alta-turnos/spec.md). No se cambia su nombre, su spec, su código ni su contrato.
-- **MVP operativo futuro:** C-02 a C-14 completan una agenda de recepción administrable y un despliegue controlado. La seguridad, la auditoría y la restauración deben verificarse antes de habilitar datos reales.
+- **Entrega académica archivada:** C-01 `crear-turno-sin-solapamientos`, con 18/18 tareas completas y Archive confirmado el 2026-10-28; la spec principal es [alta-turnos](openspec/specs/alta-turnos/spec.md). No se cambia su nombre, su spec, su código ni su contrato. El trabajo técnico actual añade C-02, todavía activo hasta Archive.
+- **MVP operativo futuro:** C-03 a C-14 completan una agenda de recepción administrable y un despliegue controlado. C-02 ya aporta el backend PostgreSQL optativo; la seguridad, la auditoría y la restauración deben verificarse antes de habilitar datos reales.
 - **Evolución del producto:** C-15 a C-20 agregan clínica, odontograma/plan de tratamiento, recordatorios, reserva del paciente, cobros y reportes. Se proponen para mostrar el alcance completo; su implementación requiere priorización y contratos propios.
 - **Opciones no comprometidas:** multisede/SaaS multitenant, IA, obras sociales y facturación electrónica ARCA no se vuelven obligatorias por aparecer en productos comparados. Si se eligen, se agregarán changes posteriores con investigación y aprobación específicas. C-19 no incluye emisión fiscal ni conexión con pagos reales.
 
-La KB y las instrucciones existentes documentan principalmente la porción académica C-01. Sus exclusiones siguen vigentes para esa implementación; las capacidades futuras de este roadmap son propuestas nuevas de planificación, no ampliaciones retroactivas de las US-001 a US-004. Para C-02+ faltan criterios específicos que se deben desarrollar en la KB y Propose del change correspondiente. Hasta una autorización posterior se mantienen datos ficticios y ninguna integración externa real.
+La KB y las instrucciones existentes documentan principalmente la porción académica C-01. Sus exclusiones siguen vigentes para esa implementación; las capacidades futuras del roadmap no amplían retroactivamente las US-001 a US-004. C-02 concreta la migración a PostgreSQL conservando la fuente SQLite, con un destino de pruebas aislado. Para C-03+ faltan criterios específicos que se deben desarrollar en la KB y Propose del change correspondiente. Se mantienen datos ficticios y ninguna integración externa real.
 
-**Stack definido por la cátedra (2026-10-29):** backend con Python, FastAPI, JWT, SQLAlchemy, PostgreSQL, Redis y Docker/Docker Compose; frontend con React, TypeScript y Vite, en carpetas `backend/` y `frontend/` ([DD-09](knowledge-base/09_decisiones_y_supuestos.md)). Cada tecnología se adopta en el change que la necesita: PostgreSQL + SQLAlchemy en C-02, JWT en C-03, React/TS/Vite en C-11, Docker Compose de despliegue en C-14 y Redis (cola de recordatorios) en C-17. Ya existen las carpetas, dependencias y servicios preparados; eso no acredita su implementación.
+**Stack definido por la cátedra (2026-10-29):** backend con Python, FastAPI, JWT, SQLAlchemy, PostgreSQL, Redis y Docker/Docker Compose; frontend con React, TypeScript y Vite ([DD-09](knowledge-base/09_decisiones_y_supuestos.md)). C-02 ya implementa PostgreSQL + SQLAlchemy; JWT sigue en C-03, React/TS/Vite en C-11, Docker Compose de despliegue en C-14 y Redis (cola de recordatorios) en C-17. La existencia de carpetas y servicios no acredita la implementación de esos changes.
 
 **Base técnica de C-01:** Python/FastAPI y SQLite local, movidos sin cambios a `backend/`. Bootstrap y modelos mínimos ya pertenecen a C-01; no se renumera como `foundation-setup`. Hosting y proveedores siguen siendo decisiones futuras justificadas. El contrato actual se consulta en [design.md](openspec/changes/archive/2026-10-28-crear-turno-sin-solapamientos/design.md), [spec.md](openspec/changes/archive/2026-10-28-crear-turno-sin-solapamientos/specs/alta-turnos/spec.md) y [api.py](backend/odontologia/api.py).
 
 ### Decisiones que habilita la planificación
 
-| Decisión pendiente | Change que debe resolverla | Condición previa a su implementación |
+| Decisión / capacidad | Change que la resuelve | Estado o condición |
 | --- | --- | --- |
-| Versionado de esquema y migración a PostgreSQL con SQLAlchemy (stack de la cátedra) | C-02 | Migración reversible desde las agendas SQLite de C-01, prueba con copia ficticia y la misma exclusión concurrente demostrada en PostgreSQL |
+| Versionado de esquema y migración a PostgreSQL con SQLAlchemy (stack de la cátedra) | C-02 | Implementado y validado con PostgreSQL aislado; copia unidireccional, fuente SQLite preservada. Archive pendiente. |
 | Identidades, permisos, sesiones y auditoría | C-03/C-04 | Matriz de acceso y eventos revisados; aprobación humana antes de código de seguridad |
 | Datos mínimos, prestaciones y disponibilidad | C-05/C-06/C-07 | Campos, bajas y excepciones definidos sin perder referencias históricas |
 | Estados, cancelación y reprogramación | C-09/C-10 | Transiciones y concurrencia especificadas; exclusión del paciente explícitamente decidida |
@@ -46,7 +46,7 @@ La KB y las instrucciones existentes documentan principalmente la porción acad�
 
 ```text
 C-01 crear-turno-sin-solapamientos (implementado y archivado)
-└── C-02 evolucionar-esquema-y-configuracion
+└── C-02 evolucionar-esquema-y-configuracion (implementado; Archive pendiente)
     └── C-03 autenticar-y-autorizar-personal
         └── C-04 registrar-auditoria-de-operaciones
             ├── C-05 administrar-pacientes
@@ -71,15 +71,15 @@ C-11 + C-12
         └── C-20 consultar-reportes-operativos (también C-08, C-09)
 ```
 
-Los números son identificadores estables agrupados por capacidad, no un orden de ejecución por sí solos: C-09 precede a C-08 porque una consulta operativa debe conocer qué estados ocupan recursos. Las dependencias declaradas en cada ficha son el contrato del grafo. C-01 ya fue verificado y archivado el 2026-10-28. C-02 es el siguiente change planificado; su Propose y su implementación requieren autorización posterior.
+Los números son identificadores estables agrupados por capacidad, no un orden de ejecución por sí solos: C-09 precede a C-08 porque una consulta operativa debe conocer qué estados ocupan recursos. C-01 está archivado desde el 2026-10-28. C-02 está implementado localmente y validado; su change sigue activo hasta el Archive. C-03 es el siguiente cambio planificado.
 
 ### Paralelismo por fase
 
-Los GATES expresan dependencias del plan futuro; sólo C-01 está actualmente completado y archivado. El símbolo `✓` significa «una vez verificado y cerrado». No imponen fases rígidas a OPSX.
+Los GATES expresan dependencias del plan futuro. C-01 está archivado; C-02 ya está implementado pero sigue activo hasta Archive. El símbolo `✓` significa «una vez verificado y cerrado». No imponen fases rígidas a OPSX.
 
 ```text
-GATE 0: C-01 ✓
-  → C-02 → C-03 → C-04               [Agente A — secuencia de fundamento]
+GATE 0: C-01 ✓ → C-02 (implementado; Archive pendiente)
+  → C-03 → C-04                    [Agente A — secuencia de fundamento]
 
 GATE 1: C-04 ✓                       ← FORK
   → C-05 pacientes                   [Agente A]
@@ -128,7 +128,7 @@ Secuencia compatible con dependencias, sin prometer una optimización temporal n
 | Paso | Agente A (Backend Core) | Agente B (Backend Aux) | Agente C (Frontend) |
 | --- | --- | --- | --- |
 | 0 | C-01 cerrado el 2026-10-28 | — | — |
-| 1 | C-02 | — | — |
+| 1 | C-02 implementado; Archive pendiente | — | — |
 | 2 | C-03 | — | — |
 | 3 | C-04 | — | — |
 | 4 | C-05 | C-06 | C-12 (apoyo operativo) |
@@ -163,16 +163,16 @@ Secuencia compatible con dependencias, sin prometer una optimización temporal n
 
 ## FASE 2 — Fundamento evolutivo, acceso y trazabilidad
 
-> Todas las fichas C-02 a C-20 están pendientes de Propose y de autorización de implementación. Endpoints, entidades y pruebas enumerados son objetivos propuestos, no contratos HTTP vigentes. Los niveles ALTO/CRITICO exigen revisión humana antes de escribir código del dominio afectado.
+> C-03 a C-20 están pendientes de Propose y autorización de implementación. C-02 cuenta con artefactos OpenSpec activos y una implementación validada, pero aún no archivada. En las fichas futuras, endpoints, entidades y pruebas son objetivos propuestos, no contratos HTTP vigentes. Los niveles ALTO/CRITICO exigen revisión humana antes de escribir código del dominio afectado.
 
 ### [C-02] `evolucionar-esquema-y-configuracion`
 
-- **Estado**: `[ ]` planificado; sin change creado en OpenSpec.
+- **Estado**: implementación completada y validada localmente; change OpenSpec activo, Archive pendiente. La evidencia está en [implementacion-turnos.md#c-02](docs/evidencia/implementacion-turnos.md#c-02).
 - **Scope**:
   - Añadir registro de versión de esquema y migraciones incrementales sobre copia ficticia; conservar IDs y turnos de C-01, sin bootstrap destructivo ni inicialización automática al importar.
-  - Separar configuración de entorno de datos y documentar restauración/reversión de una migración fallida. Migrar a PostgreSQL con SQLAlchemy (stack de la cátedra, servicio `db` de Docker Compose); la nueva persistencia debe probar la misma exclusión concurrente de C-01 antes de reemplazar SQLite.
+  - Separar configuración de entorno de datos y documentar recuperación ante una migración fallida. Importar a PostgreSQL con SQLAlchemy (stack de la cátedra, servicio `db` de Docker Compose) sin borrar la fuente; la copia es unidireccional y no sincroniza escrituras posteriores de PostgreSQL hacia SQLite.
   - Tests: agenda existente preservada, aplicación de migración una sola vez, fallo intermedio sin pérdida y rechazo de versión incompatible; mantener suite de regresión de C-01.
-- **Dependencias**: C-01.
+- **Dependencias**: C-01 (archivado).
 - **Governance**: ALTO — configuración y evolución de datos existentes.
 - **Leer antes**:
   - [02_descripcion_general.md](knowledge-base/02_descripcion_general.md) §Stack tecnológico.
