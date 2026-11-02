@@ -19,6 +19,7 @@ from odontologia.auth.usuarios import (
     ErrorUsuarios, actualizar_usuario, crear_usuario, listar_usuarios,
 )
 from odontologia.audit import listar_eventos
+from odontologia.pacientes import ErrorPacientes, actualizar_paciente, crear_paciente, listar_pacientes, obtener_paciente
 
 
 class SolicitudTurno(BaseModel):
@@ -69,7 +70,34 @@ class ActualizacionUsuario(BaseModel):
     activo: StrictBool | None = None
 
 
+class SolicitudPaciente(BaseModel):
+    model_config = ConfigDict(extra='forbid')
+    nombre: StrictStr
+    telefono: StrictStr | None = None
+
+
+class ActualizacionPaciente(BaseModel):
+    model_config = ConfigDict(extra='forbid')
+    nombre: StrictStr | None = None
+    telefono: StrictStr | None = None
+    activo: StrictBool | None = None
+
+
+class RespuestaPaciente(BaseModel):
+    id: StrictStr
+    nombre: StrictStr
+    telefono: StrictStr | None
+    activo: StrictBool
+
+
+class RespuestaListaPacientes(BaseModel):
+    items: list[RespuestaPaciente]
+    limit: int
+    offset: int
+
+
 ESTADOS_ERROR = {'entrada_invalida': 422, 'recurso_desconocido': 404,
+                 'recurso_inactivo': 409,
                  'conflicto_profesional': 409, 'conflicto_box': 409,
                  'agenda_ocupada': 503, 'almacenamiento_error': 500}
 
@@ -131,6 +159,11 @@ def crear_app(ruta_db: str | Path | None = None, *, timeout_segundos: float = 5.
         return JSONResponse(status_code=exc.estado, content={
             'codigo': exc.codigo, 'campo': None, 'mensaje': str(exc)})
 
+    @app.exception_handler(ErrorPacientes)
+    async def error_paciente(request: Request, exc: ErrorPacientes):
+        return JSONResponse(status_code=exc.estado, content={
+            'codigo': exc.codigo, 'campo': None, 'mensaje': str(exc)})
+
     def verificar_configuracion():
         try:
             return validar_secreto_jwt(secreto_jwt, algoritmo_jwt)
@@ -155,6 +188,11 @@ def crear_app(ruta_db: str | Path | None = None, *, timeout_segundos: float = 5.
 
     def administrador(identidad=Depends(identidad_actual)):
         if identidad['rol'] != 'administrador':
+            raise ErrorSesiones('permiso_denegado', 'No tiene permiso para esta operación.', 403)
+        return identidad
+
+    def personal_operativo(identidad=Depends(identidad_actual)):
+        if identidad['rol'] not in {'administrador', 'recepcion'}:
             raise ErrorSesiones('permiso_denegado', 'No tiene permiso para esta operación.', 403)
         return identidad
 
@@ -231,6 +269,64 @@ def crear_app(ruta_db: str | Path | None = None, *, timeout_segundos: float = 5.
         return actualizar_usuario(
             auth_engine, usuario_id, rol=solicitud.rol, activo=solicitud.activo,
             actor_id=_identidad['usuario_id'])
+
+    @app.get('/pacientes', response_model=RespuestaListaPacientes, responses={
+        401: respuestas_auth[401], 403: respuestas_auth[403],
+        422: {'model': ErrorHTTP}, 503: respuestas_auth[503],
+    })
+    def consulta_pacientes(
+            limit: int = Query(default=50, ge=1, le=100),
+            offset: int = Query(default=0, ge=0),
+            _identidad=Depends(personal_operativo)):
+        asegurar_esquema()
+        return {
+            'items': listar_pacientes(auth_engine, limit=limit, offset=offset),
+            'limit': limit,
+            'offset': offset,
+        }
+
+    @app.post('/pacientes', status_code=201, response_model=RespuestaPaciente, responses={
+        401: respuestas_auth[401], 403: respuestas_auth[403],
+        422: {'model': ErrorHTTP}, 503: respuestas_auth[503],
+    })
+    def alta_paciente(solicitud: SolicitudPaciente,
+                      _identidad=Depends(personal_operativo)):
+        asegurar_esquema()
+        return crear_paciente(
+            auth_engine, solicitud.nombre, solicitud.telefono,
+            actor_id=_identidad['usuario_id'])
+
+    @app.get('/pacientes/{paciente_id}', response_model=RespuestaPaciente, responses={
+        401: respuestas_auth[401], 403: respuestas_auth[403],
+        404: {'model': ErrorHTTP}, 422: {'model': ErrorHTTP}, 503: respuestas_auth[503],
+    })
+    def ficha_paciente(paciente_id: str, _identidad=Depends(personal_operativo)):
+        asegurar_esquema()
+        return obtener_paciente(auth_engine, paciente_id)
+
+    @app.patch('/pacientes/{paciente_id}', response_model=RespuestaPaciente, responses={
+        401: respuestas_auth[401], 403: respuestas_auth[403], 404: {'model': ErrorHTTP},
+        422: {'model': ErrorHTTP}, 503: respuestas_auth[503],
+    })
+    def modificar_paciente(paciente_id: str, solicitud: ActualizacionPaciente,
+                            _identidad=Depends(personal_operativo)):
+        asegurar_esquema()
+        cambios = solicitud.model_dump(exclude_unset=True)
+        if not cambios:
+            raise ErrorPacientes('entrada_invalida', 'Debe indicar al menos un cambio.', 422)
+        if 'activo' in cambios and _identidad['rol'] != 'administrador':
+            raise ErrorSesiones('permiso_denegado', 'Sólo Administrador puede cambiar el estado.', 403)
+        return actualizar_paciente(
+            auth_engine, paciente_id, cambios, actor_id=_identidad['usuario_id'])
+
+    @app.delete('/pacientes/{paciente_id}', response_model=RespuestaPaciente, responses={
+        401: respuestas_auth[401], 403: respuestas_auth[403],
+        404: {'model': ErrorHTTP}, 422: {'model': ErrorHTTP}, 503: respuestas_auth[503],
+    })
+    def desactivar_paciente(paciente_id: str, _identidad=Depends(administrador)):
+        asegurar_esquema()
+        return actualizar_paciente(
+            auth_engine, paciente_id, {'activo': False}, actor_id=_identidad['usuario_id'])
 
     @app.get('/auditoria', responses={
         401: respuestas_auth[401], 403: respuestas_auth[403],

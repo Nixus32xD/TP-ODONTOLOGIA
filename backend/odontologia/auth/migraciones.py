@@ -3,7 +3,7 @@ from pathlib import Path
 import sqlite3
 
 
-VERSION_ESQUEMA_AUTENTICACION = 2
+VERSION_ESQUEMA_AUTENTICACION = 3
 
 
 def _migrar_auditoria(conexion: sqlite3.Connection) -> None:
@@ -13,14 +13,20 @@ def _migrar_auditoria(conexion: sqlite3.Connection) -> None:
             created_at TEXT NOT NULL,
             actor_id TEXT REFERENCES usuarios(id) ON DELETE RESTRICT,
             action TEXT NOT NULL CHECK (action IN (
-                'turno.creado', 'cuenta.bootstrap', 'cuenta.creada',
+                'turno.creado', 'paciente.creado', 'paciente.actualizado',
+                'paciente.desactivado', 'paciente.reactivado',
+                'cuenta.bootstrap', 'cuenta.creada',
                 'cuenta.actualizada', 'sesion.iniciada', 'sesion.cerrada',
                 'sesion.rechazada')),
-            resource_type TEXT NOT NULL CHECK (resource_type IN ('turno', 'cuenta', 'sesion')),
+            resource_type TEXT NOT NULL CHECK (resource_type IN ('turno', 'paciente', 'cuenta', 'sesion')),
             resource_id TEXT,
             result TEXT NOT NULL CHECK (result IN ('confirmado', 'rechazado')),
             CHECK (
                 (action = 'turno.creado' AND resource_type = 'turno' AND result = 'confirmado') OR
+                (action = 'paciente.creado' AND resource_type = 'paciente' AND result = 'confirmado') OR
+                (action = 'paciente.actualizado' AND resource_type = 'paciente' AND result = 'confirmado') OR
+                (action = 'paciente.desactivado' AND resource_type = 'paciente' AND result = 'confirmado') OR
+                (action = 'paciente.reactivado' AND resource_type = 'paciente' AND result = 'confirmado') OR
                 (action = 'cuenta.bootstrap' AND resource_type = 'cuenta' AND result = 'confirmado') OR
                 (action = 'cuenta.creada' AND resource_type = 'cuenta' AND result = 'confirmado') OR
                 (action = 'cuenta.actualizada' AND resource_type = 'cuenta' AND result = 'confirmado') OR
@@ -28,6 +34,7 @@ def _migrar_auditoria(conexion: sqlite3.Connection) -> None:
                 (action = 'sesion.cerrada' AND resource_type = 'sesion' AND result = 'confirmado') OR
                 (action = 'sesion.rechazada' AND resource_type = 'sesion' AND result = 'rechazado')
             ),
+            CHECK (resource_type != 'sesion' OR resource_id IS NULL),
             CHECK (action != 'sesion.rechazada' OR (actor_id IS NULL AND resource_id IS NULL))
         )
     ''')
@@ -39,6 +46,51 @@ def _migrar_auditoria(conexion: sqlite3.Connection) -> None:
     conexion.execute('''CREATE TRIGGER eventos_auditoria_no_delete
         BEFORE DELETE ON eventos_auditoria BEGIN
         SELECT RAISE(ABORT, 'eventos_auditoria es append-only'); END''')
+
+
+def _migrar_fichas_pacientes(conexion: sqlite3.Connection) -> None:
+    columnas = {fila[1] for fila in conexion.execute('PRAGMA table_info(pacientes)')}
+    if columnas == {'id'}:
+        conexion.execute("ALTER TABLE pacientes ADD COLUMN nombre TEXT NOT NULL DEFAULT ''")
+        conexion.execute('ALTER TABLE pacientes ADD COLUMN telefono TEXT')
+        conexion.execute(
+            'ALTER TABLE pacientes ADD COLUMN activo INTEGER NOT NULL DEFAULT 1 CHECK (activo IN (0, 1))')
+        conexion.execute(
+            "UPDATE pacientes SET nombre='Paciente de demostración ' || id WHERE nombre='' ")
+    elif columnas != {'id', 'nombre', 'telefono', 'activo'}:
+        raise MigracionAutenticacionError('El esquema de pacientes no es compatible.')
+    conexion.execute('''CREATE TRIGGER IF NOT EXISTS pacientes_validar_insert
+        BEFORE INSERT ON pacientes BEGIN
+        SELECT CASE WHEN length(NEW.nombre) NOT BETWEEN 1 AND 120
+            THEN RAISE(ABORT, 'nombre de paciente inválido') END;
+        SELECT CASE WHEN NEW.telefono IS NOT NULL AND length(NEW.telefono) > 32
+            THEN RAISE(ABORT, 'teléfono de paciente inválido') END;
+        END''')
+    conexion.execute('''CREATE TRIGGER IF NOT EXISTS pacientes_validar_update
+        BEFORE UPDATE OF nombre, telefono ON pacientes BEGIN
+        SELECT CASE WHEN length(NEW.nombre) NOT BETWEEN 1 AND 120
+            THEN RAISE(ABORT, 'nombre de paciente inválido') END;
+        SELECT CASE WHEN NEW.telefono IS NOT NULL AND length(NEW.telefono) > 32
+            THEN RAISE(ABORT, 'teléfono de paciente inválido') END;
+        END''')
+
+
+def _actualizar_auditoria_pacientes(conexion: sqlite3.Connection) -> None:
+    triggers = {'eventos_auditoria_no_update', 'eventos_auditoria_no_delete'}
+    existentes = {fila[0] for fila in conexion.execute(
+        "SELECT name FROM sqlite_master WHERE type='trigger'")}
+    for trigger in triggers & existentes:
+        conexion.execute(f'DROP TRIGGER {trigger}')
+    conexion.execute('DROP INDEX IF EXISTS ix_eventos_auditoria_fecha_id')
+    conexion.execute('ALTER TABLE eventos_auditoria RENAME TO eventos_auditoria_v2')
+    _migrar_auditoria(conexion)
+    conexion.execute('''
+        INSERT INTO eventos_auditoria
+            (id, created_at, actor_id, action, resource_type, resource_id, result)
+        SELECT id, created_at, actor_id, action, resource_type, resource_id, result
+        FROM eventos_auditoria_v2
+    ''')
+    conexion.execute('DROP TABLE eventos_auditoria_v2')
 
 
 class MigracionAutenticacionError(RuntimeError):
@@ -81,12 +133,16 @@ def migrar_sqlite(ruta_db: str | Path) -> None:
                     raise MigracionAutenticacionError('El esquema de autenticación está incompleto.')
                 _migrar_auditoria(conexion)
                 conexion.execute('UPDATE auth_schema_version SET version=2')
-                conexion.execute('COMMIT')
-                return
-            if version != (VERSION_ESQUEMA_AUTENTICACION,):
+                tablas.add('eventos_auditoria')
+                version = (2,)
+            if version not in ((2,), (VERSION_ESQUEMA_AUTENTICACION,)):
                 raise MigracionAutenticacionError('La versión de autenticación no es compatible.')
             if not {'usuarios', 'sesiones', 'eventos_auditoria'} <= tablas:
                 raise MigracionAutenticacionError('El esquema de autenticación está incompleto.')
+            _migrar_fichas_pacientes(conexion)
+            if version == (2,):
+                _actualizar_auditoria_pacientes(conexion)
+                conexion.execute('UPDATE auth_schema_version SET version=3')
             conexion.execute('COMMIT')
             return
 
@@ -117,7 +173,8 @@ def migrar_sqlite(ruta_db: str | Path) -> None:
         ''')
         conexion.execute('CREATE INDEX ix_sesiones_usuario_id ON sesiones(usuario_id)')
         _migrar_auditoria(conexion)
-        conexion.execute('UPDATE auth_schema_version SET version=2')
+        _migrar_fichas_pacientes(conexion)
+        conexion.execute('UPDATE auth_schema_version SET version=3')
         conexion.execute('COMMIT')
     except MigracionAutenticacionError:
         if conexion.in_transaction:

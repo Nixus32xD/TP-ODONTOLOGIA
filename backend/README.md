@@ -11,7 +11,8 @@ API del sistema odontológico. Stack definido por la cátedra (corrección del 2
 | Persistencia en SQLite local (`ODONTOLOGIA_DB`) | Predeterminada y compatible con C-01 | C-01 |
 | PostgreSQL + SQLAlchemy, Alembic y migración explícita | Implementado, validado en PostgreSQL aislado y archivado | C-02 |
 | Autenticación JWT y autorización del personal | Implementado y archivado en SQLite/PostgreSQL | C-03 |
-| Auditoría append-only y `GET /auditoria` | Implementado/validado en SQLite y PostgreSQL; sólo Administrador; Archive pendiente | C-04 |
+| Auditoría append-only y `GET /auditoria` | Implementado, validado y archivado; sólo Administrador | C-04 |
+| Fichas mínimas y baja lógica de pacientes | Implementado en SQLite/PostgreSQL; Administrador y Recepción gestionan datos; sólo Admin cambia estado | C-05 |
 | Cola de recordatorios en Redis (`odontologia/workers/`) | Estructura preparada, sin implementar | C-17 |
 | Imagen Docker y servicios en Docker Compose | Preparados | C-02 / C-14 |
 
@@ -23,15 +24,16 @@ C-01 y SQLite siguen disponibles. C-02 permite elegir PostgreSQL de forma explí
 backend/
 ├── odontologia/
 │   ├── agenda.py        # Dominio de C-01: validación, transacción y alta
-│   ├── api.py           # Adaptador FastAPI de C-01/C-03/C-04
+│   ├── api.py           # Adaptador FastAPI de C-01/C-03/C-05
 │   ├── demo.py          # Demo por consola con agenda temporal
 │   ├── core/config.py   # Variables de entorno del stack
-│   ├── db/              # SQLAlchemy + PostgreSQL (C-02/C-04)
+│   ├── db/              # SQLAlchemy + PostgreSQL (C-02/C-05)
 │   ├── auth/            # JWT (C-03)
-│   ├── audit.py         # Metadatos append-only y consulta segura (C-04)
+│   ├── audit.py         # Metadatos append-only y consulta segura (C-04/C-05)
+│   ├── pacientes.py     # Fichas mínimas y baja lógica (C-05)
 │   └── workers/         # Redis: recordatorios en cola (C-17)
-├── alembic/             # Revisiones versionadas de C-02, C-03 y C-04
-├── tests/               # Regresión C-01 a C-04
+├── alembic/             # Revisiones versionadas de C-02 a C-05
+├── tests/               # Regresión C-01 a C-05
 ├── requirements.txt         # Dependencias directas de C-01
 ├── requirements-dev.txt     # + HTTPX para tests
 ├── requirements-lock.txt    # Entorno verificado de C-01
@@ -73,9 +75,11 @@ El bootstrap pide identificador y contraseña de forma interactiva y oculta; no 
 ..\.venv\Scripts\python.exe -m odontologia.auth.bootstrap_admin
 ```
 
-Alembic aplica las revisiones consecutivas de C-01 a C-04, incluida la tabla append-only de auditoría. En Docker Compose, migrar el servicio backend con `docker compose exec backend python -m alembic upgrade head` y ejecutar el bootstrap interactivo con `docker compose exec backend python -m odontologia.auth.bootstrap_admin` después de configurar `.env`. No usar la API ni `GET /health` como comando de migración.
+Alembic aplica las revisiones consecutivas de C-01 a C-05, incluida la ficha mínima y la tabla append-only de auditoría. En Docker Compose, migrar el servicio backend con `docker compose exec backend python -m alembic upgrade head` y ejecutar el bootstrap interactivo con `docker compose exec backend python -m odontologia.auth.bootstrap_admin` después de configurar `.env`. No usar la API ni `GET /health` como comando de migración.
 
-`POST /sesiones` recibe `identificador` y `password`; su respuesta contiene `access_token`, `token_type` y `expires_in`. En Swagger, usar **Authorize** con `Bearer <token>`. `/sesiones/actual` permite consultar y cerrar la sesión propia. El Administrador puede consultar/crear usuarios y cambiar rol/estado; Recepción sólo crea turnos. Desactivar una cuenta, cambiarle el rol o cerrar sesión revoca sus tokens persistidos. Los fallos de credenciales devuelven un mensaje genérico. Los eventos guardan sólo actor/acción/recurso/resultado/fecha; no incluyen cuerpos, contraseñas, hashes, JWT, datos clínicos ni el identificador de un login rechazado. `GET /auditoria?limit=50&offset=0` es sólo Administrador, admite límite 1–100 y no ofrece edición, borrado ni purga automática. Si el evento falla, la mutación se revierte y la API no informa éxito. Sin secreto o esquema migrado, las operaciones protegidas fallan cerradas con 503 mientras `/health` continúa pública.
+`POST /sesiones` recibe `identificador` y `password`; su respuesta contiene `access_token`, `token_type` y `expires_in`. En Swagger, usar **Authorize** con `Bearer <token>`. `/sesiones/actual` permite consultar y cerrar la sesión propia. El Administrador puede consultar/crear usuarios y cambiar rol/estado; Recepción puede crear turnos y operar fichas mínimas de pacientes; sólo Administrador cambia el estado activo de pacientes. Desactivar una cuenta, cambiarle el rol o cerrar sesión revoca sus tokens persistidos. Los fallos de credenciales devuelven un mensaje genérico. Las fichas contienen sólo nombre y teléfono opcional ficticios; no usar datos reales ni añadir historia clínica. Los eventos guardan sólo actor/acción/recurso/resultado/fecha; no incluyen cuerpos, nombres, teléfonos, contraseñas, hashes, JWT, datos clínicos ni el identificador de un login rechazado. `GET /auditoria?limit=50&offset=0` es sólo Administrador, admite límite 1–100 y no ofrece edición, borrado ni purga automática. Si el evento falla, la mutación se revierte y la API no informa éxito. Sin secreto o esquema migrado, las operaciones protegidas fallan cerradas con 503 mientras `/health` continúa pública.
+
+`POST /pacientes` acepta `nombre` y `telefono` opcional; `GET /pacientes?limit=50&offset=0`, `GET/PATCH /pacientes/{paciente_id}` y `DELETE /pacientes/{paciente_id}` requieren sesión de Administrador o Recepción, salvo que DELETE y el cambio de `activo` en PATCH quedan sólo para Administrador. La baja es lógica; los turnos históricos permanecen y un paciente inactivo no admite nuevas altas. Los nombres repetidos se permiten; la ficha no se deduplica automáticamente.
 
 ## Preparar PostgreSQL y migrar una agenda existente
 

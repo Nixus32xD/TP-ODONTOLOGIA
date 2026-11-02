@@ -208,7 +208,15 @@ def migrar_agenda_sqlite(engine: Engine, ruta: str | Path) -> ResumenMigracion:
                 raise ErrorMigracion('destino_no_vacio')
 
             if agenda.pacientes:
-                session.execute(insert(Paciente), [{'id': item} for item in agenda.pacientes])
+                session.execute(insert(Paciente), [
+                    {
+                        'id': item,
+                        'nombre': f'Paciente de demostración {item}',
+                        'telefono': None,
+                        'activo': True,
+                    }
+                    for item in agenda.pacientes
+                ])
             if agenda.profesionales:
                 session.execute(insert(Profesional), [{'id': item} for item in agenda.profesionales])
             if agenda.boxes:

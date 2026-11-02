@@ -12,8 +12,15 @@ class Base(DeclarativeBase):
 
 class Paciente(Base):
     __tablename__ = 'pacientes'
+    __table_args__ = (
+        CheckConstraint('length(nombre) BETWEEN 1 AND 120', name='ck_pacientes_nombre'),
+        CheckConstraint('activo IN (true, false)', name='ck_pacientes_activo'),
+    )
 
     id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    nombre: Mapped[str] = mapped_column(String(120), nullable=False)
+    telefono: Mapped[str | None] = mapped_column(String(32), nullable=True)
+    activo: Mapped[bool] = mapped_column(default=True, nullable=False)
 
 
 class Profesional(Base):
@@ -85,17 +92,22 @@ class EventoAuditoria(Base):
     __tablename__ = 'eventos_auditoria'
     __table_args__ = (
         CheckConstraint(
-            "action IN ('turno.creado', 'cuenta.bootstrap', 'cuenta.creada', "
+            "action IN ('turno.creado', 'paciente.creado', 'paciente.actualizado', "
+            "'paciente.desactivado', 'paciente.reactivado', 'cuenta.bootstrap', 'cuenta.creada', "
             "'cuenta.actualizada', 'sesion.iniciada', 'sesion.cerrada', 'sesion.rechazada')",
             name='ck_eventos_auditoria_action'),
         CheckConstraint(
-            "resource_type IN ('turno', 'cuenta', 'sesion')",
+            "resource_type IN ('turno', 'paciente', 'cuenta', 'sesion')",
             name='ck_eventos_auditoria_resource_type'),
         CheckConstraint(
             "result IN ('confirmado', 'rechazado')",
             name='ck_eventos_auditoria_result'),
         CheckConstraint(
             "(action = 'turno.creado' AND resource_type = 'turno' AND result = 'confirmado') OR "
+            "(action = 'paciente.creado' AND resource_type = 'paciente' AND result = 'confirmado') OR "
+            "(action = 'paciente.actualizado' AND resource_type = 'paciente' AND result = 'confirmado') OR "
+            "(action = 'paciente.desactivado' AND resource_type = 'paciente' AND result = 'confirmado') OR "
+            "(action = 'paciente.reactivado' AND resource_type = 'paciente' AND result = 'confirmado') OR "
             "(action = 'cuenta.bootstrap' AND resource_type = 'cuenta' AND result = 'confirmado') OR "
             "(action = 'cuenta.creada' AND resource_type = 'cuenta' AND result = 'confirmado') OR "
             "(action = 'cuenta.actualizada' AND resource_type = 'cuenta' AND result = 'confirmado') OR "

@@ -48,11 +48,11 @@ def validar_esquema_autenticacion(engine, persistencia: str,
             raise RuntimeError('Ruta SQLite requerida.')
         validar_ruta_sqlite_existente(ruta_sqlite)
         consulta = text('SELECT version FROM auth_schema_version')
-        version_esperada = 2
+        version_esperada = 3
         validar_version = lambda version: version == version_esperada
     elif persistencia == 'postgresql':
         consulta = text('SELECT version_num FROM alembic_version')
-        version_esperada = '20261101_0003_audit'
+        version_esperada = '20261102_0004_patient_management'
         validar_version = lambda version: version == version_esperada
     else:
         raise RuntimeError('Backend de autenticación desconocido.')

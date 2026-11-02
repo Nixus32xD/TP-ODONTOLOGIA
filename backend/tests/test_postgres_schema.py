@@ -1,9 +1,11 @@
+import importlib.util
+from pathlib import Path
 import unittest
 
 from sqlalchemy import select
 from sqlalchemy.dialects import postgresql
 
-from odontologia.db.models import AgendaMutex, Base, EventoAuditoria, Turno
+from odontologia.db.models import AgendaMutex, Base, EventoAuditoria, Paciente, Turno
 
 
 class EsquemaPostgreSQLTests(unittest.TestCase):
@@ -41,6 +43,18 @@ class EsquemaPostgreSQLTests(unittest.TestCase):
 
         self.assertIn('FOR UPDATE', sql)
         self.assertIn('agenda_mutex', sql)
+
+    def test_paciente_tiene_campos_minimos_y_migracion_postgres_encadenada(self):
+        self.assertTrue({'id', 'nombre', 'telefono', 'activo'} <= set(Paciente.__table__.columns.keys()))
+        self.assertFalse(Paciente.__table__.c.nombre.nullable)
+        self.assertFalse(Paciente.__table__.c.activo.nullable)
+
+        ruta = Path(__file__).parents[1] / 'alembic' / 'versions' / '20261102_0004_patient_management.py'
+        spec = importlib.util.spec_from_file_location('revision_patients', ruta)
+        modulo = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(modulo)
+        self.assertEqual(modulo.revision, '20261102_0004_patient_management')
+        self.assertEqual(modulo.down_revision, '20261101_0003_audit')
 
 
 if __name__ == '__main__':

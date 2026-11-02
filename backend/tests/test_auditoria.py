@@ -33,7 +33,7 @@ class AuditoriaEsquemaSQLiteTests(unittest.TestCase):
             self.assertEqual(columnas, {
                 'id', 'created_at', 'actor_id', 'action', 'resource_type', 'resource_id', 'result'})
             self.assertEqual(
-                conexion.execute('SELECT version FROM auth_schema_version').fetchone(), (2,))
+                conexion.execute('SELECT version FROM auth_schema_version').fetchone(), (3,))
 
     def test_auditoria_no_guarda_payload_ni_identificador_intentado(self):
         from odontologia.audit import registrar_evento_sqlite
@@ -65,6 +65,10 @@ class AuditoriaEsquemaSQLiteTests(unittest.TestCase):
 
         eventos_validos = (
             ('turno.creado', 'turno', 'confirmado'),
+            ('paciente.creado', 'paciente', 'confirmado'),
+            ('paciente.actualizado', 'paciente', 'confirmado'),
+            ('paciente.desactivado', 'paciente', 'confirmado'),
+            ('paciente.reactivado', 'paciente', 'confirmado'),
             ('cuenta.bootstrap', 'cuenta', 'confirmado'),
             ('cuenta.creada', 'cuenta', 'confirmado'),
             ('cuenta.actualizada', 'cuenta', 'confirmado'),
@@ -102,6 +106,7 @@ class AuditoriaEsquemaSQLiteTests(unittest.TestCase):
     def test_ddl_sqlite_rechaza_combinaciones_no_permitidas(self):
         combinaciones_invalidas = (
             ('turno.creado', 'cuenta', 'rechazado'),
+            ('paciente.creado', 'cuenta', 'confirmado'),
             ('cuenta.creada', 'cuenta', 'rechazado'),
             ('sesion.iniciada', 'turno', 'confirmado'),
         )
@@ -148,7 +153,7 @@ class AuditoriaEsquemaSQLiteTests(unittest.TestCase):
         self.assertEqual(len(registros), 2)
         self.assertGreater(registros[0]['id'], registros[1]['id'])
 
-    def test_migracion_v1_a_v2_conserva_usuarios_existentes(self):
+    def test_migracion_v1_a_v3_conserva_usuarios_existentes(self):
         engine = crear_engine_autenticacion('sqlite', None, self.ruta)
         crear_primer_administrador(engine, 'admin.one', 'frase-larga-segura-2026')
         engine.dispose()
@@ -163,7 +168,7 @@ class AuditoriaEsquemaSQLiteTests(unittest.TestCase):
             self.assertEqual(conexion.execute(
                 'SELECT COUNT(*) FROM usuarios').fetchone()[0], 1)
             self.assertEqual(conexion.execute(
-                'SELECT version FROM auth_schema_version').fetchone()[0], 2)
+                'SELECT version FROM auth_schema_version').fetchone()[0], 3)
             self.assertEqual(conexion.execute(
                 "SELECT COUNT(*) FROM sqlite_master WHERE type='table' "
                 "AND name='eventos_auditoria'").fetchone()[0], 1)

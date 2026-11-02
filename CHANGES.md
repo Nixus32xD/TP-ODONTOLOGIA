@@ -1,7 +1,7 @@
 # CHANGES — Secuencia de Implementación
 
 > Índice canónico del proyecto **TP-ODONTOLOGIA**, actualizado el 2026-11-02.
-> **Plan del producto completo; C-01–C-04 están implementados, validados y archivados. C-05–C-20 son cambios futuros planificados dentro de la autorización global del roadmap, sujetos a aprobaciones específicas de decisiones materiales según R-10.**
+> **Plan del producto completo; C-01–C-05 están implementados, validados y archivados. C-06–C-20 son cambios futuros planificados dentro de la autorización global del roadmap, sujetos a aprobaciones específicas de decisiones materiales según R-10.**
 > **Leer este archivo antes de ejecutar cualquier `/opsx:propose`.**
 
 ---
@@ -23,7 +23,7 @@ La aclaración del usuario del 2026-10-28 corrige el índice anterior: **hacer s
 - **Evolución del producto:** C-15 a C-20 agregan clínica, odontograma/plan de tratamiento, recordatorios, reserva del paciente, cobros y reportes. Se proponen para mostrar el alcance completo; su implementación requiere priorización y contratos propios.
 - **Opciones no comprometidas:** multisede/SaaS multitenant, IA, obras sociales y facturación electrónica ARCA no se vuelven obligatorias por aparecer en productos comparados. Si se eligen, se agregarán changes posteriores con investigación y aprobación específicas. C-19 no incluye emisión fiscal ni conexión con pagos reales.
 
-La KB y las instrucciones existentes documentan principalmente la porción académica C-01. Sus exclusiones siguen vigentes para esa implementación; las capacidades futuras del roadmap no amplían retroactivamente las US-001 a US-004. C-02 concreta la migración a PostgreSQL conservando la fuente SQLite, con un destino de pruebas aislado. C-03/C-04 concretaron autenticación, permisos y auditoría en changes archivados. Para C-05+ faltan criterios específicos que se desarrollan en la KB y Propose de cada change. Se mantienen datos ficticios y ninguna integración externa real.
+La KB y las instrucciones existentes documentan principalmente la porción académica C-01. Sus exclusiones siguen vigentes para esa implementación; las capacidades futuras del roadmap no amplían retroactivamente las US-001 a US-004. C-02 concreta la migración a PostgreSQL conservando la fuente SQLite, con un destino de pruebas aislado. C-03/C-04 concretaron autenticación, permisos y auditoría; C-05 agregó la ficha mínima de paciente, todos en changes archivados. Para C-06+ faltan criterios específicos que se desarrollan en la KB y Propose de cada change. Se mantienen datos ficticios y ninguna integración externa real.
 
 **Stack definido por la cátedra (2026-10-29):** backend con Python, FastAPI, JWT, SQLAlchemy, PostgreSQL, Redis y Docker/Docker Compose; frontend con React, TypeScript y Vite ([DD-09](knowledge-base/09_decisiones_y_supuestos.md)). C-02 implementa PostgreSQL + SQLAlchemy; C-03 implementa JWT y permisos de personal. React/TS/Vite sigue en C-11, Docker Compose de despliegue en C-14 y Redis (cola de recordatorios) en C-17. La existencia de carpetas y servicios no acredita la implementación de esos changes.
 
@@ -35,7 +35,7 @@ La KB y las instrucciones existentes documentan principalmente la porción acad�
 | --- | --- | --- |
 | Versionado de esquema y migración a PostgreSQL con SQLAlchemy (stack de la cátedra) | C-02 | Implementado, validado con PostgreSQL aislado y archivado; copia unidireccional, fuente SQLite preservada. |
 | Identidades, permisos, sesiones y auditoría | C-03/C-04 | C-03 y C-04 implementados, validados y archivados. |
-| Datos mínimos, prestaciones y disponibilidad | C-05/C-06/C-07 | Campos, bajas y excepciones definidos sin perder referencias históricas |
+| Datos mínimos, prestaciones y disponibilidad | C-05/C-06/C-07 | C-05 implementó nombre/contacto mínimo y baja lógica; prestaciones y disponibilidad siguen planificadas |
 | Estados, cancelación y reprogramación | C-09/C-10 | Transiciones y concurrencia especificadas; exclusión del paciente explícitamente decidida |
 | UI y operación desplegada | C-11/C-12/C-13/C-14 | Interfaz en React + TypeScript + Vite (fijada por la cátedra), despliegue con Docker Compose, recuperación y seguridad probadas |
 | Datos clínicos, comunicaciones y dinero | C-15 a C-20 | Revisión de permisos, privacidad, reglas clínicas/monetarias y proveedor cuando corresponda; sólo simulación en este ejercicio |
@@ -75,7 +75,7 @@ Los números son identificadores estables agrupados por capacidad, no un orden d
 
 ### Paralelismo por fase
 
-Los GATES expresan dependencias del plan futuro. C-01–C-04 están archivados. El símbolo `✓` significa «una vez verificado y cerrado». No imponen fases rígidas a OPSX.
+Los GATES expresan dependencias del plan futuro. C-01–C-05 están archivados. El símbolo `✓` significa «una vez verificado y cerrado». No imponen fases rígidas a OPSX.
 
 ```text
 GATE 0: C-01 ✓ → C-02 ✓ → C-03 ✓ → C-04 ✓
@@ -129,7 +129,7 @@ Secuencia compatible con dependencias, sin prometer una optimización temporal n
 | 0 | C-01 cerrado el 2026-10-28 | — | — |
 | 1 | C-02 archivado; C-03 archivado | — | — |
 | 2 | C-04 archivado | — | — |
-| 3 | C-05 | C-06 | C-12 (apoyo operativo) |
+| 3 | C-05 archivado | C-06 | C-12 (apoyo operativo) |
 | 4 | C-09 | C-07 | — |
 | 5 | C-08 | — | — |
 | 6 | C-10 | — | — |
@@ -161,7 +161,7 @@ Secuencia compatible con dependencias, sin prometer una optimización temporal n
 
 ## FASE 2 — Fundamento evolutivo, acceso y trazabilidad
 
-> C-01–C-04 están archivados. C-05 a C-20 siguen planificados con desarrollo global autorizado; contratos de cada change se revisan con Propose y las decisiones materiales de governance CRÍTICO/ALTO requieren aprobación específica antes del código.
+> C-01–C-05 están archivados. C-06 a C-20 siguen planificados con desarrollo global autorizado; contratos de cada change se revisan con Propose y las decisiones materiales de governance CRÍTICO/ALTO requieren aprobación específica antes del código.
 
 ### [C-02] `evolucionar-esquema-y-configuracion`
 
@@ -208,7 +208,7 @@ Secuencia compatible con dependencias, sin prometer una optimización temporal n
 
 ### [C-05] `administrar-pacientes`
 
-- **Estado**: [ ] planificado; no implementado ni propuesto en OpenSpec.
+- **Estado**: implementado, validado localmente y archivado el 2026-11-02. Ver [change archivado](openspec/changes/archive/2026-11-02-administrar-pacientes/) y [evidencia C-05](docs/evidencia/implementacion-turnos.md#c-05--fichas-mínimas-de-pacientes-2026-11-02).
 - **Scope**:
   - Evolucionar `Paciente` desde el identificador ficticio a una ficha de identificación/contacto mínimo, con campos y reglas de duplicados acordados; conservar las referencias de turnos anteriores.
   - Proponer `POST/GET /pacientes`, `GET/PATCH /pacientes/{id}` y baja lógica restringida; acceso por rol y auditoría. No incluir historia clínica en esta ficha.

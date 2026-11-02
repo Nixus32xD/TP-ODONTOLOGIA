@@ -229,3 +229,19 @@ OpenSpec conserva el change activo con las 15 tareas completas; el Archive queda
 La revisión encontró que validar acción, recurso y resultado en listas independientes admitía combinaciones semánticamente inválidas (por ejemplo, `turno.creado` con recurso `cuenta` y resultado `rechazado`). Se reemplazó esa validación por una matriz explícita action→resource_type→result y se agregó el mismo `CHECK` de combinación al DDL SQLite y PostgreSQL. Los rechazos de autenticación siguen siendo genéricos y sin identificadores.
 
 Pruebas RED reprodujeron seis fallos en helper y SQLite DDL. Tras el cambio, `tests.test_auditoria tests.test_postgres_schema tests.test_auth_schema`: **23 OK**; `tests.test_postgresql_integracion`: **13 OK** en un clúster PostgreSQL temporal propio (`127.0.0.1:55432/audit_test`). Los casos positivos verifican todas las combinaciones usadas por los callsites reales; los negativos verifican los tres cruces inválidos en helper y ambos DDL. El clúster quedó detenido y el puerto libre; el directorio temporal se conservó.
+
+## C-05 — Fichas mínimas de pacientes (2026-11-02)
+
+Se incorporó una ficha compuesta por nombre, teléfono opcional, ID y estado activo. Administrador y Recepción pueden crear, listar (paginación `limit`/`offset`), consultar y actualizar contacto; sólo Administrador puede desactivar o reactivar. Los nombres repetidos se permiten. El demo usa datos ficticios: no se agregaron documentos, fecha de nacimiento, historia clínica ni integraciones.
+
+Las altas y cambios se registran en la auditoría append-only dentro de la misma transacción y el evento no contiene nombre ni teléfono. La baja es lógica, conserva turnos previos y una ficha inactiva no admite turnos nuevos. PostgreSQL usa Alembic `20261102_0004_patient_management`; SQLite requiere migración explícita a esquema v3. La migración conserva IDs, turnos y eventos; la importación C-02 desde C-01 asigna nombres de demostración sin cambiar la fuente.
+
+### Evidencia de C-05
+
+- Baseline antes del código C-05: `python -m unittest discover -s tests -q` → **130 tests, OK (1 PostgreSQL omitido)**.
+- RED/GREEN: migración/schema SQLite y Alembic; alta/importación C-02; servicio de pacientes; eventos permitidos; API con 401/403, CRUD, validación y rollback; rechazo de pacientes inactivos al crear turnos.
+- Suite SQLite final: `..\.venv\Scripts\python.exe -m unittest discover -s tests -q` → **143 tests, OK (1 PostgreSQL omitido)**.
+- Suite SQLite con PostgreSQL aislado: el mismo comando y `ODONTOLOGIA_TEST_DATABASE_URL=postgresql+psycopg://postgres@127.0.0.1:55432/audit_test` → **159 tests, OK**, incluidos upgrade desde C-04, importación C-01, API RBAC, eventos, rollback ante fallos de auditoría y rechazo de turno inactivo.
+- `..\.venv\Scripts\python.exe -m pip check` → **No broken requirements found**; `openspec validate --all --strict` → **6/6 válidos**; `git diff --check` sin errores.
+- PostgreSQL temporal se detuvo y `127.0.0.1:55432` quedó libre. Sólo se usaron datos ficticios y bases de prueba en loopback.
+- `docs/discovery/informe-discovery.md` tenía una edición previa ajena; se dejó fuera de los commits.

@@ -10,6 +10,10 @@ class ErrorAuditoria(RuntimeError):
 
 _MATRIZ_EVENTOS = {
     'turno.creado': ('turno', 'confirmado'),
+    'paciente.creado': ('paciente', 'confirmado'),
+    'paciente.actualizado': ('paciente', 'confirmado'),
+    'paciente.desactivado': ('paciente', 'confirmado'),
+    'paciente.reactivado': ('paciente', 'confirmado'),
     'cuenta.bootstrap': ('cuenta', 'confirmado'),
     'cuenta.creada': ('cuenta', 'confirmado'),
     'cuenta.actualizada': ('cuenta', 'confirmado'),

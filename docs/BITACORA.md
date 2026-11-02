@@ -213,3 +213,9 @@ El change OpenSpec sigue activo, sin Archive, commit ni push: el responsable deb
 ### Seguimiento de revisión C-04 — matriz semántica (2026-11-02)
 
 Una revisión detectó que la base aceptaba combinaciones cruzadas aunque cada acción/recurso/resultado individual perteneciera a su catálogo. Se corrigió con una matriz exacta en el helper y un `CHECK` equivalente en SQLite y PostgreSQL. RED reprodujo combinaciones inválidas en helper y DDL; GREEN: 23 tests SQLite/schema OK y 13 tests de integración PostgreSQL OK, incluyendo todos los tipos de evento emitidos realmente. PostgreSQL temporal se detuvo y el puerto 55432 quedó libre. No hubo migración de datos, commit, push ni Archive.
+
+## 2026-11-02 — C-05 fichas mínimas de pacientes
+
+Se añadió `patient-management`: nombre y teléfono opcional ficticios; sin documento, fecha de nacimiento ni historia clínica. Administrador y Recepción gestionan contacto; sólo Administrador desactiva/reactiva. La baja conserva turnos y bloquea nuevas altas. Las mutaciones auditan sólo actor/acción/ID opaco en la misma transacción. PostgreSQL usa Alembic `20261102_0004_patient_management`; SQLite sube explícitamente a esquema v3; la importación C-02 convierte filas C-01 sin alterar la fuente.
+
+TDD documentó RED para esquema, importación, catálogo de auditoría, rutas y regla de paciente inactivo; cada caso pasó tras su corrección. Validación final: SQLite **143 tests OK, 1 PG omitido**; con PostgreSQL aislado loopback **159 tests OK**; `pip check` limpio; OpenSpec strict **6/6**; `git diff --check` limpio. PostgreSQL temporal se detuvo y el puerto 55432 quedó libre. El change se archivará y comiteará localmente tras sincronizar specs; no se hará push sin autorización.

@@ -16,6 +16,7 @@ class ErrorAgenda(Exception):
         mensajes = {
             'entrada_invalida': 'La entrada no cumple el contrato.',
             'recurso_desconocido': 'El recurso no está registrado en la agenda ficticia.',
+            'recurso_inactivo': 'El paciente está inactivo y no admite turnos nuevos.',
             'conflicto_profesional': 'El profesional ya está ocupado en ese intervalo.',
             'conflicto_box': 'El box ya está ocupado en ese intervalo.',
             'agenda_ocupada': 'La agenda está ocupada por otro escritor.',
@@ -176,8 +177,16 @@ def crear_turno(ruta_db: str | Path, *, paciente_id: str, profesional_id: str,
             raise ErrorAgenda('almacenamiento_error')
         conexion.execute('BEGIN IMMEDIATE')
         for campo, identificador, tabla in recursos:
-            if conexion.execute(f'SELECT 1 FROM {tabla} WHERE id=?', (identificador,)).fetchone() is None:
+            fila = conexion.execute(
+                f'SELECT 1 FROM {tabla} WHERE id=?', (identificador,)).fetchone()
+            if fila is None:
                 raise ErrorAgenda('recurso_desconocido', campo)
+            if campo == 'paciente':
+                columnas = {columna[1] for columna in conexion.execute(
+                    'PRAGMA table_info(pacientes)')}
+                if 'activo' in columnas and conexion.execute(
+                        'SELECT activo FROM pacientes WHERE id=?', (identificador,)).fetchone() != (1,):
+                    raise ErrorAgenda('recurso_inactivo', campo)
         for campo, identificador in [('profesional', profesional_id), ('box', box_id)]:
             if conexion.execute(
                     f'SELECT 1 FROM turnos WHERE {campo}_id=? '

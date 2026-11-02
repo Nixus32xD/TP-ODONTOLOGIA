@@ -27,6 +27,7 @@ from odontologia.auth.usuarios import (
 )
 from odontologia.auth.sesiones import ErrorSesiones, autenticar, cerrar_sesion, validar_sesion
 from odontologia.audit import listar_eventos
+from odontologia.pacientes import ErrorPacientes, actualizar_paciente, crear_paciente
 from odontologia.db.migracion import ErrorMigracion, migrar_agenda_sqlite
 from odontologia.db.models import (
     AgendaMutex, Base, Box, EventoAuditoria, Paciente, Profesional, Sesion, Turno, Usuario,
@@ -146,7 +147,8 @@ class IntegracionPostgreSQLTests(unittest.TestCase):
     def _seed_catalogos(self):
         with Session(self.engine) as session, session.begin():
             session.add_all([
-                Paciente(id='paciente-A'), Paciente(id='paciente-B'),
+                Paciente(id='paciente-A', nombre='Paciente de demostración A', telefono=None, activo=True),
+                Paciente(id='paciente-B', nombre='Paciente de demostración B', telefono=None, activo=True),
                 Profesional(id='profesional-A'), Profesional(id='profesional-B'),
                 Box(id='box-A'), Box(id='box-B'),
             ])
@@ -160,10 +162,14 @@ class IntegracionPostgreSQLTests(unittest.TestCase):
             resumen = migrar_agenda_sqlite(self.engine, ruta)
             with Session(self.engine) as session:
                 turnos = session.scalars(select(Turno).order_by(Turno.id)).all()
+                paciente = session.get(Paciente, 'paciente-A')
 
             self.assertEqual((resumen.pacientes, resumen.profesionales, resumen.boxes, resumen.turnos),
                              (2, 2, 2, 2))
             self.assertEqual([turno.id for turno in turnos], [turno.id for turno in ids_esperados])
+            self.assertEqual(paciente.nombre, 'Paciente de demostración paciente-A')
+            self.assertIsNone(paciente.telefono)
+            self.assertTrue(paciente.activo)
             self.assertEqual(ruta.read_bytes(), fuente_original)
             siguiente = crear_turno_postgresql(
                 self.engine, paciente_id='paciente-A', profesional_id='profesional-A', box_id='box-A',
@@ -335,9 +341,82 @@ class IntegracionPostgreSQLTests(unittest.TestCase):
             self.assertIn('turno.creado', {
                 item['action'] for item in respuesta.json()['items']})
 
+    def test_pacientes_postgresql_y_rechazo_de_turno_inactivo(self):
+        self._seed_catalogos()
+        admin = crear_primer_administrador(
+            self.engine, 'admin.patient', 'frase-larga-segura-2026')
+        crear_usuario(self.engine, 'recepcion.patient', 'otra-frase-larga-segura-2026', 'recepcion')
+        secreto = os.environ['JWT_SECRETO']
+        with patch.dict(os.environ, {'JWT_SECRETO': secreto}), \
+                TestClient(crear_app()) as cliente:
+            login_admin = cliente.post('/sesiones', json={
+                'identificador': 'admin.patient', 'password': 'frase-larga-segura-2026'})
+            login_recepcion = cliente.post('/sesiones', json={
+                'identificador': 'recepcion.patient',
+                'password': 'otra-frase-larga-segura-2026'})
+            admin_headers = {'Authorization': f"Bearer {login_admin.json()['access_token']}"}
+            recepcion_headers = {
+                'Authorization': f"Bearer {login_recepcion.json()['access_token']}"}
+            creada = cliente.post('/pacientes', headers=recepcion_headers, json={
+                'nombre': 'Paciente PostgreSQL ficticio', 'telefono': '+54 261 555-0101'})
+            self.assertEqual(creada.status_code, 201, creada.text)
+            paciente_id = creada.json()['id']
+            self.assertEqual(cliente.delete(
+                f'/pacientes/{paciente_id}', headers=recepcion_headers).status_code, 403)
+            eventos = cliente.get('/auditoria', headers=admin_headers).json()['items']
+            evento = next(item for item in eventos if item['action'] == 'paciente.creado')
+            self.assertEqual(evento['resource_id'], paciente_id)
+            self.assertNotIn('Paciente PostgreSQL', str(evento))
+            self.assertEqual(cliente.delete(
+                f'/pacientes/{paciente_id}', headers=admin_headers).status_code, 200)
+            respuesta = cliente.post('/turnos', headers=recepcion_headers, json={
+                'paciente_id': paciente_id, 'profesional_id': 'profesional-A', 'box_id': 'box-A',
+                'inicio': '2026-10-15T12:00:00Z', 'fin': '2026-10-15T12:30:00Z'})
+            self.assertEqual(respuesta.status_code, 409, respuesta.text)
+            self.assertEqual(respuesta.json()['codigo'], 'recurso_inactivo')
+
+    def test_fallo_auditoria_paciente_revierte_alta_y_baja_postgresql(self):
+        self._seed_catalogos()
+        admin = crear_primer_administrador(
+            self.engine, 'admin.patient.atomic', 'frase-larga-segura-2026')
+
+        def fallar_auditoria(_conn, _cursor, statement, _parameters, _context, _many):
+            if 'insert into eventos_auditoria' in statement.lower():
+                raise SQLAlchemyError('fallo inyectado en auditoría de paciente')
+
+        event.listen(self.engine, 'before_cursor_execute', fallar_auditoria)
+        try:
+            with self.assertRaises(ErrorPacientes):
+                crear_paciente(
+                    self.engine, 'Alta sin evento', actor_id=admin['id'])
+        finally:
+            event.remove(self.engine, 'before_cursor_execute', fallar_auditoria)
+        with Session(self.engine) as session:
+            self.assertEqual(session.scalar(select(func.count()).select_from(Paciente)), 2)
+
+        paciente = crear_paciente(
+            self.engine, 'Ficha para baja', actor_id=admin['id'])
+        event.listen(self.engine, 'before_cursor_execute', fallar_auditoria)
+        try:
+            with self.assertRaises(ErrorPacientes):
+                actualizar_paciente(
+                    self.engine, paciente['id'], {'activo': False}, actor_id=admin['id'])
+        finally:
+            event.remove(self.engine, 'before_cursor_execute', fallar_auditoria)
+        with Session(self.engine) as session:
+            self.assertTrue(session.get(Paciente, paciente['id']).activo)
+
     def test_matriz_eventos_postgresql_acepta_solo_eventos_reales(self):
         eventos_validos = (
             ('turno.creado', 'turno', 'confirmado'),
+            ('paciente.creado', 'paciente', 'confirmado'),
+            ('paciente.actualizado', 'paciente', 'confirmado'),
+            ('paciente.desactivado', 'paciente', 'confirmado'),
+            ('paciente.reactivado', 'paciente', 'confirmado'),
+            ('paciente.creado', 'paciente', 'confirmado'),
+            ('paciente.actualizado', 'paciente', 'confirmado'),
+            ('paciente.desactivado', 'paciente', 'confirmado'),
+            ('paciente.reactivado', 'paciente', 'confirmado'),
             ('cuenta.bootstrap', 'cuenta', 'confirmado'),
             ('cuenta.creada', 'cuenta', 'confirmado'),
             ('cuenta.actualizada', 'cuenta', 'confirmado'),
@@ -453,7 +532,7 @@ class IntegracionPostgreSQLTests(unittest.TestCase):
         finally:
             with self.engine.begin() as conexion:
                 conexion.execute(text(
-                    "UPDATE alembic_version SET version_num = '20261101_0003_audit'"))
+                    "UPDATE alembic_version SET version_num = '20261102_0004_patient_management'"))
 
     def test_revision_esquema_desconocida_falla_cerrado(self):
         self._seed_catalogos()
@@ -469,7 +548,7 @@ class IntegracionPostgreSQLTests(unittest.TestCase):
         finally:
             with self.engine.begin() as conexion:
                 conexion.execute(text(
-                    "UPDATE alembic_version SET version_num = '20261101_0003_audit'"))
+                    "UPDATE alembic_version SET version_num = '20261102_0004_patient_management'"))
 
         self.assertEqual(contexto.exception.codigo, 'almacenamiento_error')
         with Session(self.engine) as session:
@@ -508,6 +587,44 @@ class IntegracionPostgreSQLTests(unittest.TestCase):
 
         with Session(self.engine) as session:
             self.assertEqual(session.scalar(select(func.count()).select_from(Turno)), 1)
+
+    def test_upgrade_desde_c04_preserva_pacientes_y_eventos(self):
+        schema = f'tp_odontologia_upgrade_{uuid4().hex}'
+        with self.root_engine.begin() as conexion:
+            conexion.execute(text(f'CREATE SCHEMA {schema}'))
+        url = str(make_url(os.environ['DATABASE_URL']).update_query_dict(
+            {'options': f'-csearch_path={schema}'}))
+        config = Config(str(Path(__file__).parents[1] / 'alembic.ini'))
+        try:
+            with patch.dict(os.environ, {'DATABASE_URL': url}):
+                command.upgrade(config, '20261101_0003_audit')
+                upgrade_engine = create_engine(url)
+                try:
+                    with upgrade_engine.begin() as conexion:
+                        conexion.execute(text(
+                            "INSERT INTO pacientes(id) VALUES ('paciente-A')"))
+                        conexion.execute(text(
+                            "INSERT INTO eventos_auditoria(created_at, action, resource_type, result) "
+                            "VALUES (now(), 'cuenta.bootstrap', 'cuenta', 'confirmado')"))
+                finally:
+                    upgrade_engine.dispose()
+                command.upgrade(config, 'head')
+            upgrade_engine = create_engine(url)
+            try:
+                with upgrade_engine.connect() as conexion:
+                    paciente = conexion.execute(text(
+                        "SELECT id, nombre, telefono, activo FROM pacientes")).one()
+                    eventos = conexion.execute(text(
+                        "SELECT COUNT(*) FROM eventos_auditoria WHERE action='cuenta.bootstrap'"
+                    )).scalar_one()
+            finally:
+                upgrade_engine.dispose()
+            self.assertEqual(tuple(paciente), (
+                'paciente-A', 'Paciente de demostración paciente-A', None, True))
+            self.assertEqual(eventos, 1)
+        finally:
+            with self.root_engine.begin() as conexion:
+                conexion.execute(text(f'DROP SCHEMA {schema} CASCADE'))
 
 
 if __name__ == '__main__':
