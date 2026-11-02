@@ -103,7 +103,7 @@ El sistema SHALL permitir a una cuenta autenticada consultar su identidad y rol 
 - **THEN** recibe 401 y no se ejecuta la operación
 
 ### Requirement: Aplicar el menor privilegio aprobado
-El backend SHALL autorizar cada operación según el rol actual de la cuenta. El Administrador puede gestionar las operaciones disponibles y las cuentas; Recepción puede operar la agenda y datos permitidos pero no administrar cuentas; Profesional sólo puede consultar turnos y opciones de disponibilidad de su propio profesional vinculado y no puede crear, cambiar, cancelar ni administrar datos.
+El backend SHALL autorizar cada operación según el rol actual de la cuenta. Administrador gestiona las operaciones permitidas; Recepción opera agenda y datos autorizados, pero no administra cuentas. Profesional sólo consulta la agenda de su vínculo y no modifica turnos, catálogos, pacientes ni cuentas.
 
 #### Scenario: Recepción crea un turno
 - **GIVEN** una sesión vigente de Recepción
@@ -117,13 +117,26 @@ El backend SHALL autorizar cada operación según el rol actual de la cuenta. El
 
 #### Scenario: Profesional no realiza operaciones de escritura
 - **GIVEN** una sesión vigente de Profesional
-- **WHEN** intenta crear, cancelar, confirmar, marcar atención/ausencia o modificar turnos, catálogos o cuentas
+- **WHEN** intenta crear, cancelar, confirmar, marcar atención/ausencia o modificar turnos, catálogos, pacientes o cuentas
 - **THEN** recibe 403 sin cambios ni eventos de mutación
 
 #### Scenario: Administrador tiene acceso autorizado
 - **GIVEN** una sesión vigente de Administrador
 - **WHEN** usa una operación disponible para el personal
 - **THEN** se aplica la operación correspondiente y quedan vigentes sus reglas de dominio
+
+### Requirement: Restringir la historia clínica al Profesional responsable
+Un Profesional activo SHALL consultar y registrar evoluciones sólo para pacientes con turno `atendido` propio. Administrador y Recepción SHALL NOT consultar, registrar ni corregir contenido clínico. Los controles de propiedad, estado y auditoría siguen `clinical-history`.
+
+#### Scenario: Profesional opera clínica sólo en sus atenciones
+- **GIVEN** una sesión vigente de Profesional vinculada a profesional-A
+- **WHEN** consulta o registra una evolución para un turno `atendido` de profesional-A
+- **THEN** la operación se autoriza sólo bajo las reglas de `clinical-history` y no amplía permisos sobre la agenda
+
+#### Scenario: Administrador o Recepción no acceden al contenido clínico
+- **GIVEN** una sesión vigente de Administrador o Recepción
+- **WHEN** intenta consultar, registrar o corregir una evolución
+- **THEN** recibe 403 sin obtener contenido clínico ni modificarlo
 
 ### Requirement: Fallar cerrado ante configuración de seguridad incompleta
 El sistema SHALL requerir un secreto de firma local no versionado con longitud mínima de 32 bytes y una sesión persistida vigente para autorizar peticiones. Si falta configuración, almacenamiento o esquema, SHALL rechazar la operación sin saltarse autenticación ni crear el esquema automáticamente.

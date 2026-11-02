@@ -44,7 +44,9 @@ from odontologia.db.models import (
     AgendaMutex, Base, BloqueoAgenda, Box, EventoAuditoria, ExcepcionHorario,
     HorarioSemanal, Paciente, Prestacion, Profesional, Sesion, TramoExcepcion, Turno, Usuario,
 )
-from odontologia.db.postgresql import _hay_solapamiento, crear_turno_postgresql
+from odontologia.db.postgresql import (
+    REVISION_ESQUEMA_ACTUAL, _hay_solapamiento, crear_turno_postgresql,
+)
 
 
 def _url_test_database_permitida(url):
@@ -651,7 +653,8 @@ class IntegracionPostgreSQLTests(unittest.TestCase):
         finally:
             with self.engine.begin() as conexion:
                 conexion.execute(text(
-                    "UPDATE alembic_version SET version_num = '20261102_0009_turn_rescheduling'"))
+                    'UPDATE alembic_version SET version_num = :revision'),
+                    {'revision': REVISION_ESQUEMA_ACTUAL})
 
     def test_revision_esquema_desconocida_falla_cerrado(self):
         self._seed_catalogos()
@@ -667,7 +670,8 @@ class IntegracionPostgreSQLTests(unittest.TestCase):
         finally:
             with self.engine.begin() as conexion:
                 conexion.execute(text(
-                    "UPDATE alembic_version SET version_num = '20261102_0009_turn_rescheduling'"))
+                    'UPDATE alembic_version SET version_num = :revision'),
+                    {'revision': REVISION_ESQUEMA_ACTUAL})
 
         self.assertEqual(contexto.exception.codigo, 'almacenamiento_error')
         with Session(self.engine) as session:

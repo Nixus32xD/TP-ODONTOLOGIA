@@ -10,20 +10,19 @@ La documentación local está en `backend/README.md`. No requiere Docker, Redis 
 
 Desde `backend/`:
 
-- `.venv/Scripts/python.exe -m unittest discover -s tests` — 381 tests, OK; 4 omitidos por guardas de PostgreSQL.
+- Con `ODONTOLOGIA_TEST_DATABASE_URL=postgresql+psycopg://postgres@127.0.0.1:55432/c15_review_test` y clientes PostgreSQL 18 en `PATH`, `.venv/Scripts/python.exe -m unittest discover -s tests` — 424 tests, OK; 3 omitidos.
+- `test_clinical_history_postgresql_integracion.py` — 2 pruebas reales pasaron: migración Alembic 0010, FK/CHECK, trigger append-only, creación de bundle `pg_dump` y restauración `pg_restore` en una base nueva con la evolución sintética, auditoría y recuentos preservados.
+- `test_postgresql_integracion.py` — 41 pruebas, OK contra PostgreSQL 18.6 en loopback:55432.
 - `.venv/Scripts/python.exe -m unittest discover -s tests -p 'test_backup*.py'` — 65 tests, OK; 3 omitidos.
 - La prueba `test_openapi_y_docs` se actualizó porque el contrato OpenAPI ahora incluye los tres endpoints C-15; pasó individualmente y en la suite completa.
 
 Desde la raíz:
 
 - `openspec validate registrar-historia-clinica --strict` — válido.
-- El plan de Apply tiene 15 tareas: 13 completadas y 2 pendientes de integración PostgreSQL real (6.2 y 6.3). Por eso no se declara C-15 completamente verificado ni listo para archivar.
+- El plan de Apply tiene 15 tareas completadas. La verificación real de PostgreSQL C-15 quedó registrada en 6.2 y 6.3.
 
-## Límite de PostgreSQL en esta verificación
+## Alcance y limpieza de PostgreSQL
 
-No estaban disponibles `initdb`, `pg_ctl` ni `psql`; no se instaló ni se inició ningún servicio. Pasaron la verificación estructural/encadenamiento de Alembic y la generación offline de SQL. Las pruebas de integración PostgreSQL se omitieron por falta de `ODONTOLOGIA_TEST_DATABASE_URL`; las pruebas de backup/restore PostgreSQL usan mocks. No se aplicó `20261102_0010_clinical_history` contra un servidor ni se probó su trigger/constraints en ejecución. Tampoco se creó ni restauró un bundle C-15 en PostgreSQL. El respaldo y restauración SQLite sí se verificaron con bases temporales. Las pruebas omitidas y los mocks no cuentan como integración PostgreSQL.
+La verificación usó exclusivamente un clúster temporal PostgreSQL 18.6 en `127.0.0.1:55432` y la base `c15_review_test`; no se conectó al servicio del puerto 5432. El restore creó una base final única `c15_restore_<uuid>`, validó datos y conteos y la eliminó al terminar. Los schemas C-15 propios de las pruebas también se eliminaron.
 
-Pendientes OpenSpec:
-
-- **6.2:** aplicar la migración en un PostgreSQL de prueba aislado y comprobar tabla, relaciones, restricciones, trigger append-only e integración sin skip.
-- **6.3:** crear y restaurar un backup C-15 en un PostgreSQL de prueba aislado, usando datos ficticios y verificando recuentos y relaciones.
+La suite de integración inicial reveló que dos pruebas antiguas restauraban manualmente `alembic_version` a C-10 (0009), ahora obsoleto. Se actualizaron para restaurar `REVISION_ESQUEMA_ACTUAL` (0010); después, la suite PG completa pasó. El harness de integración C-15 desactiva la carga del logging del ini de Alembic y verifica que `uvicorn.error` quede habilitado, evitando contaminación de las pruebas posteriores.
