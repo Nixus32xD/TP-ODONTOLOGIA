@@ -2,6 +2,8 @@
 
 Fuente: [consigna original de Metodología I](consigna/desarrollo-active-stack.pdf), copia del archivo proporcionado `F:\Oficina\Documents\desarrollo-active-stack.pdf`.
 
+La consigna TPI vigente adjunta por el usuario es `F:\Oficina\Documents\documento-tpi.pdf`. Sus requisitos adicionales de skill propia, MCP y video de hasta 10 minutos se registran en [evidencia Skill/MCP](entrega/evidencia-skill-mcp.md) y [guion actualizado](entrega/guion-video.md). Este checklist histórico de la entrega anterior no reemplaza esa consigna.
+
 Este checklist resume requisitos de la consigna; no acredita su cumplimiento. La bitácora debe registrar la revisión humana de cada etapa y su decisión: Continuar, Ajustar o Parar acá.
 
 ## Etapa 0 - Preparación

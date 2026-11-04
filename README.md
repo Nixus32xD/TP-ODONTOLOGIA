@@ -69,6 +69,9 @@ El usuario autorizó commits locales separados por petición completada, validac
 - [Nueva revisión documental delegada: seis fuentes y motivos de ajuste](docs/discovery/revision-documental-2026-10-15.md).
 - [Selección y justificación de skills](docs/fundacion/seleccion-skills.md).
 - [Registro de skills del proyecto](.atl/skill-registry.md).
+- [Skill propia del TPI y evidencia de uso](docs/entrega/evidencia-skill-mcp.md).
+- [Guía de conexión y uso del MCP GitHub](docs/entrega/mcp-github.md).
+- [Guion de video TPI (máximo 10 minutos)](docs/entrega/guion-video.md).
 - [Instrucciones para agentes](AGENTS.md) y [versión equivalente para Claude](CLAUDE.md).
 - [Exploración técnica](docs/exploracion/alta-turno.md), [propuesta](openspec/changes/archive/2026-10-28-crear-turno-sin-solapamientos/proposal.md), [spec](openspec/changes/archive/2026-10-28-crear-turno-sin-solapamientos/specs/alta-turnos/spec.md) y [tareas](openspec/changes/archive/2026-10-28-crear-turno-sin-solapamientos/tasks.md).
 

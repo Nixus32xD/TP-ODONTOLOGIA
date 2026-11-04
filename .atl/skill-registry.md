@@ -55,6 +55,8 @@ Actualizar este alcance si una tarea posterior requiere alguno de esos entregabl
 | Crear o editar documentos Word y revisar su render | documents | `C:/Users/Oficina/.codex/plugins/cache/openai-primary-runtime/documents/26.1013.11914/skills/documents/SKILL.md` |
 | Explicar o explorar mediante una visualización en conversación | visualize | `C:/Users/Oficina/.codex/plugins/cache/openai-bundled/visualize/1.0.49/skills/visualize/SKILL.md` |
 
+| Cambios OpenSpec del sistema odontológico | odontologia-openspec | `.agents/skills/odontologia-openspec/SKILL.md` |
+
 ## Compact Rules
 
 Resúmenes operativos de 5 a 15 líneas por skill. El delegador conserva las restricciones aplicables de la skill original y resuelve conflictos con el pedido concreto; estas reglas no acreditan ejecución ni aprobación de fases.
@@ -201,6 +203,13 @@ Resúmenes operativos de 5 a 15 líneas por skill. El delegador conserva las res
 - Crear un archivo de glob parcialmente poblado sólo bajo alcance confirmado, instrucciones frescas y operación que falle si ya existe.
 - Si cambia la intención del change, proponer uno nuevo en vez de reemplazar silenciosamente el existente.
 
+### odontologia-openspec
+- Leer AGENTS.md, CHANGES.md, KB pertinente y estado real mediante OpenSpec CLI antes de editar.
+- Preservar alcance, dependencias, governance y contratos; resolver políticas CRÍTICAS/ALTAS no acordadas antes de implementarlas.
+- Mantener backend/frontend en sus carpetas, usar datos ficticios y reutilizar lógica existente.
+- Verificar escenarios con pruebas ejecutadas, asociando contrato, código y evidencia; no marcar tareas por inferencia.
+- Revisar diff y Git antes del commit; push sólo con autorización explícita aplicable.
+
 ### pdf
 - Preferir dependencias del runtime y generación reproducible; conservar la fuente editable.
 - Ejecutar exitosamente el marcador de operación provisto exactamente una vez antes de autoría; si falta, informar la limitación sin fingir ejecución.
@@ -227,6 +236,16 @@ Resúmenes operativos de 5 a 15 líneas por skill. El delegador conserva las res
 - Emitir la referencia visualize con path absoluto en la respuesta final; exportar o publicar sólo por pedido expreso.
 
 ## Project Conventions
+
+### Skill propia del TPI
+
+- `odontologia-openspec` — `.agents/skills/odontologia-openspec/SKILL.md`: guía cambios OpenSpec del sistema odontológico con contratos, governance, datos ficticios, pruebas y trazabilidad.
+- Creadora: `skill-creator` (Codex). Evidencia y límites de validación: `docs/entrega/evidencia-skill-mcp.md`.
+
+### Integración MCP para el TPI
+
+- GitHub MCP conectado por el entorno Codex; guía sin credenciales en `docs/entrega/mcp-github.md`.
+- La llamada real de búsqueda y el aporte observado están registrados en `docs/entrega/evidencia-skill-mcp.md`.
 
 [AGENTS.md](../AGENTS.md) y [CLAUDE.md](../CLAUDE.md) existen en la raíz y contienen instrucciones idénticas, consolidadas desde el alcance y las restricciones ya autorizados. No se importan reglas de otros proyectos ni se declara aprobación humana de contratos o reglas técnicas nuevas. El contrato de C-01 usa FastAPI, Python, SQLite, unittest y TestClient por corrección explícita del usuario; evidencias personales y Archive siguen pendientes.
 
