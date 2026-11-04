@@ -143,7 +143,9 @@ export default function Reportes({ rol, token }: Props) {
         <p>{agenda.desde} a {agenda.hasta} · {agenda.zona}</p>
         <button type="button" disabled={Boolean(descargando)}
           onClick={() => void descargar('agenda')}>Descargar agenda CSV</button>
-        {agenda.dias.map((dia) => <div key={dia.fecha}>
+        {agenda.dias.length === 0
+          ? <p role="status">No hay datos de agenda para el período consultado.</p>
+          : agenda.dias.map((dia) => <div key={dia.fecha}>
           <h4>{dia.fecha}</h4>
           <table>
             <caption>Turnos por estado</caption>
@@ -173,7 +175,9 @@ export default function Reportes({ rol, token }: Props) {
         <p>Saldo de apertura: ARS {finanzas.saldo_apertura_ars}</p>
         <button type="button" disabled={Boolean(descargando)}
           onClick={() => void descargar('finanzas')}>Descargar finanzas CSV</button>
-        <table>
+        {finanzas.dias.length === 0
+          ? <p role="status">No hay movimientos financieros para el período consultado.</p>
+          : <table>
           <caption>Cargos, cobros, reversiones y saldo diario</caption>
           <thead><tr><th>Fecha</th><th>Cargos ARS</th><th>Cobros ARS</th>
             <th>Reversiones ARS</th><th>Neto ARS</th><th>Saldo de cierre ARS</th></tr></thead>
@@ -182,7 +186,7 @@ export default function Reportes({ rol, token }: Props) {
             <td>{dia.cobros.importe_ars}</td><td>{dia.reversiones.importe_ars}</td>
             <td>{dia.neto_ars}</td><td>{dia.saldo_cierre_ars}</td>
           </tr>)}</tbody>
-        </table>
+        </table>}
       </section>}
     </section>
   )

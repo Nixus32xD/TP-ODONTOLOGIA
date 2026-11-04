@@ -47,11 +47,12 @@ Fuente de verdad de nombres, rutas y reglas compactas: [registro de skills](.atl
 | Fundación | Mantener documentación y navegación | `active-orchestrator`, `kb-creator`, `roadmap-generator`, `find-skills`, `agents-md-generator` |
 | Investigación | Contrastar evidencia pública del Discovery | `discovery-research` |
 | Planificación de dominio | Explorar y especificar el change autorizado | `openspec-explore`, `openspec-propose`, `openspec-update-change` |
+| Revisión de dominio | Contrastar cambios de agenda, permisos, clínica, recordatorios, ledger y reportes con sus invariantes | `odontologia-openspec` (usar junto con la skill OpenSpec de la acción, no en su reemplazo) |
 | Implementación y cierre | Aplicar tareas revisadas, sincronizar y archivar | `openspec-apply-change`, `openspec-sync-specs`, `openspec-archive-change` |
 | Revisión | Revisar un diff sin modificarlo | `review-agent` |
 | Documentación de entrega | Editar y verificar los artefactos pedidos | `pdf`; `documents` o `visualize` sólo cuando corresponda al formato solicitado |
 
-Los compact rules los resuelve el delegador desde `.atl/skill-registry.md`, generado por `skill-registry` y **versionado en este repositorio por pedido del usuario**. No duplicarlos aquí. Las rutas globales describen el equipo donde se generó el registro: comprobar disponibilidad antes de usarlas. El producto usa unittest estándar; se añadieron dependencias FastAPI/Uvicorn/Pydantic y HTTPX de pruebas sólo en .venv, sin nuevas skills.
+Los compact rules los resuelve el delegador desde `.atl/skill-registry.md`, generado por `skill-registry` y **versionado en este repositorio por pedido del usuario**. No duplicarlos aquí. La skill propia `odontologia-openspec`, creada con guía `skill-creator`, aporta invariantes de dominio; no la genera OpenSpec ni sustituye sus cambios/skills. Para documentación vigente de React/TypeScript puede usarse el MCP Context7 registrado en [su guía reproducible](docs/skills-mcp/mcp-context7.md); consultar sólo documentación pública, nunca datos del consultorio.
 
 ## Roadmap de Changes
 

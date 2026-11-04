@@ -9,9 +9,9 @@ Las instrucciones del usuario y el alcance confirmado prevalecen sobre las plant
 - Proyecto: `.agents/skills/` presente; `.claude/skills/`, `.gemini/skills/`, `.agent/skills/` y `skills/` ausentes.
 - Usuario: `.agents/skills/`, `.config/opencode/skills/` y `.codex/skills/` presentes; `.claude/skills/`, `.gemini/skills/`, `.cursor/skills/` y `.copilot/skills/` ausentes.
 - Complementos habilitados pertinentes a la entrega: PDF, documentos y visualizaciones; no se recorrieron cachés históricos ni se incorporaron conectores ajenos al TP.
-- Deduplicación por nombre: proyecto primero; entre globales, rutas configuradas de `.agents/skills/` primero, luego OpenCode y Codex. Las seis copias OpenCode se omiten; `active-orchestrator` allí es v2.1 y en la ruta seleccionada es v2.2. `skill-creator` de Codex también se omite por duplicado.
+- Deduplicación por nombre: proyecto primero; entre globales, rutas configuradas de `.agents/skills/` primero, luego OpenCode y Codex. Las seis copias OpenCode se omiten; `active-orchestrator` allí es v2.1 y en la ruta seleccionada es v2.2. La copia global de `skill-creator` se omite por duplicación.
 - Excluidos `sdd-*`, `_shared` y `skill-registry` (autorreferencia). Se leyeron SKILL.md completos hasta 200 líneas y frontmatter/secciones de reglas y patrones críticos para los más extensos.
-- Resultado: **21 skills únicas**, de las cuales **7 son locales al proyecto** y **14 dependen del entorno del usuario**. Ninguna instalación nueva.
+- Resultado: **22 skills únicas**, de las cuales **8 son locales al proyecto** y **14 dependen del entorno del usuario**. `odontologia-openspec` se creó para la entrega; las demás no se reinstalaron.
 
 Complementos del catálogo habilitado fuera de este registro temático (disponibles en la sesión, no inexistentes):
 
@@ -51,11 +51,10 @@ Actualizar este alcance si una tarea posterior requiere alguno de esos entregabl
 | Proponer un change con sus artefactos de planificación | openspec-propose | `N:/Nueva carpeta/TP-ODONTOLOGIA/.agents/skills/openspec-propose/SKILL.md` |
 | Sincronizar delta specs con specs principales | openspec-sync-specs | `N:/Nueva carpeta/TP-ODONTOLOGIA/.agents/skills/openspec-sync-specs/SKILL.md` |
 | Revisar y mantener coherentes artefactos existentes | openspec-update-change | `N:/Nueva carpeta/TP-ODONTOLOGIA/.agents/skills/openspec-update-change/SKILL.md` |
+| Revisar invariantes de agenda, permisos, clínica, ledger y reportes en cambios de dominio | odontologia-openspec | `N:/Nueva carpeta/TP-ODONTOLOGIA/.agents/skills/odontologia-openspec/SKILL.md` |
 | Leer, generar o comprobar un PDF | pdf | `C:/Users/Oficina/.codex/plugins/cache/openai-primary-runtime/pdf/26.1013.11914/skills/pdf/SKILL.md` |
 | Crear o editar documentos Word y revisar su render | documents | `C:/Users/Oficina/.codex/plugins/cache/openai-primary-runtime/documents/26.1013.11914/skills/documents/SKILL.md` |
 | Explicar o explorar mediante una visualización en conversación | visualize | `C:/Users/Oficina/.codex/plugins/cache/openai-bundled/visualize/1.0.49/skills/visualize/SKILL.md` |
-
-| Cambios OpenSpec del sistema odontológico | odontologia-openspec | `.agents/skills/odontologia-openspec/SKILL.md` |
 
 ## Compact Rules
 
@@ -204,11 +203,12 @@ Resúmenes operativos de 5 a 15 líneas por skill. El delegador conserva las res
 - Si cambia la intención del change, proponer uno nuevo en vez de reemplazar silenciosamente el existente.
 
 ### odontologia-openspec
-- Leer AGENTS.md, CHANGES.md, KB pertinente y estado real mediante OpenSpec CLI antes de editar.
-- Preservar alcance, dependencias, governance y contratos; resolver políticas CRÍTICAS/ALTAS no acordadas antes de implementarlas.
-- Mantener backend/frontend en sus carpetas, usar datos ficticios y reutilizar lógica existente.
-- Verificar escenarios con pruebas ejecutadas, asociando contrato, código y evidencia; no marcar tareas por inferencia.
-- Revisar diff y Git antes del commit; push sólo con autorización explícita aplicable.
+- Aplicar sólo invariantes de dominio relacionados con las áreas que toca el cambio.
+- Agenda: conservar `[inicio, fin)`, zona documentada y conflictos por profesional/box.
+- Roles/clínica: respetar acceso mínimo, propiedad de datos ficticios y auditoría metadata-only.
+- Recordatorios: consentimiento falso por defecto y canal simulado, sin proveedores externos.
+- Ledger/reportes/CSV: centavos exactos, agregados sin PII y neutralización de fórmulas.
+- Informar fuente, escenario, evidencia y contradicciones; no inventar políticas para huecos.
 
 ### pdf
 - Preferir dependencias del runtime y generación reproducible; conservar la fuente editable.
@@ -240,16 +240,16 @@ Resúmenes operativos de 5 a 15 líneas por skill. El delegador conserva las res
 ### Skill propia del TPI
 
 - `odontologia-openspec` — `.agents/skills/odontologia-openspec/SKILL.md`: guía cambios OpenSpec del sistema odontológico con contratos, governance, datos ficticios, pruebas y trazabilidad.
-- Creadora: `skill-creator` (Codex). Evidencia y límites de validación: `docs/entrega/evidencia-skill-mcp.md`.
+- Creadora: `skill-creator` global (fuente del autor Anthropic Skills; usada desde el entorno Codex). OpenAI también documenta un `$skill-creator` integrado. Evidencia y límites: `docs/entrega/evidencia-skill-mcp.md`.
 
 ### Integración MCP para el TPI
 
-- GitHub MCP conectado por el entorno Codex; guía sin credenciales en `docs/entrega/mcp-github.md`.
-- La llamada real de búsqueda y el aporte observado están registrados en `docs/entrega/evidencia-skill-mcp.md`.
+- Context7 MCP se usó en el change C-21; guía y comparación en `docs/skills-mcp/mcp-context7.md` e `investigacion.md`.
+- GitHub MCP queda documentado como alternativa. La búsqueda previa perteneció a C-20 y no se cuenta como aplicación sobre C-21.
 
-[AGENTS.md](../AGENTS.md) y [CLAUDE.md](../CLAUDE.md) existen en la raíz y contienen instrucciones idénticas, consolidadas desde el alcance y las restricciones ya autorizados. No se importan reglas de otros proyectos ni se declara aprobación humana de contratos o reglas técnicas nuevas. El contrato de C-01 usa FastAPI, Python, SQLite, unittest y TestClient por corrección explícita del usuario; evidencias personales y Archive siguen pendientes.
+[AGENTS.md](../AGENTS.md) y [CLAUDE.md](../CLAUDE.md) existen en la raíz y contienen instrucciones idénticas. C-01–C-13 y C-15–C-21 están archivados; C-14 permanece excluido. El cierre técnico no declara aceptación docente ni revisiones humanas que no se hayan realizado.
 
-Se actualiza únicamente este índice de convenciones: las 21 skills y sus reglas compactas conservan el inventario previo, sin rescaneo ni instalaciones. Las rutas globales de las otras secciones siguen requiriendo comprobación en cada equipo.
+El inventario registra 22 skills únicas: ocho locales al proyecto y catorce del entorno. `odontologia-openspec` es la única skill propia creada para el TPI; las demás rutas globales requieren comprobación en cada equipo.
 
 Convenciones y todos los documentos referenciados por AGENTS.md/CLAUDE.md:
 

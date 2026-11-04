@@ -31,6 +31,7 @@ describe('reportes operativos', () => {
 
     expect(await screen.findByText('Reservados')).toBeInTheDocument()
     expect(screen.getByText('2')).toBeInTheDocument()
+    expect(screen.queryByRole('status')).not.toBeInTheDocument()
     expect(screen.queryByRole('heading', { name: 'Resumen financiero' })).not.toBeInTheDocument()
     expect(api).toHaveBeenCalledWith(
       '/reportes/agenda?desde=2026-11-02&hasta=2026-11-03', { token: 'token-recepcion' },
@@ -74,5 +75,50 @@ describe('reportes operativos', () => {
       expect.objectContaining({ headers: expect.objectContaining({ Authorization: 'Bearer token-admin' }) }))
     expect(click).toHaveBeenCalled()
     click.mockRestore()
+  })
+
+  it('anuncia agenda vacía para Recepción', async () => {
+    api.mockResolvedValueOnce({
+      desde: '2026-11-02', hasta: '2026-11-03', zona: 'America/Argentina/Mendoza', dias: [],
+    } as never)
+    render(<Reportes rol="recepcion" token="token-recepcion" />)
+    fireEvent.change(screen.getByLabelText('Desde'), { target: { value: '2026-11-02' } })
+    fireEvent.change(screen.getByLabelText('Hasta (exclusivo)'), { target: { value: '2026-11-03' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Consultar reportes' }))
+
+    expect(await screen.findByRole('status')).toHaveTextContent('No hay datos de agenda para el período consultado.')
+    expect(screen.queryByRole('table')).not.toBeInTheDocument()
+  })
+
+  it('anuncia finanzas vacías sin ocultar la agenda con actividad', async () => {
+    api.mockImplementation(async (ruta) => {
+      if (String(ruta).startsWith('/reportes/agenda?')) {
+        return {
+          desde: '2026-11-02', hasta: '2026-11-03', zona: 'America/Argentina/Mendoza',
+          dias: [{ fecha: '2026-11-02', estados: { reservado: { cantidad: 1, minutos: 30 } },
+            recursos: { profesionales: [], boxes: [] } }],
+        } as never
+      }
+      return { saldo_apertura_ars: '0.00', dias: [] } as never
+    })
+    render(<Reportes rol="administrador" token="token-admin" />)
+    fireEvent.change(screen.getByLabelText('Desde'), { target: { value: '2026-11-02' } })
+    fireEvent.change(screen.getByLabelText('Hasta (exclusivo)'), { target: { value: '2026-11-03' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Consultar reportes' }))
+
+    expect(await screen.findByRole('status')).toHaveTextContent('No hay movimientos financieros para el período consultado.')
+    expect(screen.getByRole('heading', { name: 'Resumen de agenda' })).toBeInTheDocument()
+    expect(screen.getByRole('table', { name: 'Turnos por estado' })).toBeInTheDocument()
+  })
+
+  it('mantiene los errores de consulta como alertas y no como estados vacíos', async () => {
+    api.mockRejectedValueOnce(new Error('No se pudieron consultar los reportes.'))
+    render(<Reportes rol="recepcion" token="token-recepcion" />)
+    fireEvent.change(screen.getByLabelText('Desde'), { target: { value: '2026-11-02' } })
+    fireEvent.change(screen.getByLabelText('Hasta (exclusivo)'), { target: { value: '2026-11-03' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Consultar reportes' }))
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('No se pudieron consultar los reportes.')
+    expect(screen.queryByRole('status')).not.toBeInTheDocument()
   })
 })

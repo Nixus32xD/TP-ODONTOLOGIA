@@ -6,7 +6,7 @@ Repositorio: [Nixus32xD/TP-ODONTOLOGIA](https://github.com/Nixus32xD/TP-ODONTOLO
 
 ## Estado actual
 
-OpenSpec inicializado y Discovery documental confirmado: quince sistemas relevados, matriz ponderada y once puntos aceptados el 2026-10-15 para un consultorio pequeño. C-01 crea turnos sin solapamientos y fue archivado el 2026-10-28. C-02 agrega PostgreSQL + SQLAlchemy, migraciones Alembic e importación explícita desde SQLite; C-03 agrega autenticación JWT y permisos de personal. C-01–C-13 y C-15–C-20 están implementados, validados y archivados localmente. C-20 agrega reportes JSON/CSV y un panel local, respaldados por integración PostgreSQL temporal. C-14 despliegue sigue opcional y fuera de esta entrega. La investigación documental está asistida por IA; confirmé mi revisión personal de las seis fuentes del registro el 2026-10-15. El cierre técnico no acredita por sí solo aceptación docente.
+OpenSpec inicializado y Discovery documental confirmado: quince sistemas relevados, matriz ponderada y once puntos aceptados el 2026-10-15 para un consultorio pequeño. C-01 crea turnos sin solapamientos y fue archivado el 2026-10-28. C-02 agrega PostgreSQL + SQLAlchemy, migraciones Alembic e importación explícita desde SQLite; C-03 agrega autenticación JWT y permisos de personal. C-01–C-13 y C-15–C-21 están implementados, validados y archivados localmente. C-20 agrega reportes JSON/CSV y un panel local; C-21 mejora la comunicación de resultados vacíos. C-14 despliegue sigue opcional y fuera de esta entrega. La investigación documental está asistida por IA; confirmé mi revisión personal de las seis fuentes del registro el 2026-10-15. El cierre técnico no acredita por sí solo aceptación docente.
 
 Se ejecutó `openspec init --tools codex --language es --no-animation`: configuración `spec-driven` y seis skills OPSX. Se incorporó `discovery-research` sólo en este proyecto. El estado de Active Stack conserva `version: 4` y registra `step: agents`: Discovery está registrado y la [base de conocimiento](knowledge-base/README.md) contiene diez documentos canónicos más su índice, generados desde las fuentes existentes. C-01 se implementó con FastAPI, Python 3.12+, SQLite y unittest; C-02 añadió PostgreSQL optativo y C-03 autenticación JWT. El campo step registra la última fase de fundación; el CLI de OpenSpec registra el progreso de cada change.
 
@@ -17,7 +17,7 @@ Set-Location -LiteralPath 'N:\Nueva carpeta\TP-ODONTOLOGIA'
 openspec list --json
 ```
 
-OpenSpec conserva C-01 a C-13 y C-15 a C-20 archivados y validados localmente. C-09 gestiona estados de turno; C-10 reprograma de forma atómica; C-11 opera la agenda desde recepción; C-12 respalda/restaura la agenda; C-13 endurece seguridad y observabilidad; C-15–C-18 agregan historia clínica sintética, odontograma y planes, recordatorios simulados y autoservicio de pacientes; C-19 agrega un ledger financiero de cargos/cobros/reversiones; C-20 agrega reportes operativos JSON/CSV y panel. El [roadmap](CHANGES.md) describe el alcance completo; C-14 despliegue es opcional y queda fuera de esta entrega. Las evidencias distinguen pruebas, revisión humana y aceptación docente. La [selección de skills](docs/fundacion/seleccion-skills.md), el [registro](.atl/skill-registry.md) y las reglas de [AGENTS.md](AGENTS.md) y [CLAUDE.md](CLAUDE.md) conservan las decisiones del proyecto.
+OpenSpec conserva C-01 a C-13 y C-15 a C-21 archivados y validados localmente. C-09 gestiona estados de turno; C-10 reprograma de forma atómica; C-11 opera la agenda desde recepción; C-12 respalda/restaura la agenda; C-13 endurece seguridad y observabilidad; C-15–C-18 agregan historia clínica sintética, odontograma y planes, recordatorios simulados y autoservicio de pacientes; C-19 agrega un ledger financiero; C-20 reportes operativos JSON/CSV; C-21 estados vacíos accesibles. El [roadmap](CHANGES.md) describe el alcance completo; C-14 despliegue es opcional y queda fuera de esta entrega. La [selección de skills](docs/fundacion/seleccion-skills.md), el [registro](.atl/skill-registry.md) y las reglas de [AGENTS.md](AGENTS.md) y [CLAUDE.md](CLAUDE.md) conservan las decisiones del proyecto.
 
 El proyecto comenzó desde cero con C-01 como primer cambio funcional de agenda. C-02 y C-03 amplían esa base; los changes posteriores siguen sujetos a su propio contrato, autorización y verificación. El desarrollo usa datos ficticios y no integra servicios clínicos reales.
 
@@ -37,7 +37,7 @@ TP-ODONTOLOGIA/
 ├── openspec/           # specs vigentes y changes archivados
 ├── knowledge-base/     # base de conocimiento (10 archivos)
 ├── docs/               # Discovery, bitácora, evidencia y consigna
-├── CHANGES.md          # roadmap de 20 changes
+├── CHANGES.md          # roadmap de 21 changes
 └── AGENTS.md / CLAUDE.md
 ```
 
@@ -69,7 +69,8 @@ El usuario autorizó commits locales separados por petición completada, validac
 - [Nueva revisión documental delegada: seis fuentes y motivos de ajuste](docs/discovery/revision-documental-2026-10-15.md).
 - [Selección y justificación de skills](docs/fundacion/seleccion-skills.md).
 - [Registro de skills del proyecto](.atl/skill-registry.md).
-- [Skill propia del TPI y evidencia de uso](docs/entrega/evidencia-skill-mcp.md).
+- [Skill propia y evidencia](docs/entrega/evidencia-skill-mcp.md), [investigación Skills/MCP](docs/skills-mcp/investigacion.md) y [aplicación C-21](docs/skills-mcp/aplicacion.md).
+- [Informe PDF Skills/MCP](output/pdf/TP-Skills-MCP-informe.pdf) y fuentes Markdown.
 - [Guía de conexión y uso del MCP GitHub](docs/entrega/mcp-github.md).
 - [Guion de video TPI (máximo 10 minutos)](docs/entrega/guion-video.md).
 - [Instrucciones para agentes](AGENTS.md) y [versión equivalente para Claude](CLAUDE.md).

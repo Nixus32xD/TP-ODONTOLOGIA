@@ -1,36 +1,35 @@
 ---
 name: odontologia-openspec
-description: Revisa, propone y verifica cambios OpenSpec para el sistema odontológico de este repositorio. Usala cuando se trabaje en changes, endpoints, agenda, pacientes, clínica, finanzas, reportes o sus pruebas; aplica las reglas del proyecto y conserva la trazabilidad entre contrato, implementación, evidencia y roadmap.
+description: Revisa propuestas y cambios que afecten los contratos del sistema odontológico. Usala para detectar invariantes de agenda, permisos, historia clínica, recordatorios, ledger y reportes que una revisión genérica de OpenSpec podría pasar por alto; las skills OpenSpec siguen manejando su ciclo Explore/Propose/Apply/Archive.
 ---
 
-# Changes OpenSpec para el sistema odontológico
+# Revisión de dominio odontológico
 
-## Objetivo
+## Propósito
 
-Ayudar a evolucionar este sistema respetando los contratos aprobados, el roadmap y la separación entre evidencia técnica y aceptación humana. Esta skill guía el trabajo; no reemplaza OpenSpec CLI, los tests ni las decisiones del equipo.
+Agregar una revisión específica del negocio y la privacidad de este proyecto cuando una propuesta, delta, implementación o evidencia toque datos y operaciones odontológicas. No duplica el flujo genérico de OpenSpec.
 
-## Procedimiento
+## Uso
 
-1. Lee `AGENTS.md`, `CHANGES.md` y los documentos de Knowledge Base indicados por el change. Comprueba el estado del checkout antes de editar.
-2. Consulta `openspec list --json` y el estado del change con `openspec status --change "<nombre>" --json`. No infieras estados por nombres de carpetas.
-3. Identifica dependencias, alcance, exclusiones y nivel de governance. Para políticas CRÍTICAS o ALTAS aún no acordadas, presenta la decisión material antes de implementarla; no amplíes el contrato por conveniencia.
-4. Conserva backend en `backend/` y UI en `frontend/`. Reutiliza adaptadores y servicios existentes; nunca agregues datos clínicos reales, credenciales o llamadas a proveedores externos.
-5. Sigue el ciclo de pruebas del proyecto: baseline, prueba que falle para el comportamiento nuevo, cambio mínimo, casos límite y suite relevante. No marques tareas ni afirmes ejecuciones que no observaste.
-6. Al verificar, relaciona cada escenario con código, prueba y resultado. Una carpeta archivada o un checklist marcado no sustituye la ejecución.
-7. Antes del commit, revisa diff y estado Git; separa cambios ajenos. Push sólo si la instrucción vigente lo autoriza explícitamente.
+Lee el alcance y la especificación principal relacionada con el cambio. Selecciona sólo los invariantes correspondientes a los módulos afectados y compara los escenarios, el resultado visible y las pruebas contra ellos.
 
-## Salida al revisar o planificar
+| Área afectada | Invariantes que revisar |
+| --- | --- |
+| Agenda y disponibilidad | Intervalos `[inicio, fin)`, zona local documentada, adyacencia válida y conflicto independiente de profesional/box; la disponibilidad orienta y el backend decide. |
+| Roles, pacientes e historia clínica | Acceso mínimo por rol; el paciente sólo consulta datos propios; contenido clínico sintético y no expuesto a Recepción/Admin si el contrato lo restringe; auditoría metadata-only donde corresponda. |
+| Recordatorios | Consentimiento falso por defecto; el canal simulado no llama email, WhatsApp ni proveedores. |
+| Ledger y reportes | Importes exactos en centavos; saldo derivado del ledger; sin cargos automáticos; reportes agregados sin PII ni texto clínico. |
+| CSV | Neutralización de fórmulas, encabezados/orden estables y ausencia de datos excluidos. |
 
-- Estado observado y comando/fuente usado.
-- Alcance incluido y excluido.
-- Contratos o decisiones que requieren resolución.
-- Archivos/componentes afectados y pruebas que demostrarían el resultado.
-- Evidencia realizada y limitaciones, sin atribuirla al estudiante si la ejecutó el agente.
+No importes una regla de un área que el change no toca. No conviertas una práctica recomendada en política clínica nueva.
 
-## Reglas específicas
+## Resultado de la revisión
 
-- En agenda, conserva intervalos `[inicio, fin)`, zona horaria documentada y rechazo de conflictos de profesional/box.
-- En auditoría y datos clínicos, limita registros a metadata cuando lo exige el contrato y conserva autorización por rol.
-- En importes, usa el ledger existente y precisión entera/decimal estricta; no derives cargos desde turnos.
-- En CSV, neutraliza fórmulas y no exportes PII ni contenido clínico.
-- Docker y Redis están fuera del alcance operativo actual; no los agregues como dependencias.
+Entrega una lista breve con:
+
+- Área/invariante revisado y su fuente de verdad local.
+- Escenario o borde cubierto y evidencia observable esperada.
+- Omisiones o contradicciones encontradas, indicando el antes/después al corregirlas.
+- Preguntas de política que el contrato no resuelve; no las completes por inferencia.
+
+Usa datos ficticios. La skill complementa las instrucciones de `AGENTS.md`, la Knowledge Base y las skills de OpenSpec; no autoriza cambios, acceso externo ni ejecución de operaciones.

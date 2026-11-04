@@ -1,5 +1,14 @@
 # Bitácora del proceso
 
+## 2026-11-04 — Skill, MCP y C-21
+
+- Se revisó el roadmap completo: C-01–C-13 y C-15–C-20 ya estaban archivados; C-14 sigue opcional/fuera de alcance.
+- Se creó y archivó C-21 `mejorar-estados-vacios-reportes`, dependiente de C-20. La delta de reportes agrega cuatro escenarios para vacíos, datos y errores; la UI comunica vacío con `role="status"` y conserva `role="alert"` en error.
+- Evidencia ejecutada: tests focales 5/5; suite frontend 77/77 en 13 archivos; build y `openspec validate --strict` satisfactorios; specs sincronizadas por Archive.
+- Skill `odontologia-openspec` se acotó a invariantes del dominio. Context7 se consultó sobre React para este C-21; W3C se usó para la semántica de status. Una búsqueda GitHub anterior sobre C-20 no se atribuye a C-21.
+- Fuentes y aplicación: `docs/skills-mcp/`; informe PDF: `output/pdf/TP-Skills-MCP-informe.pdf`. Los guiones de video son locales/ignorados por Git.
+- Límite: no se realizó prueba con lector de pantalla ni revisión humana de terceros; no se afirma aceptación docente.
+
 ## 2026-10-15 - Preparación
 
 - **Decisión del usuario:** construir una entrega propia desde cero.

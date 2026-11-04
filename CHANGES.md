@@ -1,7 +1,7 @@
 # CHANGES — Secuencia de Implementación
 
 > Índice canónico del proyecto **TP-ODONTOLOGIA**, actualizado el 2026-11-02.
-> **Plan del producto completo; C-01-C-13 y C-15-C-20 están implementados, validados y archivados localmente. C-14 es opcional y queda fuera de la entrega.**
+> **C-01-C-13, C-15-C-21 están implementados, validados y archivados localmente. C-14 queda opcional y fuera de la entrega.**
 > **Leer este archivo antes de ejecutar cualquier `/opsx:propose`.**
 
 ---
@@ -20,7 +20,7 @@ La aclaración del usuario del 2026-10-28 corrige el índice anterior: **hacer s
 
 - **Entrega académica archivada:** C-01 `crear-turno-sin-solapamientos`, con 18/18 tareas completas y Archive confirmado el 2026-10-28; la spec principal es [alta-turnos](openspec/specs/alta-turnos/spec.md). No se cambia su nombre, su spec, su código ni su contrato. C-02, C-03 y C-04 también están implementados, validados y archivados localmente.
 - **MVP académico demostrable:** C-03 a C-13 completan una agenda de recepción administrable, con cambios revisables, pruebas y demostración local. C-02 ya aporta el backend PostgreSQL optativo y está archivado; la seguridad, auditoría y recuperación usan datos ficticios. No se requiere desplegar el sistema ni levantar contenedores.
-- **Evolución del producto:** C-15 a C-20 agregan clínica, odontograma/plan de tratamiento, recordatorios, reserva del paciente, cobros y reportes. C-15 a C-20 quedaron implementados, validados y archivados localmente.
+- **Evolución del producto:** C-15 a C-20 agregan clínica, odontograma/plan de tratamiento, recordatorios, reserva del paciente, cobros y reportes. C-21 mejora estados vacíos del panel de reportes.
 - **Opciones no comprometidas:** multisede/SaaS multitenant, IA, obras sociales y facturación electrónica ARCA no se vuelven obligatorias por aparecer en productos comparados. Si se eligen, se agregarán changes posteriores con investigación y aprobación específicas. C-19 no incluye emisión fiscal ni conexión con pagos reales.
 
 La KB y las instrucciones existentes documentan principalmente la porción académica C-01. Sus exclusiones siguen vigentes para esa implementación; las capacidades futuras del roadmap no amplían retroactivamente las US-001 a US-004. C-02 concreta la migración a PostgreSQL conservando la fuente SQLite; C-03/C-04 autenticación, permisos y auditoría; C-05 la ficha mínima; C-06 catálogos; C-07 disponibilidad; C-08 consultas de agenda; C-09 estados; y C-10 reprogramación atómica. C-01 standalone conserva compatibilidad. Se mantienen datos ficticios y ninguna integración externa real.
@@ -116,7 +116,7 @@ C-01 → C-02 → C-03 → C-04 → C-05 → C-09 → C-08 → C-10 → C-11 →
 
 La rama `C-04 → C-06 → C-07 → C-08` tiene la misma longitud que `C-04 → C-05 → C-09 → C-08`; C-09 también requiere C-06. **La cadena dibujada no basta sola:** C-06/C-07 y C-12 son prerrequisitos paralelos obligatorios; el conjunto mínimo del MVP contiene C-01 a C-13. C-14 es opcional y queda fuera de esta entrega. Se cuenta longitud en changes para mostrar precedencias, no un plazo calculado: las duraciones no están estimadas.
 
-Si se prioriza todo el producto C-01 a C-20, las rutas más largas llegan a C-16 o C-20 y tienen **12 changes**: `C-01 → … → C-13 → C-15 → C-16` o `C-01 → … → C-13 → C-19 → C-20`. Clínica y cobros siguen siendo extensiones independientes del MVP académico; no requieren un paquete de despliegue.
+La ruta funcional hasta los reportes C-20 tiene 12 changes en sus dependencias más largas; C-21 añade una mejora de interfaz que depende de C-20. C-14 continúa excluido. Clínica y cobros siguen siendo extensiones independientes del MVP académico; no requieren un paquete de despliegue.
 
 ### Plan óptimo con 3 agentes
 
@@ -158,7 +158,7 @@ Secuencia compatible con dependencias, sin prometer una optimización temporal n
 
 ## FASE 2 — Fundamento evolutivo, acceso y trazabilidad
 
-> C-01–C-10 están archivados localmente y validados. C-11 a C-20 siguen planificados con desarrollo global autorizado. Las decisiones materiales de governance CRÍTICO/ALTO requieren aprobación específica antes del código.
+> Al cierre, C-01–C-13 y C-15–C-21 están archivados localmente y validados. C-14 sigue fuera del alcance. Las decisiones materiales futuras CRÍTICO/ALTO requieren aprobación específica antes del código.
 
 ### [C-02] `evolucionar-esquema-y-configuracion`
 
@@ -458,3 +458,13 @@ Secuencia compatible con dependencias, sin prometer una optimización temporal n
   - [03_actores_y_roles.md](knowledge-base/03_actores_y_roles.md) §Datos y responsabilidad.
   - [06_funcionalidades.md](knowledge-base/06_funcionalidades.md) §Funcionalidades postergadas.
   - [08_arquitectura_propuesta.md](knowledge-base/08_arquitectura_propuesta.md) §Seguridad y datos.
+
+## FASE 7 — Calidad de interfaz
+
+### [C-21] `mejorar-estados-vacios-reportes`
+
+- **Estado**: implementado, validado y archivado localmente el 2026-11-04.
+- **Scope**: mensajes accesibles por dataset cuando agenda o finanzas no tienen filas; conservar tablas con datos y alertas de error. Sin cambios de API, cálculo, permisos ni CSV.
+- **Evidencia**: frontend 77/77 en 13 archivos, build aprobado, OpenSpec strict y delta sincronizada. Se usaron skill de dominio y Context7 sobre el mismo change; se contrastó `role="status"` con W3C. Ver [aplicación](docs/skills-mcp/aplicacion.md).
+- **Dependencias**: C-20.
+- **Governance**: BAJO — sólo representación de estado en UI.

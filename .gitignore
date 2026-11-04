@@ -34,6 +34,8 @@ frontend/playwright-report/
 # Preparación y grabaciones locales del video
 /docs/entrega/capturas/
 /docs/entrega/video/
+/docs/entrega/guion-video-tpi-local.md
+/docs/skills-mcp/guion-video-local.md
 *.mp4
 *.mkv
 *.webm
